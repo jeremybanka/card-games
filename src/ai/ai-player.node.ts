@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 
 import { Silo } from "atom.io"
 import type { Socket as RealtimeSocket } from "atom.io/realtime"
@@ -21,6 +21,7 @@ import type {
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
+import type { AiTurnGenerator } from "./ai-strategy.ts"
 import {
 	createAiPlayerSiloState,
 	type AiPlayerSiloState,
@@ -37,6 +38,8 @@ export type AiPlayerRuntime = {
 }
 
 export type CreateAiPlayerOptions = {
+	canAct?: (game: PublicGameView, privateView: PrivatePlayerView) => boolean
+	generateTurn?: AiTurnGenerator
 	modelId: AiModelId
 	name: string
 	playerId: PlayerId
@@ -81,12 +84,12 @@ async function createAiPlayerRuntime(
 	const silo = new Silo({
 		isProduction: process.env.NODE_ENV === "production",
 		lifespan: "ephemeral",
-		name: `AI-${options.playerId}`,
+		name: `AI-${options.playerId}-${randomUUID()}`,
 	})
 	const state = createAiPlayerSiloState(
 		silo,
 		options.playerId,
-		createOpenAiTurnGenerator(options.modelId),
+		options.generateTurn ?? createOpenAiTurnGenerator(options.modelId),
 	)
 	const socket: AiSocket = io(options.serverUrl, {
 		autoConnect: false,
@@ -121,7 +124,10 @@ async function createAiPlayerRuntime(
 	const shouldAct = (): boolean => {
 		const game = silo.getState(publicGameViewAtom)
 		const privateView = silo.getState(privatePlayerViewAtom)
-		return isAiTurnReady(options.playerId, game, privateView)
+		return (
+			isAiTurnReady(options.playerId, game, privateView) &&
+			(options.canAct?.(game, privateView) ?? true)
+		)
 	}
 
 	const act = async (): Promise<void> => {

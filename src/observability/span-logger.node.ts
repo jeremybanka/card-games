@@ -207,6 +207,14 @@ export class SpanLogger {
 		this.write("info", event, attributes, this.#storage.getStore())
 	}
 
+	getMinimumLevel(): LogLevel {
+		return this.#minimumLevel
+	}
+
+	setMinimumLevel(level: LogLevel): void {
+		this.#minimumLevel = level
+	}
+
 	warn(event: string, attributes: LogFields = {}): void {
 		this.write("warn", event, attributes, this.#storage.getStore())
 	}

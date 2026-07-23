@@ -1,7 +1,7 @@
 import { createReadStream, existsSync } from "node:fs"
 import { createServer } from "node:http"
 import { extname, join, resolve } from "node:path"
-import { randomInt, randomUUID } from "node:crypto"
+import { randomUUID } from "node:crypto"
 
 import { disposeState, findState, getState, setState } from "atom.io"
 import type { UserKey } from "atom.io/realtime"
@@ -26,6 +26,7 @@ import {
 } from "../src/game/hearts-actions.ts"
 import {
 	createHeartsGame,
+	createPhysicalCardIds,
 	disconnectPlayer,
 	HeartsRuleError,
 	joinHeartsGame,
@@ -36,6 +37,10 @@ import {
 	submitPass,
 	type HeartsState,
 } from "../src/game/hearts-engine.ts"
+import {
+	createSeededRandom,
+	type SeededRandom,
+} from "../src/game/seeded-random.ts"
 import {
 	heartsStateAtoms,
 	privatePlayerViewProjectionSelectors,
@@ -58,6 +63,8 @@ import {
 const SERVER_PORT = Number.parseInt(process.env.PORT ?? "8787", 10)
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 const PLAYER_NAME_MAXIMUM_LENGTH = 18
+const GAME_SEED = process.env.GAME_SEED?.trim() || randomUUID()
+const roomCodeRandom = createSeededRandom(`room-code:${GAME_SEED}`)
 
 type GameServerSocket = Socket<
 	ClientToServerEvents,
@@ -69,6 +76,8 @@ type GameServerSocket = Socket<
 type Room = {
 	aiPlayers: Map<PlayerId, AiPlayerRuntime>
 	connections: Map<PlayerId, { dispose: () => void; socket: GameServerSocket }>
+	dealRandom: SeededRandom
+	identityRandom: SeededRandom
 }
 
 const rooms = new Map<string, Room>()
@@ -98,7 +107,8 @@ function createRoomCode(): string {
 	for (let attempt = 0; attempt < 100; attempt += 1) {
 		let roomCode = ""
 		for (let index = 0; index < 4; index += 1) {
-			roomCode += ROOM_CODE_ALPHABET[randomInt(ROOM_CODE_ALPHABET.length)]
+			roomCode +=
+				ROOM_CODE_ALPHABET[roomCodeRandom.integer(ROOM_CODE_ALPHABET.length)]
 		}
 		if (!rooms.has(roomCode)) return roomCode
 	}
@@ -345,8 +355,23 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			(span) => {
 				const playerName = normalizePlayerName(playerNameInput)
 				const roomCode = createRoomCode()
-				const room: Room = { aiPlayers: new Map(), connections: new Map() }
-				setRoomState(roomCode, createHeartsGame(roomCode, playerId, playerName))
+				const room: Room = {
+					aiPlayers: new Map(),
+					connections: new Map(),
+					dealRandom: createSeededRandom(`deal:${roomCode}:${GAME_SEED}`),
+					identityRandom: createSeededRandom(
+						`identity:${roomCode}:${GAME_SEED}`,
+					),
+				}
+				setRoomState(
+					roomCode,
+					createHeartsGame(
+						roomCode,
+						playerId,
+						playerName,
+						createPhysicalCardIds(room.identityRandom.uuid),
+					),
+				)
 				rooms.set(roomCode, room)
 				connectPlayerToRoom(room, roomCode, socket, playerId, playerName)
 				span.event("room.created", {
@@ -417,7 +442,7 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 					throw new HeartsRuleError("Choose a supported OpenAI model.")
 				}
 
-				const rawPlayerId = randomUUID()
+				const rawPlayerId = room.identityRandom.uuid()
 				const aiPlayerId = `user::${rawPlayerId}` satisfies PlayerId
 				const playerSecret = randomUUID()
 				const sameModelCount = state.players.filter(
@@ -493,8 +518,12 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			"realtime.action.start_game",
 			{ playerId },
 			(span) => {
-				const [roomCode] = roomForPlayer(playerId)
-				const nextState = startGame(getRoomState(roomCode), playerId)
+				const [roomCode, room] = roomForPlayer(playerId)
+				const nextState = startGame(
+					getRoomState(roomCode),
+					playerId,
+					room.dealRandom.next,
+				)
 				setRoomState(roomCode, nextState)
 				span.event("game.dealt", {
 					room: stateSnapshotForLog(nextState),
@@ -584,8 +613,12 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			"realtime.action.start_next_round",
 			{ playerId },
 			(span) => {
-				const [roomCode] = roomForPlayer(playerId)
-				const nextState = startNextRound(getRoomState(roomCode), playerId)
+				const [roomCode, room] = roomForPlayer(playerId)
+				const nextState = startNextRound(
+					getRoomState(roomCode),
+					playerId,
+					room.dealRandom.next,
+				)
 				setRoomState(roomCode, nextState)
 				span.event("game.dealt", {
 					room: stateSnapshotForLog(nextState),
@@ -713,6 +746,7 @@ realtime(
 
 httpServer.listen(SERVER_PORT, "0.0.0.0", () => {
 	serverLogger.info("server.listening", {
+		gameSeed: GAME_SEED,
 		host: "0.0.0.0",
 		logLevel: process.env.LOG_LEVEL ?? "info",
 		nodeEnv: process.env.NODE_ENV ?? "development",

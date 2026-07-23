@@ -12,6 +12,7 @@ import {
 	toPublicGameView,
 	type HeartsState,
 } from "./hearts-engine.ts"
+import { createSeededRandom } from "./seeded-random.ts"
 import type { CardId, PlayerId } from "./hearts-types.ts"
 
 const playerIds = [
@@ -28,13 +29,8 @@ function physicalIds(): CardId[] {
 	)
 }
 
-function seededRandom(seed: number): () => number {
-	let value = seed >>> 0
-	return () => {
-		value = (value * 1_664_525 + 1_013_904_223) >>> 0
-		return value / 4_294_967_296
-	}
-}
+const seededRandom = (seed: number): (() => number) =>
+	createSeededRandom(seed).next
 
 function lobby(playerCount: 2 | 3 | 4): HeartsState {
 	let state = createHeartsGame("WIND", playerIds[0], "Ada", physicalIds())

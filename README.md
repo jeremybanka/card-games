@@ -50,6 +50,23 @@ with Varmint wrapping the data generator. Invalid or stale model actions fall
 back to a deterministic legal strategy and are still validated by the
 authoritative room server.
 
+## Deterministic replay
+
+Game randomness runs through a seeded linear congruential generator (LCG).
+When `GAME_SEED` is unset, the server creates and logs a fresh cryptographic
+seed at startup. Setting `GAME_SEED` makes room allocation, opaque physical
+card identities, AI identities, and every deal reproducible from the same
+ordered action stream. Identity and deal generators are domain-separated so
+public opaque IDs do not expose the shuffle stream.
+
+The four-bot realtime end-to-end test uses the invariant
+`sol-vs-three-luna-v1` seed. It records a complete round with one Sol seat and
+three Luna seats into a temporary Varmint cache, then runs the same table again
+in read mode. The replay must execute no underlying generators and produce the
+same 56 intents, card values, winners, scores, and final authoritative state.
+Player secrets and observability span IDs remain cryptographically random
+because they are not game actions and must not be replayed.
+
 ## Observability
 
 The room server writes newline-delimited JSON spans to standard output and
@@ -80,7 +97,7 @@ tokens, and player secrets are redacted recursively. Set `LOG_LEVEL` to
 ## Information boundaries
 
 The server owns the complete card mapping and validates every action. Each room
-has 52 stable, opaque physical card IDs, but the server securely scrambles their
+has 52 stable, opaque physical card IDs, but the server scrambles their
 relationship to suits and ranks on every deal.
 
 Clients receive two separate atom.io realtime projections:
@@ -102,6 +119,7 @@ publicly visible player ID.
 | `pnpm build`      | Type-check and create the production client              |
 | `pnpm start`      | Serve the production client and realtime rooms           |
 | `pnpm test`       | Run rules, generators, realtime privacy, and simulations |
+| `pnpm test:e2e`   | Record and replay the deterministic four-bot round       |
 | `pnpm check`      | Run Oxc, TypeScript, ESLint, and Lasertag checks         |
 | `pnpm fmt`        | Format source and configuration files                    |
 | `pnpm spellcheck` | Check prose and identifiers                              |

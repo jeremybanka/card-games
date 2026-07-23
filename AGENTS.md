@@ -18,6 +18,8 @@
   boundary.
 - Preserve physical card IDs for the lifetime of a room, but scramble their
   relationship to card values on every deal.
+- Route replay-sensitive game randomness through domain-separated instances of
+  the seeded LCG. Give deterministic tests invariant, named seeds.
 - Treat every AI seat as an ordinary realtime player with its own private
   atom.io Silo. Keep AI observations, plans, prompts, and private hand facts out
   of public room state. Privileged server logs may record them for diagnostics.
