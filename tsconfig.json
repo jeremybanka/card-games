@@ -14,7 +14,7 @@
 		"skipLibCheck": true,
 		"strict": true,
 		"target": "ES2024",
-		"types": ["vite/client"]
+		"types": ["node", "vite/client"]
 	},
-	"include": ["src", "eslint.config.ts", "vite.config.ts"]
+	"include": ["server", "src", "eslint.config.ts", "vite.config.ts"]
 }

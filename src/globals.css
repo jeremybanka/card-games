@@ -10,10 +10,15 @@ body,
 	min-height: 100%;
 }
 
+html {
+	background: #0c2f26;
+}
+
 body {
 	margin: 0;
-	background: var(--color-canvas);
-	color: var(--color-text-primary);
+	overflow: hidden;
+	background: var(--felt-dark);
+	color: var(--ink);
 	font-family:
 		Inter,
 		ui-sans-serif,
@@ -22,6 +27,8 @@ body {
 		BlinkMacSystemFont,
 		"Segoe UI",
 		sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-webkit-tap-highlight-color: transparent;
 }
 
 button,
@@ -31,30 +38,22 @@ select {
 	font: inherit;
 }
 
+button {
+	touch-action: manipulation;
+}
+
 :root {
-	color-scheme: light dark;
+	color-scheme: dark;
 
-	--color-canvas: #f4f0e7;
-	--color-surface: #fffaf0;
-	--color-text-primary: #252921;
-	--color-text-strong: #11150f;
-	--color-text-muted: #686e62;
-	--color-border: #d8d1c1;
-	--color-accent: #2f6a4d;
-	--color-accent-hover: #25543d;
-	--color-on-accent: #ffffff;
-	--color-focus: #d9872e;
-
-	@media (prefers-color-scheme: dark) {
-		--color-canvas: #141813;
-		--color-surface: #1d231c;
-		--color-text-primary: #e9ede5;
-		--color-text-strong: #ffffff;
-		--color-text-muted: #abb3a5;
-		--color-border: #394137;
-		--color-accent: #8bd0a7;
-		--color-accent-hover: #a6dfba;
-		--color-on-accent: #102117;
-		--color-focus: #f1ad65;
-	}
+	--felt: #174e3e;
+	--felt-light: #1c5b48;
+	--felt-dark: #0c3027;
+	--ink: #fffaf0;
+	--ink-muted: #bac9c1;
+	--gold: #e1be69;
+	--danger: #d95368;
+	--card: #fffdf8;
+	--card-ink: #15211d;
+	--shadow: rgb(0 0 0 / 0.28);
+	--focus: #f1cf7b;
 }

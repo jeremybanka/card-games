@@ -7,6 +7,15 @@
   TypeScript directly.
 - Define source state with `atom.io`. Name tokens for their kind (for example,
   `questCountAtom`) and give public state explicit types.
+- Treat the server as authoritative for every game action. Clients submit
+  intents containing opaque physical card IDs; the server validates ownership,
+  phase, turn order, and Hearts rules before changing state.
+- Keep full card-value mappings in server-only modules. Expose table state and
+  each player's private hand through separate atom.io realtime providers. Never
+  add hidden card values to public projections, logs, acknowledgements, or
+  client-readable state.
+- Preserve physical card IDs for the lifetime of a room, but scramble their
+  relationship to card values on every deal.
 - Give each exported JSX component a same-named sibling CSS Module
   (`AppShell.tsx` and `AppShell.module.css`). Import it as `css`, expose only
   `.class`, and attach `css.class` to the component root.
@@ -17,4 +26,4 @@
 - Keep `src/globals.css` limited to resets, fonts, and semantic tokens. Keep
   component styling in CSS Modules.
 - After component or CSS Module changes, run `pnpm lasertag check`. Run
-  `pnpm check` and `pnpm build` before handing off changes.
+  `pnpm check`, `pnpm test`, and `pnpm build` before handing off changes.

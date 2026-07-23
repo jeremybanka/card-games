@@ -3,10 +3,13 @@
 	"useGitignore": true,
 	"ignorePaths": ["pnpm-lock.yaml"],
 	"words": [
+		"ABCDEFGHJKLMNPQRSTUVWXYZ",
 		"keytar",
 		"lasertag",
 		"malva",
+		"multiplayer",
 		"preact",
+		"realtime",
 		"vite",
 		"viteplus",
 		"vitest",
