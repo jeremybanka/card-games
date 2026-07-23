@@ -50,6 +50,20 @@ with Varmint wrapping the data generator. Invalid or stale model actions fall
 back to a deterministic legal strategy and are still validated by the
 authoritative room server.
 
+## Observability
+
+The room server writes newline-delimited JSON spans to standard output and
+standard error. Realtime actions, room lifecycle, deals, passes, plays, trick
+resolution, AI connection state, rendered model facts, decisions, fallbacks,
+OpenAI response metadata, token usage, and action acknowledgements carry trace
+and span IDs, outcomes, and durations.
+
+These are privileged server-admin logs and intentionally include private hands,
+card mappings, AI prompts, plans, and observations. They are never sent through
+the realtime boundary. API keys, authorization values, cookies, passwords,
+tokens, and player secrets are redacted recursively. Set `LOG_LEVEL` to
+`debug`, `info`, `warn`, or `error`; the default is `info`.
+
 ## Rules
 
 - Four players use the standard 52-card, 13-card-hand game.

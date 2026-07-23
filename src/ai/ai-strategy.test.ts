@@ -216,18 +216,35 @@ describe("AI Hearts generators", () => {
 			playableCardIds: [two.id],
 			playerId: aiPlayerId,
 		})
-		const generate = createGuardedAiTurnGenerator(async () => ({
-			currentPlan: "Cheat.",
-			nextAction: {
-				action: "playCard",
-				cardId: "card::not-in-hand",
-			},
-			observation: "I can see hidden cards.",
-		}))
+		const onFallback = vi.fn()
+		const generate = createGuardedAiTurnGenerator(
+			async () => ({
+				currentPlan: "Cheat.",
+				nextAction: {
+					action: "playCard",
+					cardId: "card::not-in-hand",
+				},
+				observation: "I can see hidden cards.",
+			}),
+			{ onFallback },
+		)
 
 		await expect(generate(context)).resolves.toMatchObject({
 			nextAction: { action: "playCard", cardId: two.id },
 		})
+		expect(onFallback).toHaveBeenCalledWith(
+			expect.objectContaining({
+				generated: {
+					currentPlan: "Cheat.",
+					nextAction: {
+						action: "playCard",
+						cardId: "card::not-in-hand",
+					},
+					observation: "I can see hidden cards.",
+				},
+				reason: "illegal_action",
+			}),
+		)
 	})
 
 	it("runs structured generators through Varmint", async () => {

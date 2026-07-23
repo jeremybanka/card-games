@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 import { Silo } from "atom.io"
 import type { Socket as RealtimeSocket } from "atom.io/realtime"
 import { pullAtom } from "atom.io/realtime-client"
@@ -16,6 +18,7 @@ import type {
 	PublicGameView,
 	ServerToClientEvents,
 } from "../game/hearts-types.ts"
+import { serverLogger } from "../observability/span-logger.node.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import {
@@ -72,7 +75,7 @@ export function isAiTurnReady(
 	)
 }
 
-export async function createAiPlayer(
+async function createAiPlayerRuntime(
 	options: CreateAiPlayerOptions,
 ): Promise<AiPlayerRuntime> {
 	const silo = new Silo({
@@ -112,6 +115,8 @@ export async function createAiPlayer(
 			trickNumber: game.trickNumber,
 		})
 	}
+	const fingerprintId = (fingerprint: string): string =>
+		createHash("sha256").update(fingerprint).digest("hex").slice(0, 12)
 
 	const shouldAct = (): boolean => {
 		const game = silo.getState(publicGameViewAtom)
@@ -126,22 +131,77 @@ export async function createAiPlayer(
 		lastAttemptedFingerprint = fingerprint
 		acting = true
 		try {
-			const decision = await silo.getState(state.aiStrategicTurnSelector)
-			if (!shouldAct() || turnFingerprint() !== fingerprint) return
+			const gameAtStart = silo.getState(publicGameViewAtom)
+			const privateViewAtStart = silo.getState(privatePlayerViewAtom)
+			await serverLogger.withRootSpan(
+				"ai.turn",
+				{
+					fingerprintId: fingerprintId(fingerprint),
+					modelId: options.modelId,
+					playerId: options.playerId,
+					privateView: privateViewAtStart,
+					publicView: gameAtStart,
+					roomCode: options.roomCode,
+				},
+				async (span) => {
+					const decision = await silo.getState(state.aiStrategicTurnSelector)
+					if (!shouldAct() || turnFingerprint() !== fingerprint) {
+						span.event(
+							"ai.turn.abandoned",
+							{
+								currentFingerprintId: fingerprintId(turnFingerprint()),
+								decision,
+								reason: "authoritative_state_changed",
+							},
+							"warn",
+						)
+						return
+					}
 
-			const turnKey = `round-${silo.getState(publicGameViewAtom).roundNumber}-trick-${silo.getState(publicGameViewAtom).trickNumber}`
-			silo.setState(state.aiCurrentPlanAtom, decision.currentPlan)
-			silo.setState(state.aiNextActionAtom, decision.nextAction)
-			silo.setState(state.aiTurnObservationsAtom, (observations) => [
-				...observations.slice(-23),
-				{ observation: decision.observation, turnKey },
-			])
+					const currentGame = silo.getState(publicGameViewAtom)
+					const turnKey = `round-${currentGame.roundNumber}-trick-${currentGame.trickNumber}`
+					silo.setState(state.aiCurrentPlanAtom, decision.currentPlan)
+					silo.setState(state.aiNextActionAtom, decision.nextAction)
+					silo.setState(state.aiTurnObservationsAtom, (observations) => [
+						...observations.slice(-23),
+						{ observation: decision.observation, turnKey },
+					])
+					span.event("ai.state.updated", {
+						currentPlan: decision.currentPlan,
+						nextAction: decision.nextAction,
+						observation: decision.observation,
+						observationJournal: silo.getState(state.aiTurnObservationsAtom),
+						turnKey,
+					})
 
-			const result =
-				decision.nextAction.action === "passCards"
-					? await actionResult(socket, "passCards", decision.nextAction.cardIds)
-					: await actionResult(socket, "playCard", decision.nextAction.cardId)
-			if (!result.ok) lastAttemptedFingerprint = ""
+					const result =
+						decision.nextAction.action === "passCards"
+							? await actionResult(
+									socket,
+									"passCards",
+									decision.nextAction.cardIds,
+								)
+							: await actionResult(
+									socket,
+									"playCard",
+									decision.nextAction.cardId,
+								)
+					span.event(
+						"ai.action.acknowledged",
+						{
+							action: decision.nextAction,
+							result,
+						},
+						result.ok ? "info" : "warn",
+					)
+					if (!result.ok) {
+						lastAttemptedFingerprint = ""
+						span.setOutcome("error")
+					}
+				},
+			)
+		} catch {
+			lastAttemptedFingerprint = ""
 		} finally {
 			acting = false
 			if (shouldAct()) queueMicrotask(() => void act())
@@ -157,28 +217,42 @@ export async function createAiPlayer(
 	]
 
 	const joinAndPull = (): Promise<void> =>
-		new Promise((resolve, reject) => {
-			socket.emit("joinRoom", options.roomCode, options.name, (result) => {
-				if (!result.ok) {
-					reject(new Error(result.error))
-					return
-				}
-				for (const dispose of pullDisposers) dispose()
-				pullDisposers = [
-					pullAtom(
-						silo.store,
-						socket as unknown as RealtimeSocket,
-						publicGameViewAtom,
-					),
-					pullAtom(
-						silo.store,
-						socket as unknown as RealtimeSocket,
-						privatePlayerViewAtom,
-					),
-				]
-				resolve()
-			})
-		})
+		serverLogger.withRootSpan(
+			"ai.realtime.join",
+			{
+				modelId: options.modelId,
+				name: options.name,
+				playerId: options.playerId,
+				roomCode: options.roomCode,
+			},
+			(span) =>
+				new Promise((resolve, reject) => {
+					socket.emit("joinRoom", options.roomCode, options.name, (result) => {
+						if (!result.ok) {
+							reject(new Error(result.error))
+							return
+						}
+						for (const dispose of pullDisposers) dispose()
+						pullDisposers = [
+							pullAtom(
+								silo.store,
+								socket as unknown as RealtimeSocket,
+								publicGameViewAtom,
+							),
+							pullAtom(
+								silo.store,
+								socket as unknown as RealtimeSocket,
+								privatePlayerViewAtom,
+							),
+						]
+						span.event("ai.realtime.projections_pulled", {
+							atoms: [publicGameViewAtom.key, privatePlayerViewAtom.key],
+							result,
+						})
+						resolve()
+					})
+				}),
+		)
 
 	let readySettled = false
 	const ready = new Promise<void>((resolve, reject) => {
@@ -198,6 +272,12 @@ export async function createAiPlayer(
 				})
 		})
 		socket.on("connect_error", (error) => {
+			serverLogger.error("ai.realtime.connect_error", {
+				error,
+				modelId: options.modelId,
+				playerId: options.playerId,
+				roomCode: options.roomCode,
+			})
 			if (!readySettled) {
 				readySettled = true
 				reject(error)
@@ -209,14 +289,48 @@ export async function createAiPlayer(
 
 	return {
 		dispose: () => {
-			disposed = true
-			for (const dispose of pullDisposers) dispose()
-			for (const dispose of stateDisposers) dispose()
-			socket.disconnect()
+			void serverLogger.withRootSpan(
+				"ai.runtime.dispose",
+				{
+					modelId: options.modelId,
+					playerId: options.playerId,
+					roomCode: options.roomCode,
+				},
+				(span) => {
+					disposed = true
+					for (const dispose of pullDisposers) dispose()
+					for (const dispose of stateDisposers) dispose()
+					socket.disconnect()
+					span.event("ai.runtime.disposed")
+				},
+			)
 		},
 		modelId: options.modelId,
 		playerId: options.playerId,
 		silo,
 		state,
 	}
+}
+
+export async function createAiPlayer(
+	options: CreateAiPlayerOptions,
+): Promise<AiPlayerRuntime> {
+	return serverLogger.withSpan(
+		"ai.runtime.create",
+		{
+			modelId: options.modelId,
+			name: options.name,
+			playerId: options.playerId,
+			roomCode: options.roomCode,
+			serverUrl: options.serverUrl,
+		},
+		async (span) => {
+			const runtime = await createAiPlayerRuntime(options)
+			span.event("ai.runtime.ready", {
+				modelId: runtime.modelId,
+				playerId: runtime.playerId,
+			})
+			return runtime
+		},
+	)
 }

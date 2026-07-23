@@ -3,6 +3,7 @@ import { generateText, jsonSchema, Output } from "ai"
 import type { CacheMode } from "varmint"
 import { Squirrel } from "varmint"
 
+import { serverLogger } from "../observability/span-logger.node.ts"
 import { renderAiGameFacts } from "./ai-game-facts.ts"
 import type { AiModelId } from "./ai-models.ts"
 import {
@@ -63,35 +64,107 @@ export function createOpenAiTurnGenerator(
 	apiKey = process.env.OPENAI_API_KEY,
 ): AiTurnGenerator {
 	if (apiKey === undefined || apiKey.length === 0) {
-		return async (context) => fallbackAiDecision(context)
+		serverLogger.warn("ai.generator.fallback_configured", {
+			modelId,
+			reason: "missing_openai_api_key",
+		})
+		return async (context) =>
+			serverLogger.withSpan(
+				"ai.strategy",
+				{
+					context,
+					modelId,
+					provider: "deterministic_fallback",
+				},
+				(span) => {
+					const decision = fallbackAiDecision(context)
+					span.event("ai.decision", { decision })
+					return decision
+				},
+			)
 	}
 
 	const openai = createOpenAI({ apiKey })
 	const model = openai.responses(modelId)
-	const generate: AiTurnGenerator = async (
-		context,
-	): Promise<AiTurnDecision> => {
-		const { output } = await generateText({
-			model,
-			output: Output.object({
-				description:
-					"A legal Hearts action plus a private observation and strategic plan.",
-				name: "hearts_turn_decision",
-				schema: jsonSchema<AiTurnDecision>(aiTurnDecisionJsonSchema),
-			}),
-			prompt: renderAiGameFacts(context),
-			providerOptions: {
-				openai: {
-					reasoningEffort: "low",
-					textVerbosity: "low",
-				},
+	const generate: AiTurnGenerator = async (context): Promise<AiTurnDecision> =>
+		serverLogger.withSpan(
+			"ai.openai.generate",
+			{
+				modelId,
+				phase: context.publicView.phase,
+				playerId: context.playerId,
+				roomCode: context.publicView.roomCode,
+				roundNumber: context.publicView.roundNumber,
+				trickNumber: context.publicView.trickNumber,
 			},
-			system: systemPrompt,
-		})
-		return output
-	}
+			async (span) => {
+				const renderedFacts = renderAiGameFacts(context)
+				span.event("ai.prompt.rendered", {
+					renderedFacts,
+					systemPrompt,
+				})
+				const result = await generateText({
+					model,
+					output: Output.object({
+						description:
+							"A legal Hearts action plus a private observation and strategic plan.",
+						name: "hearts_turn_decision",
+						schema: jsonSchema<AiTurnDecision>(aiTurnDecisionJsonSchema),
+					}),
+					prompt: renderedFacts,
+					providerOptions: {
+						openai: {
+							reasoningEffort: "low",
+							textVerbosity: "low",
+						},
+					},
+					system: systemPrompt,
+				})
+				span.event("ai.openai.response", {
+					finishReason: result.finishReason,
+					output: result.output,
+					providerMetadata: result.providerMetadata,
+					response: {
+						id: result.response.id,
+						modelId: result.response.modelId,
+						timestamp: result.response.timestamp,
+					},
+					usage: result.usage,
+				})
+				return result.output
+			},
+		)
 
-	return createGuardedAiTurnGenerator(
+	const guarded = createGuardedAiTurnGenerator(
 		wrapAiGeneratorWithVarmint(`hearts-${modelId}`, generate),
+		{
+			onFallback: (details) => {
+				serverLogger.warn("ai.strategy.fallback", {
+					...details,
+					modelId,
+				})
+			},
+		},
 	)
+
+	return async (context) =>
+		serverLogger.withSpan(
+			"ai.strategy",
+			{
+				cacheMode: aiGeneratorSquirrel.mode,
+				modelId,
+				phase: context.publicView.phase,
+				playerId: context.playerId,
+				roomCode: context.publicView.roomCode,
+				roundNumber: context.publicView.roundNumber,
+				trickNumber: context.publicView.trickNumber,
+			},
+			async (span) => {
+				const decision = await guarded(context)
+				span.event("ai.decision", {
+					decision,
+				})
+				return decision
+			},
+		)
 }

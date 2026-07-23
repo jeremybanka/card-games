@@ -12,14 +12,17 @@
   phase, turn order, and Hearts rules before changing state.
 - Keep full card-value mappings in server-only modules. Expose table state and
   each player's private hand through separate atom.io realtime providers. Never
-  add hidden card values to public projections, logs, acknowledgements, or
-  client-readable state.
+  add hidden card values to public projections, acknowledgements, or
+  client-readable state. Privileged server-admin logs may include complete game
+  and AI state, but must redact credentials and must never cross the realtime
+  boundary.
 - Preserve physical card IDs for the lifetime of a room, but scramble their
   relationship to card values on every deal.
 - Treat every AI seat as an ordinary realtime player with its own private
   atom.io Silo. Keep AI observations, plans, prompts, and private hand facts out
-  of public room state. AI actions must use the same schemas and authoritative
-  server handlers as human actions.
+  of public room state. Privileged server logs may record them for diagnostics.
+  AI actions must use the same schemas and authoritative server handlers as
+  human actions.
 - Give each exported JSX component a same-named sibling CSS Module
   (`AppShell.tsx` and `AppShell.module.css`). Import it as `css`, expose only
   `.class`, and attach `css.class` to the component root.

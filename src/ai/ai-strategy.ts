@@ -12,6 +12,20 @@ export type AiTurnGenerator = (
 	context: AiGameContext,
 ) => Promise<AiTurnDecision>
 
+export type AiFallbackReason =
+	| "generation_error"
+	| "illegal_action"
+	| "invalid_schema"
+
+export type AiGuardObserver = {
+	onFallback?: (details: {
+		context: AiGameContext
+		error?: unknown
+		generated?: unknown
+		reason: AiFallbackReason
+	}) => void
+}
+
 function pointRisk(card: VisibleCard): number {
 	if (card.suit === "spades" && card.rank === 12) return 100
 	if (card.suit === "hearts") return 40 + card.rank
@@ -114,24 +128,44 @@ export function fallbackAiDecision(context: AiGameContext): AiTurnDecision {
 
 export function createGuardedAiTurnGenerator(
 	generate: AiTurnGenerator,
+	observer: AiGuardObserver = {},
 ): AiTurnGenerator {
 	return async (context) => {
+		let generated: AiTurnDecision
 		try {
-			const generated = await generate(context)
-			const validated = aiTurnDecisionType(generated)
-			if (
-				validated instanceof ArkErrors ||
-				!isLegalGeneratedAction(context, validated.nextAction as AiNextAction)
-			) {
-				return fallbackAiDecision(context)
-			}
-			return {
-				currentPlan: validated.currentPlan,
-				nextAction: validated.nextAction as AiNextAction,
-				observation: validated.observation,
-			}
-		} catch {
+			generated = await generate(context)
+		} catch (error) {
+			observer.onFallback?.({
+				context,
+				error,
+				reason: "generation_error",
+			})
 			return fallbackAiDecision(context)
+		}
+		const validated = aiTurnDecisionType(generated)
+		if (validated instanceof ArkErrors) {
+			observer.onFallback?.({
+				context,
+				error: validated,
+				generated,
+				reason: "invalid_schema",
+			})
+			return fallbackAiDecision(context)
+		}
+		if (
+			!isLegalGeneratedAction(context, validated.nextAction as AiNextAction)
+		) {
+			observer.onFallback?.({
+				context,
+				generated,
+				reason: "illegal_action",
+			})
+			return fallbackAiDecision(context)
+		}
+		return {
+			currentPlan: validated.currentPlan,
+			nextAction: validated.nextAction as AiNextAction,
+			observation: validated.observation,
 		}
 	}
 }
