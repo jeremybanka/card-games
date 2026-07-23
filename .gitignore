@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.mise/
+.pnpm-home/
+.pnpm-store/
+.vite/
+
+.env
+.env.*
+!.env.example
+*.log

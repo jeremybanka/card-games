@@ -1,0 +1,16 @@
+{
+	"version": "0.2",
+	"useGitignore": true,
+	"ignorePaths": ["pnpm-lock.yaml"],
+	"words": [
+		"keytar",
+		"lasertag",
+		"malva",
+		"preact",
+		"vite",
+		"viteplus",
+		"vitest",
+		"voidzero",
+		"wayfarer"
+	]
+}

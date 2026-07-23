@@ -1,0 +1,17 @@
+{
+	"editor.formatOnSave": true,
+	"editor.defaultFormatter": "dprint.dprint",
+	"dprint.path": "node_modules/.bin/dprint",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.oxc": "explicit"
+	},
+	"js/ts.tsdk.path": "node_modules/typescript/lib",
+	"files.associations": {
+		"tsconfig.json": "jsonc",
+		".env.*": "properties",
+		"*.css": "css"
+	},
+	"json.schemaDownload.trustedDomains": {
+		"https://dprint.dev": true
+	}
+}

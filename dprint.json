@@ -1,0 +1,43 @@
+{
+	"$schema": "https://dprint.dev/schemas/v0.json",
+	"lineWidth": 80,
+	"useTabs": true,
+	"indentWidth": 2,
+	"includes": [
+		"**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,md,mdx,css,toml,yml,yaml}"
+	],
+	"excludes": [
+		"**/pnpm-lock.yaml",
+		"**/coverage/**",
+		"**/dist/**",
+		"**/node_modules/**"
+	],
+	"oxc": {
+		"associations": ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
+		"semicolons": "asNeeded",
+		"trailingCommas": "all"
+	},
+	"json": {
+		"associations": ["**/*.{json,jsonc}"]
+	},
+	"markdown": {
+		"associations": ["**/*.{md,mdx}"]
+	},
+	"malva": {
+		"associations": ["**/*.css"]
+	},
+	"toml": {
+		"associations": ["**/*.toml"]
+	},
+	"yaml": {
+		"associations": ["**/*.{yml,yaml}"]
+	},
+	"plugins": [
+		"./node_modules/@dprint/oxc/plugin.wasm",
+		"./node_modules/@dprint/json/plugin.wasm",
+		"./node_modules/@dprint/markdown/plugin.wasm",
+		"./node_modules/dprint-plugin-malva/plugin.wasm",
+		"./node_modules/@dprint/toml/plugin.wasm",
+		"./node_modules/dprint-plugin-yaml/plugin.wasm"
+	]
+}

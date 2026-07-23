@@ -1,0 +1,22 @@
+packages: []
+
+allowBuilds:
+  "@vscode/vsce-sign": false
+  dprint: true
+  keytar: false
+
+blockExoticSubdeps: true
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - atom.io
+  - lasertag
+verifyDepsBeforeRun: error
+
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    typescript: ^5.0.0 || ^6.0.0 || ^7.0.0
+    vite: "*"
+    vitest: "*"

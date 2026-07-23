@@ -1,0 +1,8 @@
+{
+	"recommendations": [
+		"dprint.dprint",
+		"oxc.oxc-vscode",
+		"streetsidesoftware.code-spell-checker",
+		"yoavbls.pretty-ts-errors"
+	]
+}

@@ -1,0 +1,45 @@
+{
+	"name": "wayfarer.quest",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "tsc --noEmit && vite build",
+		"check": "vp check --no-fmt && tsc --noEmit && eslint . && lasertag check",
+		"dev": "vite",
+		"fmt": "dprint fmt",
+		"fmt:check": "dprint check",
+		"lint": "vp lint && eslint . && lasertag check",
+		"preview": "vite preview",
+		"spellcheck": "cspell ."
+	},
+	"dependencies": {
+		"atom.io": "0.50.1",
+		"preact": "10.29.7",
+		"react": "npm:@preact/compat@18.3.2",
+		"react-dom": "npm:@preact/compat@18.3.2"
+	},
+	"devDependencies": {
+		"@dprint/json": "0.23.0",
+		"@dprint/markdown": "0.22.1",
+		"@dprint/oxc": "0.30.0",
+		"@dprint/toml": "0.7.0",
+		"@preact/preset-vite": "2.10.5",
+		"@typescript-eslint/parser": "8.65.0",
+		"@typescript-eslint/utils": "8.65.0",
+		"cspell": "10.0.1",
+		"dprint": "0.55.2",
+		"dprint-plugin-malva": "0.16.0",
+		"dprint-plugin-yaml": "0.6.0",
+		"eslint": "10.7.0",
+		"jiti": "2.7.0",
+		"lasertag": "0.6.7",
+		"typescript": "7.0.2",
+		"vite": "8.1.4",
+		"vite-plus": "0.2.5"
+	},
+	"engines": {
+		"node": "26.5.0",
+		"pnpm": "11.15.1"
+	},
+	"packageManager": "pnpm@11.15.1"
+}
