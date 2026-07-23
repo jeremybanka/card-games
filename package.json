@@ -12,10 +12,13 @@
 		"fmt:check": "dprint check",
 		"lint": "vp lint && eslint . && lasertag check",
 		"preview": "vite preview",
+		"record:ai-game": "node --env-file-if-exists=.env scripts/record-ai-game.node.ts",
 		"spellcheck": "cspell .",
 		"start": "node --env-file-if-exists=.env server/main.node.ts",
 		"test": "vp test --run",
-		"test:e2e": "vp test --run src/ai/ai-game.e2e.test.ts"
+		"test:debug": "LOG_LEVEL=debug TEST_LOG_LEVEL=debug vp test --run --disableConsoleIntercept",
+		"test:e2e": "vp test --run src/ai/ai-game.e2e.test.ts",
+		"test:e2e:debug": "LOG_LEVEL=debug TEST_LOG_LEVEL=debug vp test --run --disableConsoleIntercept src/ai/ai-game.e2e.test.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/openai": "3.0.64",

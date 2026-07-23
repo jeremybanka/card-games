@@ -1,5 +1,5 @@
 import { createServer } from "node:http"
-import { mkdtemp, readdir, rm } from "node:fs/promises"
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises"
 import type { AddressInfo } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -15,9 +15,19 @@ import { Squirrel } from "varmint"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { createAiPlayer, type AiPlayerRuntime } from "./ai-player.node.ts"
-import { wrapAiGeneratorWithVarmint } from "./ai-generator.node.ts"
+import {
+	createOpenAiTurnGenerator,
+	type AiModelResponseRecord,
+	wrapAiGeneratorWithVarmint,
+} from "./ai-generator.node.ts"
+import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import type { AiModelId } from "./ai-models.ts"
-import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
+import {
+	fallbackAiDecision,
+	type AiFallbackReason,
+	type AiTurnGenerator,
+} from "./ai-strategy.ts"
+import type { AiTurnDecision } from "./ai-types.ts"
 import {
 	parsePassCardsPayload,
 	parsePlayCardPayload,
@@ -46,10 +56,14 @@ import type {
 	PlayerId,
 	ServerToClientEvents,
 } from "../game/hearts-types.ts"
-import { serverLogger } from "../observability/span-logger.node.ts"
+import {
+	type LogLevel,
+	serverLogger,
+} from "../observability/span-logger.node.ts"
 
 const roomCode = "BOTS"
 const invariantSeed = "sol-vs-three-luna-v1"
+const liveInvariantSeed = "sol-vs-three-luna-live-v1"
 const bots = [
 	{
 		id: "user::00000000-0000-4000-8000-000000000001",
@@ -82,6 +96,8 @@ const bots = [
 	secret: string
 }[]
 
+type Bot = (typeof bots)[number]
+
 type BotSocket = Socket<
 	ClientToServerEvents,
 	ServerToClientEvents,
@@ -92,15 +108,24 @@ type BotSocket = Socket<
 type TranscriptEntry =
 	| {
 			action: "passCards"
-			cardIds: CardId[]
+			cards: Array<{
+				id: CardId
+				value: HeartsState["cardValues"][CardId]
+			}>
 			playerId: PlayerId
 			roundNumber: number
 	  }
 	| {
 			action: "playCard"
 			cardId: CardId
+			completedTrickWinnerId: PlayerId | null
 			playerId: PlayerId
 			roundNumber: number
+			scores: Array<{
+				playerId: PlayerId
+				roundPoints: number
+				score: number
+			}>
 			trickNumber: number
 			value: HeartsState["cardValues"][CardId]
 	  }
@@ -110,6 +135,36 @@ type BotRun = {
 	finalState: HeartsState
 	generatorCalls: number
 	transcript: TranscriptEntry[]
+}
+
+type BotTableOptions = {
+	createGenerator?: (bot: Bot, squirrel: Squirrel) => AiTurnGenerator
+	seed?: string
+	timeout?: number
+}
+
+type LiveDecisionRecord = {
+	context: AiGameContext
+	decision: AiTurnDecision
+	modelId: AiModelId
+	playerId: PlayerId
+	renderedFacts: string
+	sequence: number
+	source: "cache" | "fallback" | "model"
+}
+
+type LiveFallbackRecord = {
+	context: AiGameContext
+	error: { message: string; name: string } | string | null
+	generated: unknown
+	modelId: AiModelId
+	reason: AiFallbackReason
+	sequence: number
+}
+
+type LiveModelResponseRecord = AiModelResponseRecord & {
+	playerId: PlayerId
+	sequence: number
 }
 
 function actionFailure(ack: ActionAck, error: unknown): void {
@@ -159,11 +214,11 @@ async function waitForRoundComplete(timeout = 10_000): Promise<HeartsState> {
 async function runBotTable(
 	mode: CacheMode,
 	cacheDirectory: string,
+	options: BotTableOptions = {},
 ): Promise<BotRun> {
-	const dealRandom = createSeededRandom(`deal:${roomCode}:${invariantSeed}`)
-	const identityRandom = createSeededRandom(
-		`identity:${roomCode}:${invariantSeed}`,
-	)
+	const seed = options.seed ?? invariantSeed
+	const dealRandom = createSeededRandom(`deal:${roomCode}:${seed}`)
+	const identityRandom = createSeededRandom(`identity:${roomCode}:${seed}`)
 	const initial = createHeartsGame(
 		roomCode,
 		bots[0].id,
@@ -251,7 +306,10 @@ async function runBotTable(
 					setState(heartsStateAtoms, roomCode, nextState)
 					transcript.push({
 						action: "passCards",
-						cardIds: payload.cardIds,
+						cards: payload.cardIds.map((id) => ({
+							id,
+							value: state.cardValues[id],
+						})),
 						playerId,
 						roundNumber: state.roundNumber,
 					})
@@ -270,8 +328,17 @@ async function runBotTable(
 					transcript.push({
 						action: "playCard",
 						cardId: payload.cardId,
+						completedTrickWinnerId:
+							nextState.trickNumber > state.trickNumber
+								? nextState.lastTrickWinnerId
+								: null,
 						playerId,
 						roundNumber: state.roundNumber,
+						scores: nextState.players.map((player) => ({
+							playerId: player.id,
+							roundPoints: player.roundPoints,
+							score: player.score,
+						})),
 						trickNumber: state.trickNumber,
 						value: state.cardValues[payload.cardId],
 					})
@@ -297,22 +364,24 @@ async function runBotTable(
 
 	try {
 		for (const bot of bots) {
-			const modelStrategy: AiTurnGenerator = async (context) => {
-				generatorCalls += 1
-				const decision = fallbackAiDecision(context)
-				return {
-					...decision,
-					currentPlan: `${bot.modelId}: ${decision.currentPlan}`,
-				}
-			}
+			const generateTurn =
+				options.createGenerator?.(bot, squirrel) ??
+				wrapAiGeneratorWithVarmint(
+					`e2e-${bot.modelId}-${bot.id}`,
+					async (context) => {
+						generatorCalls += 1
+						const decision = fallbackAiDecision(context)
+						return {
+							...decision,
+							currentPlan: `${bot.modelId}: ${decision.currentPlan}`,
+						}
+					},
+					squirrel,
+				)
 			runtimes.push(
 				await createAiPlayer({
 					canAct: serialPassingGate(bot.id),
-					generateTurn: wrapAiGeneratorWithVarmint(
-						`e2e-${bot.modelId}-${bot.id}`,
-						modelStrategy,
-						squirrel,
-					),
+					generateTurn,
 					modelId: bot.modelId,
 					name: bot.name,
 					playerId: bot.id,
@@ -332,7 +401,9 @@ async function runBotTable(
 				dealRandom.next,
 			),
 		)
-		const finalState = structuredClone(await waitForRoundComplete())
+		const finalState = structuredClone(
+			await waitForRoundComplete(options.timeout),
+		)
 		const cacheFiles = await readdir(cacheDirectory, { recursive: true })
 		return {
 			cacheOutputCount: cacheFiles.filter((file) =>
@@ -351,11 +422,84 @@ async function runBotTable(
 	}
 }
 
+function serializedError(
+	error: unknown,
+): { message: string; name: string } | string | null {
+	if (error instanceof Error) {
+		return { message: error.message, name: error.name }
+	}
+	if (error === undefined) return null
+	return String(error)
+}
+
+function testLogLevel(): LogLevel {
+	const configured = process.env.TEST_LOG_LEVEL
+	if (
+		configured === "debug" ||
+		configured === "info" ||
+		configured === "warn" ||
+		configured === "error"
+	) {
+		return configured
+	}
+	return "error"
+}
+
+function createLiveGeneratorFactory(
+	apiKey: string,
+	decisions: LiveDecisionRecord[],
+	modelResponses: LiveModelResponseRecord[],
+	fallbacks: LiveFallbackRecord[],
+): NonNullable<BotTableOptions["createGenerator"]> {
+	return (bot, squirrel) => {
+		const generate = createOpenAiTurnGenerator(bot.modelId, apiKey, {
+			onFallback: (details) => {
+				fallbacks.push({
+					context: structuredClone(details.context),
+					error: serializedError(details.error),
+					generated: details.generated,
+					modelId: bot.modelId,
+					reason: details.reason,
+					sequence: decisions.length + 1,
+				})
+			},
+			onModelResponse: (response) => {
+				modelResponses.push({
+					...response,
+					playerId: bot.id,
+					sequence: decisions.length + 1,
+				})
+			},
+			squirrel,
+		})
+		return async (context) => {
+			const responseCount = modelResponses.length
+			const fallbackCount = fallbacks.length
+			const decision = await generate(context)
+			decisions.push({
+				context: structuredClone(context),
+				decision,
+				modelId: bot.modelId,
+				playerId: bot.id,
+				renderedFacts: renderAiGameFacts(context),
+				sequence: decisions.length + 1,
+				source:
+					fallbacks.length > fallbackCount
+						? "fallback"
+						: modelResponses.length > responseCount
+							? "model"
+							: "cache",
+			})
+			return decision
+		}
+	}
+}
+
 describe("four-bot deterministic realtime game", () => {
 	const originalLogLevel = serverLogger.getMinimumLevel()
 
 	beforeAll(() => {
-		serverLogger.setMinimumLevel("error")
+		serverLogger.setMinimumLevel(testLogLevel())
 	})
 
 	afterAll(() => {
@@ -382,4 +526,129 @@ describe("four-bot deterministic realtime game", () => {
 			await rm(cacheDirectory, { force: true, recursive: true })
 		}
 	}, 20_000)
+
+	const liveIt = process.env.RECORD_LIVE_AI_GAME === "1" ? it : it.skip
+
+	liveIt(
+		"records a real Sol-versus-three-Luna round for analysis",
+		async () => {
+			const apiKey = process.env.OPENAI_API_KEY
+			if (apiKey === undefined || apiKey.length === 0) {
+				throw new Error("OPENAI_API_KEY is required for a live recording.")
+			}
+
+			const recordingDirectory = join(
+				process.cwd(),
+				".varmint",
+				"recordings",
+				liveInvariantSeed,
+			)
+			const cacheDirectory = join(recordingDirectory, "cache")
+			const artifactPath = join(recordingDirectory, "analysis.json")
+			await mkdir(recordingDirectory, { recursive: true })
+
+			const recordedDecisions: LiveDecisionRecord[] = []
+			const recordedResponses: LiveModelResponseRecord[] = []
+			const recordedFallbacks: LiveFallbackRecord[] = []
+			const recorded = await runBotTable("write", cacheDirectory, {
+				createGenerator: createLiveGeneratorFactory(
+					apiKey,
+					recordedDecisions,
+					recordedResponses,
+					recordedFallbacks,
+				),
+				seed: liveInvariantSeed,
+				timeout: 1_200_000,
+			})
+
+			await writeFile(
+				artifactPath,
+				`${JSON.stringify(
+					{
+						cacheDirectory,
+						createdAt: new Date().toISOString(),
+						models: bots.map(({ id, modelId, name }) => ({
+							id,
+							modelId,
+							name,
+						})),
+						recording: {
+							cacheOutputCount: recorded.cacheOutputCount,
+							decisions: recordedDecisions,
+							fallbacks: recordedFallbacks,
+							finalState: recorded.finalState,
+							modelResponses: recordedResponses,
+							transcript: recorded.transcript,
+						},
+						roomCode,
+						seed: liveInvariantSeed,
+						status: "recorded",
+					},
+					null,
+					2,
+				)}\n`,
+			)
+
+			const replayedDecisions: LiveDecisionRecord[] = []
+			const replayedResponses: LiveModelResponseRecord[] = []
+			const replayedFallbacks: LiveFallbackRecord[] = []
+			const replayed = await runBotTable("read", cacheDirectory, {
+				createGenerator: createLiveGeneratorFactory(
+					apiKey,
+					replayedDecisions,
+					replayedResponses,
+					replayedFallbacks,
+				),
+				seed: liveInvariantSeed,
+				timeout: 60_000,
+			})
+
+			expect(recorded.cacheOutputCount).toBe(56)
+			expect(recorded.transcript).toHaveLength(56)
+			expect(recordedDecisions).toHaveLength(56)
+			expect(replayedResponses).toHaveLength(0)
+			expect(replayed.transcript).toEqual(recorded.transcript)
+			expect(replayed.finalState).toEqual(recorded.finalState)
+			expect(replayedDecisions.map(({ decision }) => decision)).toEqual(
+				recordedDecisions.map(({ decision }) => decision),
+			)
+
+			await writeFile(
+				artifactPath,
+				`${JSON.stringify(
+					{
+						cacheDirectory,
+						createdAt: new Date().toISOString(),
+						models: bots.map(({ id, modelId, name }) => ({
+							id,
+							modelId,
+							name,
+						})),
+						recording: {
+							cacheOutputCount: recorded.cacheOutputCount,
+							decisions: recordedDecisions,
+							fallbacks: recordedFallbacks,
+							finalState: recorded.finalState,
+							modelResponses: recordedResponses,
+							transcript: recorded.transcript,
+						},
+						replay: {
+							cacheOutputCount: replayed.cacheOutputCount,
+							decisions: replayedDecisions,
+							fallbacks: replayedFallbacks,
+							finalState: replayed.finalState,
+							modelResponseCount: replayedResponses.length,
+							transcript: replayed.transcript,
+						},
+						roomCode,
+						seed: liveInvariantSeed,
+						status: "recorded-and-replayed",
+					},
+					null,
+					2,
+				)}\n`,
+			)
+		},
+		1_200_000,
+	)
 })

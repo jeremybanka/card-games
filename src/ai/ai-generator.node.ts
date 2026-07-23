@@ -9,9 +9,29 @@ import type { AiModelId } from "./ai-models.ts"
 import {
 	createGuardedAiTurnGenerator,
 	fallbackAiDecision,
+	type AiGuardObserver,
 	type AiTurnGenerator,
 } from "./ai-strategy.ts"
 import { aiTurnDecisionJsonSchema, type AiTurnDecision } from "./ai-types.ts"
+
+export type AiModelResponseRecord = {
+	finishReason: string
+	modelId: AiModelId
+	output: AiTurnDecision
+	providerMetadata: unknown
+	response: {
+		id: string
+		modelId: string
+		timestamp: string
+	}
+	usage: unknown
+}
+
+export type OpenAiTurnGeneratorOptions = {
+	onFallback?: NonNullable<AiGuardObserver["onFallback"]>
+	onModelResponse?: (record: AiModelResponseRecord) => void
+	squirrel?: Squirrel
+}
 
 function cacheMode(): CacheMode {
 	const configured = process.env.VARMINT_CACHE_MODE
@@ -62,6 +82,7 @@ const systemPrompt = [
 export function createOpenAiTurnGenerator(
 	modelId: AiModelId,
 	apiKey = process.env.OPENAI_API_KEY,
+	options: OpenAiTurnGeneratorOptions = {},
 ): AiTurnGenerator {
 	if (apiKey === undefined || apiKey.length === 0) {
 		serverLogger.warn("ai.generator.fallback_configured", {
@@ -131,18 +152,31 @@ export function createOpenAiTurnGenerator(
 					},
 					usage: result.usage,
 				})
+				options.onModelResponse?.({
+					finishReason: result.finishReason,
+					modelId,
+					output: result.output,
+					providerMetadata: result.providerMetadata,
+					response: {
+						id: result.response.id,
+						modelId: result.response.modelId,
+						timestamp: result.response.timestamp.toISOString(),
+					},
+					usage: result.usage,
+				})
 				return result.output
 			},
 		)
 
 	const guarded = createGuardedAiTurnGenerator(
-		wrapAiGeneratorWithVarmint(`hearts-${modelId}`, generate),
+		wrapAiGeneratorWithVarmint(`hearts-${modelId}`, generate, options.squirrel),
 		{
 			onFallback: (details) => {
 				serverLogger.warn("ai.strategy.fallback", {
 					...details,
 					modelId,
 				})
+				options.onFallback?.(details)
 			},
 		},
 	)
@@ -151,7 +185,7 @@ export function createOpenAiTurnGenerator(
 		serverLogger.withSpan(
 			"ai.strategy",
 			{
-				cacheMode: aiGeneratorSquirrel.mode,
+				cacheMode: options.squirrel?.mode ?? aiGeneratorSquirrel.mode,
 				modelId,
 				phase: context.publicView.phase,
 				playerId: context.playerId,

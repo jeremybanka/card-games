@@ -67,6 +67,16 @@ same 56 intents, card values, winners, scores, and final authoritative state.
 Player secrets and observability span IDs remain cryptographically random
 because they are not game actions and must not be replayed.
 
+Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
+model-backed round under
+`.varmint/recordings/sol-vs-three-luna-live-v1/`. The command saves the Varmint
+inputs and outputs plus an `analysis.json` containing rendered facts, raw model
+responses and usage, guarded decisions, fallback records, accepted actions,
+full server state, trick winners, and scores. It then performs a cache-only
+replay and requires the same decisions, actions, and final state without any
+model responses. Set `TEST_LOG_LEVEL=debug` when running the recorder to stream
+the same complete local spans exposed by the debug test commands.
+
 ## Observability
 
 The room server writes newline-delimited JSON spans to standard output and
@@ -113,16 +123,19 @@ publicly visible player ID.
 
 ## Commands
 
-| Command           | Purpose                                                  |
-| ----------------- | -------------------------------------------------------- |
-| `pnpm dev`        | Start the Vite client and realtime room server           |
-| `pnpm build`      | Type-check and create the production client              |
-| `pnpm start`      | Serve the production client and realtime rooms           |
-| `pnpm test`       | Run rules, generators, realtime privacy, and simulations |
-| `pnpm test:e2e`   | Record and replay the deterministic four-bot round       |
-| `pnpm check`      | Run Oxc, TypeScript, ESLint, and Lasertag checks         |
-| `pnpm fmt`        | Format source and configuration files                    |
-| `pnpm spellcheck` | Check prose and identifiers                              |
+| Command               | Purpose                                                  |
+| --------------------- | -------------------------------------------------------- |
+| `pnpm dev`            | Start the Vite client and realtime room server           |
+| `pnpm build`          | Type-check and create the production client              |
+| `pnpm start`          | Serve the production client and realtime rooms           |
+| `pnpm test`           | Run rules, generators, realtime privacy, and simulations |
+| `pnpm test:debug`     | Run tests with complete debug-level server spans         |
+| `pnpm test:e2e`       | Record and replay the deterministic four-bot round       |
+| `pnpm test:e2e:debug` | Run the four-bot replay with debug-level server spans    |
+| `pnpm check`          | Run Oxc, TypeScript, ESLint, and Lasertag checks         |
+| `pnpm fmt`            | Format source and configuration files                    |
+| `pnpm record:ai-game` | Record and replay a real Sol-versus-Luna round           |
+| `pnpm spellcheck`     | Check prose and identifiers                              |
 
 Repository-specific authoring and secrecy policies live in
 [AGENTS.md](./AGENTS.md).
