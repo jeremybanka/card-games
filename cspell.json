@@ -4,6 +4,7 @@
 	"ignorePaths": ["pnpm-lock.yaml"],
 	"words": [
 		"ABCDEFGHJKLMNPQRSTUVWXYZ",
+		"arktype",
 		"keytar",
 		"lasertag",
 		"malva",

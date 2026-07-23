@@ -23,6 +23,33 @@ pnpm dev
 Open the Vite URL on two to four devices or browser profiles. One player creates
 a table and shares its four-letter room code; the others join with that code.
 
+## AI seats
+
+Before dealing, the room owner can fill open seats with GPT-5.6 Sol, Terra, or
+Luna opponents. Terra is the balanced default; Sol prioritizes strategic
+quality, and Luna prioritizes speed and cost.
+
+Copy `.env.example` to `.env` and set `OPENAI_API_KEY` to enable model-generated
+strategy. Without a key, AI seats remain fully playable through the deterministic
+strategic fallback. `VARMINT_CACHE_MODE` can be set to `read`, `write`, or
+`read-write` when recording or replaying generator results; it defaults to
+`off`.
+
+Every AI is a separate Socket.IO player. It receives the same public projection
+and one private hand projection through atom.io realtime, stores them in its own
+private atom.io Silo, and submits the same schema-validated intents as a human.
+The Silo maintains:
+
+- accessible text facts that omit opponent card identities and hidden values;
+- a private turn-by-turn observation journal;
+- current-plan and next-action atoms;
+- Loadable model-generated observation, plan, and action selectors.
+
+Structured generation uses the Vercel AI SDK OpenAI provider and ArkType schemas,
+with Varmint wrapping the data generator. Invalid or stale model actions fall
+back to a deterministic legal strategy and are still validated by the
+authoritative room server.
+
 ## Rules
 
 - Four players use the standard 52-card, 13-card-hand game.
@@ -55,15 +82,15 @@ publicly visible player ID.
 
 ## Commands
 
-| Command           | Purpose                                               |
-| ----------------- | ----------------------------------------------------- |
-| `pnpm dev`        | Start the Vite client and realtime room server        |
-| `pnpm build`      | Type-check and create the production client           |
-| `pnpm start`      | Serve the production client and realtime rooms        |
-| `pnpm test`       | Run Hearts rules, privacy, and full-round simulations |
-| `pnpm check`      | Run Oxc, TypeScript, ESLint, and Lasertag checks      |
-| `pnpm fmt`        | Format source and configuration files                 |
-| `pnpm spellcheck` | Check prose and identifiers                           |
+| Command           | Purpose                                                  |
+| ----------------- | -------------------------------------------------------- |
+| `pnpm dev`        | Start the Vite client and realtime room server           |
+| `pnpm build`      | Type-check and create the production client              |
+| `pnpm start`      | Serve the production client and realtime rooms           |
+| `pnpm test`       | Run rules, generators, realtime privacy, and simulations |
+| `pnpm check`      | Run Oxc, TypeScript, ESLint, and Lasertag checks         |
+| `pnpm fmt`        | Format source and configuration files                    |
+| `pnpm spellcheck` | Check prose and identifiers                              |
 
 Repository-specific authoring and secrecy policies live in
 [AGENTS.md](./AGENTS.md).

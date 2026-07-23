@@ -1,7 +1,7 @@
 import { createReadStream, existsSync } from "node:fs"
 import { createServer } from "node:http"
 import { extname, join, resolve } from "node:path"
-import { randomInt } from "node:crypto"
+import { randomInt, randomUUID } from "node:crypto"
 
 import { disposeState, findState, getState, setState } from "atom.io"
 import type { UserKey } from "atom.io/realtime"
@@ -11,6 +11,19 @@ import { realtimeStateProvider } from "atom.io/realtime-server"
 import { Server } from "socket.io"
 import type { Socket } from "socket.io"
 
+import {
+	createAiPlayer,
+	type AiPlayerRuntime,
+} from "../src/ai/ai-player.node.ts"
+import {
+	aiModelLabel,
+	isAiModelId,
+	type AiModelId,
+} from "../src/ai/ai-models.ts"
+import {
+	parsePassCardsPayload,
+	parsePlayCardPayload,
+} from "../src/game/hearts-actions.ts"
 import {
 	createHeartsGame,
 	disconnectPlayer,
@@ -32,7 +45,6 @@ import {
 } from "../src/game/hearts-state.ts"
 import type {
 	ActionAck,
-	CardId,
 	ClientToServerEvents,
 	PlayerId,
 	ServerToClientEvents,
@@ -50,12 +62,14 @@ type GameServerSocket = Socket<
 >
 
 type Room = {
+	aiPlayers: Map<PlayerId, AiPlayerRuntime>
 	connections: Map<PlayerId, { dispose: () => void; socket: GameServerSocket }>
 }
 
 const rooms = new Map<string, Room>()
 const roomCodeByPlayer = new Map<PlayerId, string>()
 const playerSecrets = new Map<string, string>()
+const aiModelsByPlayer = new Map<PlayerId, AiModelId>()
 
 function normalizePlayerName(input: string): string {
 	const name = input.trim().replace(/\s+/g, " ")
@@ -107,6 +121,21 @@ function acknowledge(ack: ActionAck, action: () => string): void {
 	}
 }
 
+async function acknowledgeAsync(
+	ack: ActionAck,
+	action: () => Promise<string>,
+): Promise<void> {
+	try {
+		ack({ ok: true, roomCode: await action() })
+	} catch (thrown) {
+		const message =
+			thrown instanceof Error
+				? thrown.message
+				: "The table could not complete that action."
+		ack({ ok: false, error: message })
+	}
+}
+
 function leaveCurrentRoom(
 	playerId: PlayerId,
 	expectedSocket?: GameServerSocket,
@@ -130,6 +159,7 @@ function leaveCurrentRoom(
 
 	const state = getRoomState(roomCode)
 	if (state.players.length === 0) {
+		for (const aiPlayer of room.aiPlayers.values()) aiPlayer.dispose()
 		rooms.delete(roomCode)
 		disposeState(heartsStateAtoms, roomCode)
 		return
@@ -150,7 +180,17 @@ function connectPlayerToRoom(
 	leaveCurrentRoom(playerId)
 	setRoomState(
 		roomCode,
-		joinHeartsGame(getRoomState(roomCode), playerId, playerName),
+		joinHeartsGame(
+			getRoomState(roomCode),
+			playerId,
+			playerName,
+			aiModelsByPlayer.has(playerId)
+				? {
+						aiModel: aiModelsByPlayer.get(playerId) as AiModelId,
+						kind: "ai",
+					}
+				: { aiModel: null, kind: "human" },
+		),
 	)
 
 	const provideState = realtimeStateProvider({
@@ -194,7 +234,7 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 		acknowledge(ack, () => {
 			const playerName = normalizePlayerName(playerNameInput)
 			const roomCode = createRoomCode()
-			const room: Room = { connections: new Map() }
+			const room: Room = { aiPlayers: new Map(), connections: new Map() }
 			setRoomState(roomCode, createHeartsGame(roomCode, playerId, playerName))
 			rooms.set(roomCode, room)
 			connectPlayerToRoom(room, roomCode, socket, playerId, playerName)
@@ -223,6 +263,79 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 		})
 	})
 
+	socket.on("assignAiSeat", (modelIdInput, ack) => {
+		void acknowledgeAsync(ack, async () => {
+			const [roomCode, room] = roomForPlayer(playerId)
+			const state = getRoomState(roomCode)
+			if (state.hostId !== playerId) {
+				throw new HeartsRuleError("Only the host can assign AI seats.")
+			}
+			if (state.phase !== "lobby") {
+				throw new HeartsRuleError(
+					"AI seats can only be assigned before the game starts.",
+				)
+			}
+			if (state.players.length >= 4) {
+				throw new HeartsRuleError("This table already has four players.")
+			}
+			if (!isAiModelId(modelIdInput)) {
+				throw new HeartsRuleError("Choose a supported OpenAI model.")
+			}
+
+			const rawPlayerId = randomUUID()
+			const aiPlayerId = `user::${rawPlayerId}` satisfies PlayerId
+			const playerSecret = randomUUID()
+			const sameModelCount = state.players.filter(
+				(player) => player.aiModel === modelIdInput,
+			).length
+			const name = `${aiModelLabel(modelIdInput).replace("GPT-5.6 ", "")} AI ${sameModelCount + 1}`
+			aiModelsByPlayer.set(aiPlayerId, modelIdInput)
+			try {
+				const runtime = await createAiPlayer({
+					modelId: modelIdInput,
+					name,
+					playerId: aiPlayerId,
+					playerSecret,
+					roomCode,
+					serverUrl: `http://127.0.0.1:${SERVER_PORT}`,
+				})
+				room.aiPlayers.set(aiPlayerId, runtime)
+			} catch (error) {
+				aiModelsByPlayer.delete(aiPlayerId)
+				playerSecrets.delete(rawPlayerId)
+				throw error
+			}
+			return roomCode
+		})
+	})
+
+	socket.on("removeAiSeat", (aiPlayerId, ack) => {
+		acknowledge(ack, () => {
+			const [roomCode, room] = roomForPlayer(playerId)
+			const state = getRoomState(roomCode)
+			if (state.hostId !== playerId) {
+				throw new HeartsRuleError("Only the host can remove AI seats.")
+			}
+			if (state.phase !== "lobby") {
+				throw new HeartsRuleError(
+					"AI seats can only be removed before the game starts.",
+				)
+			}
+			const aiPlayer = state.players.find(
+				(candidate) => candidate.id === aiPlayerId && candidate.kind === "ai",
+			)
+			if (aiPlayer === undefined) {
+				throw new HeartsRuleError("That AI seat is not at this table.")
+			}
+			room.aiPlayers.get(aiPlayerId)?.dispose()
+			room.aiPlayers.delete(aiPlayerId)
+			aiModelsByPlayer.delete(aiPlayerId)
+			playerSecrets.delete(aiPlayerId.replace(/^user::/, ""))
+			leaveCurrentRoom(aiPlayerId)
+			return roomCode
+		})
+	})
+
 	socket.on("startGame", (ack) => {
 		const [roomCode] = roomForPlayer(playerId)
 		acknowledge(ack, () => {
@@ -234,15 +347,10 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 	socket.on("passCards", (cardIds, ack) => {
 		const [roomCode] = roomForPlayer(playerId)
 		acknowledge(ack, () => {
-			if (
-				!Array.isArray(cardIds) ||
-				cardIds.some((id) => typeof id !== "string")
-			) {
-				throw new HeartsRuleError("The submitted pass is invalid.")
-			}
+			const payload = parsePassCardsPayload({ cardIds })
 			setRoomState(
 				roomCode,
-				submitPass(getRoomState(roomCode), playerId, cardIds as CardId[]),
+				submitPass(getRoomState(roomCode), playerId, payload.cardIds),
 			)
 			return roomCode
 		})
@@ -251,10 +359,11 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 	socket.on("playCard", (cardId, ack) => {
 		const [roomCode] = roomForPlayer(playerId)
 		acknowledge(ack, () => {
-			if (typeof cardId !== "string" || !cardId.startsWith("card::")) {
-				throw new HeartsRuleError("That card identifier is invalid.")
-			}
-			setRoomState(roomCode, playCard(getRoomState(roomCode), playerId, cardId))
+			const payload = parsePlayCardPayload({ cardId })
+			setRoomState(
+				roomCode,
+				playCard(getRoomState(roomCode), playerId, payload.cardId),
+			)
 			return roomCode
 		})
 	})

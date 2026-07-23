@@ -5,6 +5,11 @@ import { usePullAtom } from "atom.io/realtime-react"
 import type { JSX, VNode } from "preact"
 import { useEffect, useMemo, useRef, useState } from "preact/hooks"
 
+import {
+	DEFAULT_AI_MODEL_ID,
+	isAiModelId,
+	OPENAI_HEARTS_MODELS,
+} from "./ai/ai-models.ts"
 import { actionErrorAtom } from "./client-state.ts"
 import { gameSocket } from "./game-socket.ts"
 import {
@@ -176,7 +181,10 @@ function OpponentZone({
 			data-disconnected={!player.connected || undefined}
 		>
 			<opponent-heading>
-				<strong>{player.name}</strong>
+				<strong>
+					{player.name}
+					{player.kind === "ai" ? " · AI" : ""}
+				</strong>
 				<span>{player.score} pts</span>
 			</opponent-heading>
 			<opponent-hand
@@ -427,6 +435,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 	const myUserKey = usePullAtom(myUserKeyAtom) as PlayerId | null
 	const actionError = useO(actionErrorAtom)
 	const [selectedCard, setSelectedCard] = useState<CardId | null>(null)
+	const [selectedAiModel, setSelectedAiModel] = useState(DEFAULT_AI_MODEL_ID)
 	const [passSelection, setPassSelection] = useState<CardId[]>([])
 	const [dragState, setDragState] = useState<DragState | null>(null)
 	const pointerOrigin = useRef<{
@@ -527,24 +536,80 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 						<p>{game.players.length} of 4 players seated</p>
 						<seated-list>
 							{game.players.map((player) => (
-								<span
+								<seat-pill
 									key={player.id}
 									data-connected={player.connected || undefined}
 								>
-									{player.name}
-								</span>
+									<span>{player.name}</span>
+									{player.kind === "ai" ? (
+										<>
+											<small>{player.aiModel}</small>
+											{game.hostId === myUserKey ? (
+												<button
+													type="button"
+													aria-label={`Remove ${player.name}`}
+													onClick={() => {
+														gameSocket.emit(
+															"removeAiSeat",
+															player.id,
+															handleResult,
+														)
+													}}
+												>
+													×
+												</button>
+											) : null}
+										</>
+									) : null}
+								</seat-pill>
 							))}
 						</seated-list>
 						{game.hostId === myUserKey ? (
-							<button
-								type="button"
-								disabled={game.players.length < 2}
-								onClick={() => {
-									gameSocket.emit("startGame", handleResult)
-								}}
-							>
-								Deal the cards
-							</button>
+							<>
+								{game.players.length < 4 ? (
+									<ai-seat-controls>
+										<label>
+											<span>OpenAI opponent</span>
+											<select
+												value={selectedAiModel}
+												onInput={(event) => {
+													const modelId = event.currentTarget.value
+													if (isAiModelId(modelId)) {
+														setSelectedAiModel(modelId)
+													}
+												}}
+											>
+												{OPENAI_HEARTS_MODELS.map((model) => (
+													<option key={model.id} value={model.id}>
+														{model.label}
+													</option>
+												))}
+											</select>
+										</label>
+										<button
+											type="button"
+											onClick={() => {
+												gameSocket.emit(
+													"assignAiSeat",
+													selectedAiModel,
+													handleResult,
+												)
+											}}
+										>
+											Fill AI seat
+										</button>
+									</ai-seat-controls>
+								) : null}
+								<button
+									type="button"
+									disabled={game.players.length < 2}
+									onClick={() => {
+										gameSocket.emit("startGame", handleResult)
+									}}
+								>
+									Deal the cards
+								</button>
+							</>
 						) : (
 							<p>Waiting for the host to deal.</p>
 						)}

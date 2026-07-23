@@ -1,7 +1,12 @@
 import "./globals.css"
 
 import { RealtimeProvider } from "atom.io/realtime-react"
-import { render } from "preact"
+import {
+	createElement,
+	render,
+	type ComponentChildren,
+	type FunctionComponent,
+} from "preact"
 
 import { AppShell } from "./AppShell.tsx"
 import { gameSocket } from "./game-socket.ts"
@@ -12,9 +17,17 @@ if (appRoot === null) {
 	throw new Error("Expected the app root to exist.")
 }
 
+const RealtimeProviderCompat =
+	RealtimeProvider as unknown as FunctionComponent<{
+		children?: ComponentChildren
+		socket: typeof gameSocket
+	}>
+
 render(
-	<RealtimeProvider socket={gameSocket}>
-		<AppShell />
-	</RealtimeProvider>,
+	createElement(
+		RealtimeProviderCompat,
+		{ socket: gameSocket },
+		createElement(AppShell, {}),
+	),
 	appRoot,
 )

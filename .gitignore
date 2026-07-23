@@ -5,6 +5,7 @@ coverage/
 .pnpm-home/
 .pnpm-store/
 .vite/
+.varmint/
 
 .env
 .env.*

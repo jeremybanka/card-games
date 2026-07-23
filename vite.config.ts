@@ -2,7 +2,7 @@ import preact from "@preact/preset-vite"
 import { defineConfig } from "vite-plus"
 
 export default defineConfig({
-	plugins: [preact()],
+	plugins: process.env.NODE_ENV === "test" ? [] : [...preact()],
 	server: {
 		proxy: {
 			"/socket.io": {

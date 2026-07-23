@@ -1,3 +1,4 @@
+import type { AiModelId } from "../ai/ai-models.ts"
 import type {
 	CardId,
 	CardValue,
@@ -18,9 +19,11 @@ export const GAME_END_SCORE = 100
 export const PASS_CARD_COUNT = 3
 
 export type HeartsPlayer = {
+	aiModel: AiModelId | null
 	connected: boolean
 	hand: CardId[]
 	id: PlayerId
+	kind: "ai" | "human"
 	name: string
 	passSelection: CardId[] | null
 	roundPoints: number
@@ -185,9 +188,11 @@ export function createHeartsGame(
 		physicalCardIds,
 		players: [
 			{
+				aiModel: null,
 				connected: true,
 				hand: [],
 				id: hostId,
+				kind: "human",
 				name: hostName,
 				passSelection: null,
 				roundPoints: 0,
@@ -208,6 +213,10 @@ export function joinHeartsGame(
 	state: HeartsState,
 	playerId: PlayerId,
 	playerName: string,
+	controller: Pick<HeartsPlayer, "aiModel" | "kind"> = {
+		aiModel: null,
+		kind: "human",
+	},
 ): HeartsState {
 	const next = copyState(state)
 	const existing = next.players.find((player) => player.id === playerId)
@@ -223,9 +232,11 @@ export function joinHeartsGame(
 		throw new HeartsRuleError("This table already has four players.")
 	}
 	next.players.push({
+		aiModel: controller.aiModel,
 		connected: true,
 		hand: [],
 		id: playerId,
+		kind: controller.kind,
 		name: playerName,
 		passSelection: null,
 		roundPoints: 0,
@@ -618,10 +629,12 @@ export function toPublicGameView(state: HeartsState): PublicGameView {
 			.map((player) => player.id),
 		phase: state.phase,
 		players: state.players.map((player) => ({
+			aiModel: player.aiModel,
 			capturedCardIds: [...player.taken],
 			connected: player.connected,
 			handCardIds: [...player.hand],
 			id: player.id,
+			kind: player.kind,
 			name: player.name,
 			roundPoints: player.roundPoints,
 			score: player.score,

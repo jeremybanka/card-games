@@ -16,6 +16,10 @@
   client-readable state.
 - Preserve physical card IDs for the lifetime of a room, but scramble their
   relationship to card values on every deal.
+- Treat every AI seat as an ordinary realtime player with its own private
+  atom.io Silo. Keep AI observations, plans, prompts, and private hand facts out
+  of public room state. AI actions must use the same schemas and authoritative
+  server handlers as human actions.
 - Give each exported JSX component a same-named sibling CSS Module
   (`AppShell.tsx` and `AppShell.module.css`). Import it as `css`, expose only
   `.class`, and attach `css.class` to the component root.

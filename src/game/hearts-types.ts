@@ -1,3 +1,5 @@
+import type { AiModelId } from "../ai/ai-models.ts"
+
 export type Suit = "clubs" | "diamonds" | "spades" | "hearts"
 export type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14
 export type CardId = `card::${string}`
@@ -27,10 +29,12 @@ export type GamePhase =
 export type PassDirection = "left" | "right" | "across" | "hold"
 
 export type PublicPlayerView = {
+	aiModel: AiModelId | null
 	capturedCardIds: CardId[]
 	connected: boolean
 	handCardIds: CardId[]
 	id: PlayerId
+	kind: "ai" | "human"
 	name: string
 	roundPoints: number
 	score: number
@@ -68,11 +72,13 @@ export type ActionResult =
 export type ActionAck = (result: ActionResult) => void
 
 export type ClientToServerEvents = {
+	assignAiSeat: (modelId: AiModelId, ack: ActionAck) => void
 	createRoom: (playerName: string, ack: ActionAck) => void
 	joinRoom: (roomCode: string, playerName: string, ack: ActionAck) => void
 	leaveRoom: (ack: ActionAck) => void
 	passCards: (cardIds: CardId[], ack: ActionAck) => void
 	playCard: (cardId: CardId, ack: ActionAck) => void
+	removeAiSeat: (playerId: PlayerId, ack: ActionAck) => void
 	restartGame: (ack: ActionAck) => void
 	startGame: (ack: ActionAck) => void
 	startNextRound: (ack: ActionAck) => void
