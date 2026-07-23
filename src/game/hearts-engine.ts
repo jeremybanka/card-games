@@ -33,6 +33,10 @@ export type HeartsPlayer = {
 
 export type HeartsState = {
 	cardValues: Partial<Record<CardId, CardValue>>
+	completedTricks: Array<{
+		plays: Array<{ cardId: CardId; playerId: PlayerId }>
+		winnerId: PlayerId
+	}>
 	currentPlayerId: PlayerId | null
 	currentTrick: Array<{ cardId: CardId; playerId: PlayerId }>
 	heartsBroken: boolean
@@ -178,6 +182,7 @@ export function createHeartsGame(
 ): HeartsState {
 	return {
 		cardValues: {},
+		completedTricks: [],
 		currentPlayerId: null,
 		currentTrick: [],
 		heartsBroken: false,
@@ -296,6 +301,7 @@ export function dealRound(
 
 	next.roundNumber += 1
 	next.cardValues = {}
+	next.completedTricks = []
 	next.currentTrick = []
 	next.heartsBroken = false
 	next.lastTrickWinnerId = null
@@ -538,6 +544,10 @@ export function playCard(
 
 	const winnerId = trickWinner(next)
 	const winner = next.players[playerIndex(next, winnerId)] as HeartsPlayer
+	next.completedTricks.push({
+		plays: next.currentTrick.map((play) => ({ ...play })),
+		winnerId,
+	})
 	winner.taken.push(...next.currentTrick.map((play) => play.cardId))
 	next.lastTrickWinnerId = winnerId
 	next.currentTrick = []
@@ -562,6 +572,7 @@ export function restartGame(state: HeartsState, hostId: PlayerId): HeartsState {
 	next.phase = "lobby"
 	next.roundNumber = 0
 	next.cardValues = {}
+	next.completedTricks = []
 	next.currentPlayerId = null
 	next.currentTrick = []
 	next.heartsBroken = false
@@ -618,6 +629,13 @@ function publicTrick(state: HeartsState): TrickPlay[] {
 
 export function toPublicGameView(state: HeartsState): PublicGameView {
 	return {
+		completedTricks: state.completedTricks.map((trick) => ({
+			plays: trick.plays.map((play) => ({
+				card: visibleCard(state, play.cardId),
+				playerId: play.playerId,
+			})),
+			winnerId: trick.winnerId,
+		})),
 		currentPlayerId: state.currentPlayerId,
 		currentTrick: publicTrick(state),
 		heartsBroken: state.heartsBroken,

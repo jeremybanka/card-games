@@ -13,15 +13,18 @@ import type {
 	ActionResult,
 	CardId,
 	ClientToServerEvents,
+	PassDirection,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
 	ServerToClientEvents,
+	VisibleCard,
 } from "../game/hearts-types.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
+import type { AiMemoryLedgerEntry } from "./ai-types.ts"
 import {
 	createAiPlayerSiloState,
 	type AiPlayerSiloState,
@@ -46,6 +49,35 @@ export type CreateAiPlayerOptions = {
 	playerSecret: string
 	roomCode: string
 	serverUrl: string
+}
+
+function passSeatOffset(direction: PassDirection, playerCount: number): number {
+	switch (direction) {
+		case "left":
+			return 1
+		case "right":
+			return -1
+		case "across":
+			return playerCount === 4 ? 2 : 1
+		case "hold":
+			return 0
+	}
+}
+
+function passPartnerId(
+	game: PublicGameView,
+	playerId: PlayerId,
+	role: "recipient" | "sender",
+): PlayerId {
+	const playerIndex = game.players.findIndex((player) => player.id === playerId)
+	if (playerIndex === -1) {
+		throw new Error("The AI player is not seated at its realtime table.")
+	}
+	const offset = passSeatOffset(game.passDirection, game.players.length)
+	const directedOffset = role === "recipient" ? offset : -offset
+	const partnerIndex =
+		(playerIndex + directedOffset + game.players.length) % game.players.length
+	return (game.players[partnerIndex] as PublicGameView["players"][number]).id
 }
 
 function actionResult(
@@ -103,7 +135,57 @@ async function createAiPlayerRuntime(
 	let disposed = false
 	let acting = false
 	let lastAttemptedFingerprint = ""
+	let observedRoundNumber = 0
 	let pullDisposers: Array<() => void> = []
+	let pendingPass:
+		| {
+				direction: PassDirection
+				handBeforePass: VisibleCard[]
+				passedCards: VisibleCard[]
+				roundNumber: number
+				senderId: PlayerId
+		  }
+		| undefined
+
+	const appendMemory = (entry: AiMemoryLedgerEntry): void => {
+		silo.setState(state.aiMemoryLedgerAtom, (ledger) => [...ledger, entry])
+	}
+
+	const resetMemoryForNewRound = (): void => {
+		const roundNumber = silo.getState(publicGameViewAtom).roundNumber
+		if (roundNumber === observedRoundNumber) return
+		observedRoundNumber = roundNumber
+		pendingPass = undefined
+		lastAttemptedFingerprint = ""
+		silo.setState(state.aiMemoryLedgerAtom, [])
+		silo.setState(state.aiTurnObservationsAtom, [])
+		silo.setState(state.aiCurrentPlanAtom, "")
+		silo.setState(state.aiNextActionAtom, null)
+	}
+
+	const captureReceivedPassCards = (): void => {
+		if (pendingPass === undefined) return
+		const privateView = silo.getState(privatePlayerViewAtom)
+		const passedIds = new Set(pendingPass.passedCards.map((card) => card.id))
+		if (privateView.cards.some((card) => passedIds.has(card.id))) return
+		const retainedIds = new Set(
+			pendingPass.handBeforePass
+				.filter((card) => !passedIds.has(card.id))
+				.map((card) => card.id),
+		)
+		const receivedCards = privateView.cards.filter(
+			(card) => !retainedIds.has(card.id),
+		)
+		if (receivedCards.length !== pendingPass.passedCards.length) return
+		appendMemory({
+			cards: receivedCards,
+			direction: pendingPass.direction,
+			kind: "cardsReceived",
+			roundNumber: pendingPass.roundNumber,
+			senderId: pendingPass.senderId,
+		})
+		pendingPass = undefined
+	}
 
 	const turnFingerprint = (): string => {
 		const game = silo.getState(publicGameViewAtom)
@@ -192,6 +274,31 @@ async function createAiPlayerRuntime(
 									"playCard",
 									decision.nextAction.cardId,
 								)
+					if (result.ok && decision.nextAction.action === "passCards") {
+						const selectedIds = new Set(decision.nextAction.cardIds)
+						const passedCards = privateViewAtStart.cards.filter((card) =>
+							selectedIds.has(card.id),
+						)
+						pendingPass = {
+							direction: gameAtStart.passDirection,
+							handBeforePass: privateViewAtStart.cards,
+							passedCards,
+							roundNumber: gameAtStart.roundNumber,
+							senderId: passPartnerId(gameAtStart, options.playerId, "sender"),
+						}
+						appendMemory({
+							cards: passedCards,
+							direction: gameAtStart.passDirection,
+							kind: "cardsPassed",
+							recipientId: passPartnerId(
+								gameAtStart,
+								options.playerId,
+								"recipient",
+							),
+							roundNumber: gameAtStart.roundNumber,
+						})
+						captureReceivedPassCards()
+					}
 					span.event(
 						"ai.action.acknowledged",
 						{
@@ -215,6 +322,8 @@ async function createAiPlayerRuntime(
 	}
 
 	const scheduleAct = (): void => {
+		resetMemoryForNewRound()
+		captureReceivedPassCards()
 		queueMicrotask(() => void act())
 	}
 	const stateDisposers = [

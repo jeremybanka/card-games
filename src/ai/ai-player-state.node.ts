@@ -13,6 +13,7 @@ import type { PlayerId } from "../game/hearts-types.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
 import type {
+	AiMemoryLedgerEntry,
 	AiNextAction,
 	AiTurnDecision,
 	AiTurnObservation,
@@ -25,6 +26,7 @@ export type AiPlayerSiloState = {
 		Loadable<AiNextAction>
 	>
 	aiNextActionAtom: RegularAtomToken<AiNextAction | null>
+	aiMemoryLedgerAtom: RegularAtomToken<AiMemoryLedgerEntry[]>
 	aiRenderedGameFactsSelector: ReadonlyPureSelectorToken<string>
 	aiStrategicTurnSelector: ReadonlyPureSelectorToken<Loadable<AiTurnDecision>>
 	aiTurnObservationSelector: ReadonlyPureSelectorToken<Loadable<string>>
@@ -50,10 +52,15 @@ export function createAiPlayerSiloState(
 		key: "aiNextAction",
 		default: null,
 	})
+	const aiMemoryLedgerAtom = silo.atom<AiMemoryLedgerEntry[]>({
+		key: "aiMemoryLedger",
+		default: [],
+	})
 
 	const contextFromState = (get: {
 		<T>(token: RegularAtomToken<T>): T
 	}): AiGameContext => ({
+		memoryLedger: get(aiMemoryLedgerAtom),
 		observations: get(aiTurnObservationsAtom),
 		playerId,
 		previousPlan: get(aiCurrentPlanAtom),
@@ -98,6 +105,7 @@ export function createAiPlayerSiloState(
 		aiCurrentPlanAtom,
 		aiGeneratedCurrentPlanSelector,
 		aiGeneratedNextActionSelector,
+		aiMemoryLedgerAtom,
 		aiNextActionAtom,
 		aiRenderedGameFactsSelector,
 		aiStrategicTurnSelector,

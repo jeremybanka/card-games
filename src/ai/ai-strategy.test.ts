@@ -35,6 +35,7 @@ function gameContext(
 	overrides: Partial<PublicGameView> = {},
 ): AiGameContext {
 	const publicView: PublicGameView = {
+		completedTricks: [],
 		currentPlayerId: aiPlayerId,
 		currentTrick: [],
 		heartsBroken: false,
@@ -76,6 +77,7 @@ function gameContext(
 		...overrides,
 	}
 	return {
+		memoryLedger: [],
 		observations: [],
 		playerId: aiPlayerId,
 		previousPlan: "",
@@ -152,9 +154,55 @@ describe("AI Hearts generators", () => {
 			}),
 		)
 
-		expect(facts).toContain("queen of spades [card::own-queen]")
-		expect(facts).toContain("1 cards in hand")
+		expect(facts).toContain("QS [card::own-queen] — LEGAL")
+		expect(facts).toContain("hand=1")
 		expect(facts).not.toContain("card::opaque-opponent-card")
+	})
+
+	it("renders exact private transfers and completed public tricks as memory", () => {
+		const passedKing = card("passed-king", "hearts", 13)
+		const receivedQueen = card("received-queen", "hearts", 12)
+		const completedCard = card("completed-two", "clubs", 2)
+		const context = gameContext(
+			{
+				cards: [receivedQueen],
+				passSubmitted: true,
+				playableCardIds: [receivedQueen.id],
+				playerId: aiPlayerId,
+			},
+			{
+				completedTricks: [
+					{
+						plays: [{ card: completedCard, playerId: humanPlayerId }],
+						winnerId: humanPlayerId,
+					},
+				],
+			},
+		)
+		context.memoryLedger = [
+			{
+				cards: [passedKing],
+				direction: "left",
+				kind: "cardsPassed",
+				recipientId: humanPlayerId,
+				roundNumber: 1,
+			},
+			{
+				cards: [receivedQueen],
+				direction: "left",
+				kind: "cardsReceived",
+				roundNumber: 1,
+				senderId: humanPlayerId,
+			},
+		]
+
+		const facts = renderAiGameFacts(context)
+
+		expect(facts).toContain("- R1 pass left -> P1: KH")
+		expect(facts).toContain("- R1 receive left <- P1: QH")
+		expect(facts).toContain("- T1>P1: P1 2C")
+		expect(facts).not.toContain("card::passed-king")
+		expect(facts).not.toContain("card::completed-two")
 	})
 
 	it("passes the queen of spades and highest hearts first", () => {

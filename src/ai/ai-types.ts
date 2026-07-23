@@ -2,7 +2,12 @@ import { type } from "arktype"
 import type { JSONSchema7 } from "ai"
 
 import { cardIdType, passCardIdsType } from "../game/hearts-actions.ts"
-import type { CardId } from "../game/hearts-types.ts"
+import type {
+	CardId,
+	PassDirection,
+	PlayerId,
+	VisibleCard,
+} from "../game/hearts-types.ts"
 
 export type AiNextAction =
 	| { action: "passCards"; cardIds: CardId[] }
@@ -18,6 +23,22 @@ export type AiTurnObservation = {
 	observation: string
 	turnKey: string
 }
+
+export type AiMemoryLedgerEntry =
+	| {
+			cards: VisibleCard[]
+			direction: PassDirection
+			kind: "cardsPassed"
+			recipientId: PlayerId
+			roundNumber: number
+	  }
+	| {
+			cards: VisibleCard[]
+			direction: PassDirection
+			kind: "cardsReceived"
+			roundNumber: number
+			senderId: PlayerId
+	  }
 
 export const aiNextActionType = type({
 	action: "'passCards'",

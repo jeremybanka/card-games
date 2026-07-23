@@ -112,6 +112,32 @@ describe("Hearts dealing and visibility", () => {
 		})
 		expect(correlationsChanged.length).toBeGreaterThan(40)
 	})
+
+	it("publishes values only after a completed trick makes them public", () => {
+		let state = resolvePassing(
+			startGame(lobby(4), playerIds[0], seededRandom(43)),
+		)
+		const cardsPlayed: CardId[] = []
+		for (let play = 0; play < 4; play += 1) {
+			const playerId = state.currentPlayerId as PlayerId
+			const cardId = playableCardIdsFor(state, playerId)[0] as CardId
+			cardsPlayed.push(cardId)
+			state = playCard(state, playerId, cardId)
+		}
+
+		const publicView = toPublicGameView(state)
+		expect(publicView.completedTricks).toHaveLength(1)
+		expect(
+			publicView.completedTricks[0]?.plays.map((play) => play.card.id),
+		).toEqual(cardsPlayed)
+		expect(publicView.completedTricks[0]?.plays).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					card: expect.objectContaining({ rank: expect.any(Number) }),
+				}),
+			]),
+		)
+	})
 })
 
 describe("Hearts rules", () => {

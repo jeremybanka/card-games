@@ -25,6 +25,7 @@ const humanCardId = "card::human-private-ace" satisfies CardId
 
 function publicView(playerId: PlayerId): PublicGameView {
 	return {
+		completedTricks: [],
 		currentPlayerId: playerId,
 		currentTrick: [],
 		heartsBroken: false,

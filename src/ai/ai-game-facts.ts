@@ -6,9 +6,10 @@ import type {
 	Suit,
 	VisibleCard,
 } from "../game/hearts-types.ts"
-import type { AiTurnObservation } from "./ai-types.ts"
+import type { AiMemoryLedgerEntry, AiTurnObservation } from "./ai-types.ts"
 
 export type AiGameContext = {
+	memoryLedger: AiMemoryLedgerEntry[]
 	observations: AiTurnObservation[]
 	playerId: PlayerId
 	previousPlan: string
@@ -16,60 +17,103 @@ export type AiGameContext = {
 	publicView: PublicGameView
 }
 
-const suitNames: Record<Suit, string> = {
-	clubs: "clubs",
-	diamonds: "diamonds",
-	hearts: "hearts",
-	spades: "spades",
+const suitCodes: Record<Suit, string> = {
+	clubs: "C",
+	diamonds: "D",
+	hearts: "H",
+	spades: "S",
 }
 
-function rankName(rank: Rank): string {
+function rankCode(rank: Rank): string {
 	switch (rank) {
 		case 11:
-			return "jack"
+			return "J"
 		case 12:
-			return "queen"
+			return "Q"
 		case 13:
-			return "king"
+			return "K"
 		case 14:
-			return "ace"
+			return "A"
+		case 10:
+			return "T"
 		default:
 			return String(rank)
 	}
 }
 
 export function renderVisibleCard(card: VisibleCard): string {
-	return `${rankName(card.rank)} of ${suitNames[card.suit]} [${card.id}]`
+	return `${rankCode(card.rank)}${suitCodes[card.suit]} [${card.id}]`
+}
+
+function renderLedgerCard(card: VisibleCard): string {
+	return `${rankCode(card.rank)}${suitCodes[card.suit]}`
+}
+
+function playerAlias(context: AiGameContext, playerId: PlayerId): string {
+	const index = context.publicView.players.findIndex(
+		(player) => player.id === playerId,
+	)
+	return index === -1 ? playerId : `P${index}`
 }
 
 function renderPlayers(context: AiGameContext): string[] {
 	return context.publicView.players.map((player, index) => {
-		const perspective =
-			player.id === context.playerId ? "you" : `opponent ${index + 1}`
+		const perspective = player.id === context.playerId ? " YOU" : ""
 		const controller =
-			player.kind === "ai"
-				? `AI using ${player.aiModel ?? "an unspecified model"}`
-				: "human"
-		return [
-			`- ${perspective}: ${player.name} (${controller})`,
-			`score ${player.score}`,
-			`${player.handCardIds.length} cards in hand`,
-			`${player.capturedCardIds.length} captured cards`,
-			player.connected ? "connected" : "disconnected",
-		].join("; ")
+			player.kind === "ai" ? `AI:${player.aiModel ?? "unspecified"}` : "human"
+		return `- P${index}${perspective} ${player.name} (${controller}): score=${
+			player.score
+		} hand=${player.handCardIds.length} captured=${
+			player.capturedCardIds.length
+		} ${player.connected ? "connected" : "disconnected"}`
 	})
 }
 
 function renderCurrentTrick(context: AiGameContext): string[] {
-	if (context.publicView.currentTrick.length === 0)
-		return ["- No cards played."]
-	return context.publicView.currentTrick.map((play, index) => {
-		const player =
-			context.publicView.players.find(
-				(candidate) => candidate.id === play.playerId,
-			)?.name ?? "Unknown player"
-		return `- Play ${index + 1}: ${player} played ${renderVisibleCard(play.card)}.`
+	if (context.publicView.currentTrick.length === 0) return ["- empty"]
+	return [
+		`- ${context.publicView.currentTrick
+			.map(
+				(play) =>
+					`${playerAlias(context, play.playerId)} ${renderLedgerCard(
+						play.card,
+					)}`,
+			)
+			.join(" | ")}`,
+	]
+}
+
+function renderCompletedTricks(context: AiGameContext): string[] {
+	if (context.publicView.completedTricks.length === 0) {
+		return ["- none"]
+	}
+	return context.publicView.completedTricks.map((trick, index) => {
+		const plays = trick.plays
+			.map(
+				(play) =>
+					`${playerAlias(context, play.playerId)} ${renderLedgerCard(
+						play.card,
+					)}`,
+			)
+			.join(" | ")
+		return `- T${index + 1}>${playerAlias(context, trick.winnerId)}: ${plays}`
 	})
+}
+
+function renderMemoryLedger(
+	context: AiGameContext,
+	entry: AiMemoryLedgerEntry,
+): string {
+	const cards = entry.cards.map(renderLedgerCard).join(" ")
+	return entry.kind === "cardsPassed"
+		? `- R${entry.roundNumber} pass ${entry.direction} -> ${playerAlias(
+				context,
+				entry.recipientId,
+			)}: ${cards}`
+		: `- R${entry.roundNumber} receive ${entry.direction} <- ${playerAlias(
+				context,
+				entry.senderId,
+			)}: ${cards}`
 }
 
 export function renderAiGameFacts(context: AiGameContext): string {
@@ -77,58 +121,65 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		(player) => player.id === context.playerId,
 	)
 	const currentPlayer =
-		context.publicView.players.find(
-			(player) => player.id === context.publicView.currentPlayerId,
-		)?.name ?? "none"
+		context.publicView.currentPlayerId === null
+			? "none"
+			: playerAlias(context, context.publicView.currentPlayerId)
 	const hand =
 		context.privateView.cards.length === 0
-			? ["- Your hand is empty."]
+			? ["- empty"]
 			: context.privateView.cards.map(
 					(card) =>
 						`- ${renderVisibleCard(card)}${
 							context.privateView.playableCardIds.includes(card.id)
-								? " — legal now"
+								? " — LEGAL"
 								: ""
 						}`,
 				)
 	const observations =
 		context.observations.length === 0
-			? ["- No prior observations."]
+			? ["- none"]
 			: context.observations
 					.slice(-12)
 					.map((entry) => `- ${entry.turnKey}: ${entry.observation}`)
+	const memoryLedger =
+		context.memoryLedger.length === 0
+			? ["- none"]
+			: context.memoryLedger.map((entry) => renderMemoryLedger(context, entry))
 
 	return [
-		"# Hearts table facts",
-		`Room: ${context.publicView.roomCode}`,
-		`You are: ${me?.name ?? context.playerId}`,
-		`Phase: ${context.publicView.phase}`,
-		`Round: ${context.publicView.roundNumber}`,
-		`Trick: ${context.publicView.trickNumber + 1}`,
-		`Current player: ${currentPlayer}`,
-		`Hearts broken: ${context.publicView.heartsBroken ? "yes" : "no"}`,
-		`Pass direction: ${context.publicView.passDirection}`,
+		"# Hearts facts (cards: T/J/Q/K/A; suits: C/D/H/S)",
+		`Table ${context.publicView.roomCode} | you ${playerAlias(
+			context,
+			context.playerId,
+		)} ${me?.name ?? context.playerId} | phase ${
+			context.publicView.phase
+		} | round ${context.publicView.roundNumber} | trick ${
+			context.publicView.trickNumber + 1
+		} | turn ${currentPlayer} | hearts ${
+			context.publicView.heartsBroken ? "broken" : "intact"
+		} | pass ${context.publicView.passDirection}`,
 		"",
 		"## Seats",
 		...renderPlayers(context),
 		"",
-		"## Current trick (public information)",
+		"## Current trick (public, play order)",
 		...renderCurrentTrick(context),
 		"",
-		"## Your private hand",
+		"## Completed tricks (public, Tn>winner: plays in order)",
+		...renderCompletedTricks(context),
+		"",
+		"## Hand (during passing choose any 3 IDs)",
 		...hand,
 		"",
-		"## Legal opaque card IDs",
-		context.privateView.playableCardIds.length === 0
-			? "- None."
-			: `- ${context.privateView.playableCardIds.join(", ")}`,
+		"## Plan",
+		context.previousPlan || "none",
 		"",
-		"## Previous plan",
-		context.previousPlan || "No plan yet.",
+		"## Private pass memory",
+		...memoryLedger,
 		"",
-		"## Recent private observation journal",
+		"## Recent private observations",
 		...observations,
 		"",
-		"Only the values listed in your private hand and current public trick are visible. Opponent hands are represented only by counts.",
+		"Information boundary: exact values appear only in your hand/pass memory and public tricks; opponent hands expose counts only. Deck values are unique, so compact card codes preserve card identity after IDs are omitted from history.",
 	].join("\n")
 }

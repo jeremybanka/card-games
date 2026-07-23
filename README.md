@@ -69,13 +69,15 @@ because they are not game actions and must not be replayed.
 
 Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
-`.varmint/recordings/sol-vs-three-luna-live-v1/`. The command saves the Varmint
-inputs and outputs plus an `analysis.json` containing rendered facts, raw model
-responses and usage, guarded decisions, fallback records, accepted actions,
-full server state, trick winners, and scores. It then performs a cache-only
-replay and requires the same decisions, actions, and final state without any
-model responses. Set `TEST_LOG_LEVEL=debug` when running the recorder to stream
-the same complete local spans exposed by the debug test commands.
+`.varmint/recordings/sol-vs-three-luna-live-v4-compact-ledger/`. Override the
+artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves the
+Varmint inputs and outputs plus an `analysis.json` containing rendered facts,
+raw model responses and usage, guarded decisions, fallback records, accepted
+actions, full server state, trick winners, and scores. It then performs a
+cache-only replay and requires the same decisions, actions, and final state
+without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
+recorder to stream the same complete local spans exposed by the debug test
+commands.
 
 ## Observability
 

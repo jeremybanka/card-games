@@ -19,6 +19,11 @@ export type TrickPlay = {
 	playerId: PlayerId
 }
 
+export type CompletedTrick = {
+	plays: TrickPlay[]
+	winnerId: PlayerId
+}
+
 export type GamePhase =
 	| "lobby"
 	| "passing"
@@ -41,6 +46,7 @@ export type PublicPlayerView = {
 }
 
 export type PublicGameView = {
+	completedTricks: CompletedTrick[]
 	currentPlayerId: PlayerId | null
 	currentTrick: TrickPlay[]
 	heartsBroken: boolean
@@ -89,6 +95,7 @@ export type ServerToClientEvents = {
 }
 
 export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
+	completedTricks: [],
 	currentPlayerId: null,
 	currentTrick: [],
 	heartsBroken: false,

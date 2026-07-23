@@ -60,6 +60,7 @@ export function wrapAiGeneratorWithVarmint(
 		wrapped
 			.for(
 				JSON.stringify({
+					memoryLedger: context.memoryLedger,
 					observations: context.observations,
 					playerId: context.playerId,
 					previousPlan: context.previousPlan,
@@ -72,11 +73,15 @@ export function wrapAiGeneratorWithVarmint(
 
 const systemPrompt = [
 	"You are a strategic Hearts player seated at a private multiplayer table.",
-	"Choose exactly one legal next action from the opaque card IDs in the supplied facts.",
+	"Choose exactly one legal next action using an opaque card ID from the supplied hand.",
 	"Success means: obey the current phase, follow suit, minimize expected points, track exposed cards, and return a concise observation and reusable plan.",
+	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
+	"Use private pass memory and completed tricks as exact memory. Cards you passed remain known to be with their recipient until publicly played.",
+	"Card values uniquely identify deck cards, so history omits opaque IDs without losing strategic identity.",
 	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
 	"For passing, return exactly three different card IDs from your private hand.",
-	"For play, return exactly one ID from Legal opaque card IDs.",
+	"For play, copy exactly the card:: ID inside brackets on a hand row labeled LEGAL; do not include brackets or the label.",
+	"Keep observation and plan terse; refer to cards by compact code and never repeat opaque IDs outside nextAction.",
 ].join("\n")
 
 export function createOpenAiTurnGenerator(
@@ -169,7 +174,11 @@ export function createOpenAiTurnGenerator(
 		)
 
 	const guarded = createGuardedAiTurnGenerator(
-		wrapAiGeneratorWithVarmint(`hearts-${modelId}`, generate, options.squirrel),
+		wrapAiGeneratorWithVarmint(
+			`hearts-compact-v2-${modelId}`,
+			generate,
+			options.squirrel,
+		),
 		{
 			onFallback: (details) => {
 				serverLogger.warn("ai.strategy.fallback", {

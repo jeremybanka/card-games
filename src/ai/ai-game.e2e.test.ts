@@ -64,6 +64,9 @@ import {
 const roomCode = "BOTS"
 const invariantSeed = "sol-vs-three-luna-v1"
 const liveInvariantSeed = "sol-vs-three-luna-live-v1"
+const liveRecordingName =
+	process.env.AI_GAME_RECORDING_NAME?.trim() ||
+	"sol-vs-three-luna-live-v4-compact-ledger"
 const bots = [
 	{
 		id: "user::00000000-0000-4000-8000-000000000001",
@@ -133,6 +136,7 @@ type TranscriptEntry =
 type BotRun = {
 	cacheOutputCount: number
 	finalState: HeartsState
+	generatorContexts: AiGameContext[]
 	generatorCalls: number
 	transcript: TranscriptEntry[]
 }
@@ -360,6 +364,7 @@ async function runBotTable(
 	const serverUrl = `http://127.0.0.1:${address.port}`
 	const squirrel = new Squirrel(mode, cacheDirectory)
 	let generatorCalls = 0
+	const generatorContexts: AiGameContext[] = []
 	const runtimes: AiPlayerRuntime[] = []
 
 	try {
@@ -370,6 +375,7 @@ async function runBotTable(
 					`e2e-${bot.modelId}-${bot.id}`,
 					async (context) => {
 						generatorCalls += 1
+						generatorContexts.push(structuredClone(context))
 						const decision = fallbackAiDecision(context)
 						return {
 							...decision,
@@ -410,6 +416,7 @@ async function runBotTable(
 				file.endsWith(".output.json"),
 			).length,
 			finalState,
+			generatorContexts,
 			generatorCalls,
 			transcript,
 		}
@@ -515,6 +522,18 @@ describe("four-bot deterministic realtime game", () => {
 			expect(recorded.generatorCalls).toBe(56)
 			expect(recorded.cacheOutputCount).toBe(56)
 			expect(recorded.transcript).toHaveLength(56)
+			expect(
+				recorded.generatorContexts
+					.filter((context) => context.publicView.phase === "playing")
+					.every((context) => context.memoryLedger.length === 2),
+			).toBe(true)
+			expect(
+				Math.max(
+					...recorded.generatorContexts.map(
+						(context) => context.publicView.completedTricks.length,
+					),
+				),
+			).toBe(12)
 			expect(replayed.generatorCalls).toBe(0)
 			expect(replayed.cacheOutputCount).toBe(56)
 			expect(replayed.transcript).toEqual(recorded.transcript)
@@ -541,7 +560,7 @@ describe("four-bot deterministic realtime game", () => {
 				process.cwd(),
 				".varmint",
 				"recordings",
-				liveInvariantSeed,
+				liveRecordingName,
 			)
 			const cacheDirectory = join(recordingDirectory, "cache")
 			const artifactPath = join(recordingDirectory, "analysis.json")
@@ -572,6 +591,7 @@ describe("four-bot deterministic realtime game", () => {
 							modelId,
 							name,
 						})),
+						recordingName: liveRecordingName,
 						recording: {
 							cacheOutputCount: recorded.cacheOutputCount,
 							decisions: recordedDecisions,
@@ -624,6 +644,7 @@ describe("four-bot deterministic realtime game", () => {
 							modelId,
 							name,
 						})),
+						recordingName: liveRecordingName,
 						recording: {
 							cacheOutputCount: recorded.cacheOutputCount,
 							decisions: recordedDecisions,
