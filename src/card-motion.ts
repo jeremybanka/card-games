@@ -30,6 +30,16 @@ export type CardTransition =
 const cardSelector = "playing-card[data-card-id], card-back[data-card-id]"
 const dealStepMilliseconds = 24
 const opponentPlayDurationMilliseconds = 520
+const capturePendingCardEvent = "wayfarer:capture-pending-card"
+
+export function capturePendingCardMotion(
+	root: HTMLElement,
+	cardId: string,
+): void {
+	root.dispatchEvent(
+		new CustomEvent<string>(capturePendingCardEvent, { detail: cardId }),
+	)
+}
 
 function cardFace(element: HTMLElement): CardSnapshot["face"] {
 	return element.matches("playing-card") ? "up" : "down"
@@ -259,7 +269,8 @@ function animateCardChanges(
 ): Map<string, CardSnapshot> {
 	const current = takeSnapshots(root, committed)
 	if (
-		root.dataset.cardGesture !== undefined ||
+		(root.dataset.cardGesture !== undefined &&
+			root.dataset.cardGesture !== "pending") ||
 		matchMedia("(prefers-reduced-motion: reduce)").matches
 	) {
 		root.dataset.motionReadyRound = root.dataset.cardRound ?? ""
@@ -381,6 +392,12 @@ export function observeCardMotion(root: HTMLElement): () => void {
 		snapshots = animateCardChanges(root, snapshots, committed)
 	}
 	const observer = new MutationObserver(animateMutation)
+	const capturePendingCard = (event: Event): void => {
+		const cardId = (event as CustomEvent<string>).detail
+		const pending = takeSnapshots(root).get(cardId)
+		if (pending !== undefined) snapshots.set(cardId, pending)
+	}
+	root.addEventListener(capturePendingCardEvent, capturePendingCard)
 	observer.observe(root, {
 		attributeFilter: ["data-card-round"],
 		attributes: true,
@@ -389,6 +406,7 @@ export function observeCardMotion(root: HTMLElement): () => void {
 	})
 	return () => {
 		observer.disconnect()
+		root.removeEventListener(capturePendingCardEvent, capturePendingCard)
 	}
 }
 

@@ -6,6 +6,8 @@ import {
 	draggedCardTransform,
 	dragTranslationFromPointer,
 	handCardLayout,
+	HAND_OUTWARD_CORRIDOR_BASE,
+	HAND_OUTWARD_CORRIDOR_SLOPE,
 	HAND_SCRUBBING_BAND_TOP,
 } from "./card-hand-layout.ts"
 
@@ -41,20 +43,64 @@ describe("card hand layout", () => {
 		const scrubbed = advanceCardGesture(
 			{ cardId: "card-a", phase: "picking" },
 			"card-b",
-			0,
+			{ x: 30, y: 0 },
 		)
 		expect(scrubbed).toEqual({ cardId: "card-b", phase: "picking" })
+	})
+
+	it.each(["left", "center", "right"])(
+		"preserves the picked %s card through a diagonal outward corridor",
+		() => {
+			expect(
+				advanceCardGesture(
+					{ cardId: "picked-card", phase: "picking" },
+					"intersected-neighbor",
+					{ x: 34, y: -24 },
+				),
+			).toEqual({ cardId: "picked-card", phase: "picking" })
+		},
+	)
+
+	it("allows an unmistakably lateral scrub before an outward drag", () => {
+		const lateral = advanceCardGesture(
+			{ cardId: "card-a", phase: "picking" },
+			"card-b",
+			{ x: 60, y: -10 },
+		)
+		expect(lateral).toEqual({ cardId: "card-b", phase: "picking" })
+		expect(
+			advanceCardGesture(lateral, "card-c", {
+				x: HAND_OUTWARD_CORRIDOR_BASE,
+				y: -20,
+			}),
+		).toEqual({ cardId: "card-b", phase: "picking" })
+	})
+
+	it("uses an inclusive, deterministic corridor boundary", () => {
+		const y = -20
+		const boundary =
+			HAND_OUTWARD_CORRIDOR_BASE + Math.abs(y) * HAND_OUTWARD_CORRIDOR_SLOPE
+		const gesture = { cardId: "card-a", phase: "picking" } as const
+		expect(
+			advanceCardGesture(gesture, "card-b", { x: boundary, y }).cardId,
+		).toBe("card-a")
+		expect(
+			advanceCardGesture(gesture, "card-b", { x: boundary + 0.01, y }).cardId,
+		).toBe("card-b")
 	})
 
 	it("locks the current card when leaving the picking band", () => {
 		const dragged = advanceCardGesture(
 			{ cardId: "card-b", phase: "picking" },
 			"card-c",
-			HAND_SCRUBBING_BAND_TOP - 1,
+			{ x: 10, y: HAND_SCRUBBING_BAND_TOP - 1 },
 		)
 		expect(dragged).toEqual({ cardId: "card-b", phase: "dragging" })
 		expect(
-			advanceCardGesture(dragged, "card-z", HAND_SCRUBBING_BAND_TOP + 100),
+			advanceCardGesture(dragged, "card-z", {
+				x: 100,
+				y: HAND_SCRUBBING_BAND_TOP + 100,
+			}),
 		).toBe(dragged)
 	})
 

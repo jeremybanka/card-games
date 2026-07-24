@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
+	capturePendingCardMotion,
 	type CardSnapshot,
 	observeCardMotion,
 	planCardTransition,
@@ -99,6 +100,62 @@ describe("planCardTransition", () => {
 })
 
 describe("observeCardMotion", () => {
+	it("hands a pending dragged card release position to authoritative motion", async () => {
+		vi.stubGlobal("matchMedia", () => ({ matches: false }))
+		const neverFinishes = new Promise<never>(() => {})
+		const animate = vi.fn(
+			() => ({ finished: neverFinishes }) as unknown as Animation,
+		)
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: animate,
+		})
+		const root = document.createElement("game-table")
+		root.dataset.cardRound = "1"
+		root.dataset.cardGesture = "dragging"
+		const hand = document.createElement("player-hand")
+		const source = document.createElement("playing-card")
+		source.dataset.cardId = "card::dragged"
+		source.dataset.dealRound = "1"
+		let sourceLeft = 20
+		let sourceTop = 420
+		source.getBoundingClientRect = () =>
+			({
+				height: 100,
+				left: sourceLeft,
+				top: sourceTop,
+				width: 72,
+			}) as DOMRect
+		hand.append(source)
+		root.append(hand)
+		document.body.append(root)
+		const stop = observeCardMotion(root)
+
+		sourceLeft = 120
+		sourceTop = 260
+		capturePendingCardMotion(root, "card::dragged")
+		root.dataset.cardGesture = "pending"
+		const destination = document.createElement("playing-card")
+		destination.dataset.cardId = "card::dragged"
+		destination.getBoundingClientRect = () =>
+			({ height: 92, left: 180, top: 160, width: 66 }) as DOMRect
+		source.remove()
+		root.append(destination)
+
+		await vi.waitFor(() => {
+			expect(animate).toHaveBeenCalledWith(
+				[
+					expect.objectContaining({
+						transform: expect.stringContaining("translate3d(-60px, 100px"),
+					}),
+					expect.anything(),
+				],
+				expect.objectContaining({ duration: 320 }),
+			)
+		})
+		stop()
+	})
+
 	it("settles authoritative changes immediately when motion is reduced", async () => {
 		vi.stubGlobal("matchMedia", () => ({ matches: true }))
 		const animate = vi.fn()

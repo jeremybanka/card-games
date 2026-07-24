@@ -15,6 +15,9 @@ export type DragTranslation = {
 }
 
 export const HAND_SCRUBBING_BAND_TOP = -28
+export const HAND_OUTWARD_INTENT_TOP = -8
+export const HAND_OUTWARD_CORRIDOR_BASE = 18
+export const HAND_OUTWARD_CORRIDOR_SLOPE = 0.8
 export const DRAGGED_CARD_SCALE = 1.06
 
 export function handCardLayout(
@@ -43,14 +46,23 @@ export function cardGesturePhase(
 export function advanceCardGesture<CardId extends string>(
 	gesture: CardGesture<CardId>,
 	scrubbedCardId: CardId,
-	verticalDistance: number,
+	pointerDelta: DragTranslation,
 ): CardGesture<CardId> {
 	if (gesture.phase === "dragging") {
 		return gesture
 	}
-	const phase = cardGesturePhase(verticalDistance)
+	const phase = cardGesturePhase(pointerDelta.y)
+	const outwardCorridorHalfWidth =
+		HAND_OUTWARD_CORRIDOR_BASE +
+		Math.abs(pointerDelta.y) * HAND_OUTWARD_CORRIDOR_SLOPE
+	const preservesOutwardIntent =
+		pointerDelta.y < HAND_OUTWARD_INTENT_TOP &&
+		Math.abs(pointerDelta.x) <= outwardCorridorHalfWidth
 	return {
-		cardId: phase === "dragging" ? gesture.cardId : scrubbedCardId,
+		cardId:
+			phase === "dragging" || preservesOutwardIntent
+				? gesture.cardId
+				: scrubbedCardId,
 		phase,
 	}
 }
