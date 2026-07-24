@@ -51,7 +51,6 @@ game-transitions.class {
 				font-family: Georgia, "Times New Roman", serif;
 				font-size: clamp(1.4rem, 7vw, 2.2rem);
 				font-weight: 500;
-				letter-spacing: -0.025em;
 			}
 		}
 
@@ -121,7 +120,6 @@ game-transitions.class {
 				font-family: Georgia, "Times New Roman", serif;
 				font-size: clamp(1.55rem, 7vw, 2.4rem);
 				font-weight: 500;
-				letter-spacing: -0.035em;
 			}
 
 			> span {
@@ -190,7 +188,8 @@ game-transitions.class {
 						left: 0.46rem;
 						display: grid;
 						place-items: center;
-						line-height: 0.86;
+						gap: 0.08rem;
+						line-height: 1;
 
 						> strong {
 							font-family: Georgia, "Times New Roman", serif;
