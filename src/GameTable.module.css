@@ -808,7 +808,9 @@ game-table.class {
 	game-table.class {
 		> player-zone {
 			> player-hand {
-				> hand-card:not([data-disabled]):hover {
+				> hand-card:not([data-disabled]):hover:not(
+					:has(playing-card[data-picking], playing-card[data-dragging])
+				) {
 					z-index: 250;
 
 					> playing-card {
@@ -816,13 +818,6 @@ game-table.class {
 						filter: drop-shadow(0 0.75rem 0.7rem rgb(0 0 0 / 0.46)) drop-shadow(
 							0 0 0.4rem rgb(225 190 105 / 0.72)
 						);
-					}
-
-					&:has(playing-card[data-picking], playing-card[data-dragging]) {
-						> playing-card {
-							filter: none;
-							transform: none;
-						}
 					}
 				}
 			}
