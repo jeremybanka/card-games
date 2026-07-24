@@ -6,6 +6,7 @@ import type {
 	PublicGameView,
 } from "./game/hearts-types.ts"
 import {
+	capturedTrickCount,
 	completedTrickKey,
 	orderedTrickReviewPlays,
 	shouldAutoDismissTrickReview,
@@ -52,6 +53,12 @@ function game(overrides: Partial<PublicGameView> = {}): PublicGameView {
 }
 
 describe("game presentation", () => {
+	it("derives captured tricks for every supported seat count", () => {
+		expect(capturedTrickCount(6, 2)).toBe(3)
+		expect(capturedTrickCount(7, 3)).toBe(2)
+		expect(capturedTrickCount(40, 4)).toBe(10)
+	})
+
 	it("gives every completed trick a stable round-scoped key", () => {
 		expect(completedTrickKey(game())).toBe("TEST:round-2-trick-1")
 		expect(completedTrickKey(game({ completedTricks: [] }))).toBeNull()

@@ -8,10 +8,18 @@ player-avatar.class {
 	border-radius: 50%;
 	box-shadow: 0 0.2rem 0.4rem rgb(0 0 0 / 0.3);
 	color: white;
-	font-size: calc(var(--player-avatar-size, 1.65rem) * 0.28);
+	font-size: calc(var(--player-avatar-size, 1.65rem) * 0.3);
 	font-weight: 900;
 	line-height: 1;
 	text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
+
+	> span {
+		height: 1em;
+		display: grid;
+		place-items: center;
+		line-height: 1;
+		transform: translateY(0.03em);
+	}
 
 	&[data-size="small"] {
 		--player-avatar-size: 1.55rem;

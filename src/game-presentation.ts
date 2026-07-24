@@ -5,6 +5,13 @@ import type {
 	TrickPlay,
 } from "./game/hearts-types.ts"
 
+export function capturedTrickCount(
+	capturedCardCount: number,
+	playerCount: number,
+): number {
+	return Math.floor(capturedCardCount / playerCount)
+}
+
 export function completedTrickKey(game: PublicGameView): string | null {
 	if (game.completedTricks.length === 0) return null
 	return `${game.roomCode}:round-${game.roundNumber}-trick-${game.completedTricks.length}`
