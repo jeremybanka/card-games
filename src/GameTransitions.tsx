@@ -53,6 +53,7 @@ function TurnBanner({
 		player?.id === myPlayerId
 			? "Your turn"
 			: `${player?.name ?? "Another player"}'s turn`
+	const visualLabel = label.replace(/ (turn)$/, "\u00a0$1")
 	return (
 		<turn-banner
 			aria-atomic="true"
@@ -63,7 +64,7 @@ function TurnBanner({
 			<banner-line data-edge="top" />
 			<banner-panel>
 				<small>NEXT TO PLAY</small>
-				<strong>{label}</strong>
+				<strong>{visualLabel}</strong>
 			</banner-panel>
 			<banner-line data-edge="bottom" />
 		</turn-banner>
@@ -143,14 +144,6 @@ function TrickReview({
 										size="large"
 									/>
 								</review-avatar>
-								{isWinner ? (
-									<winning-halo
-										aria-hidden="true"
-										style={{
-											animationDelay: `${landingDelay + 360}ms`,
-										}}
-									/>
-								) : null}
 							</review-card>
 						</review-position>
 					)
