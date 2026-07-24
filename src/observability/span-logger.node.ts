@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { randomUUID } from "node:crypto"
+import { inspect } from "node:util"
 
 export type LogLevel = "debug" | "error" | "info" | "warn"
 export type LogFields = Record<string, unknown>
@@ -111,7 +112,7 @@ function safeFields(fields: LogFields): LogFields {
 	return safeValue(fields, "", new WeakSet()) as LogFields
 }
 
-function consoleSink(record: LogRecord): void {
+export function consoleSink(record: LogRecord): void {
 	const line = JSON.stringify(record)
 	if (record.level === "error") {
 		console.error(line)
@@ -122,6 +123,201 @@ function consoleSink(record: LogRecord): void {
 		return
 	}
 	console.log(line)
+}
+
+type LogConsole = Pick<Console, "error" | "log" | "warn">
+
+type PrettyLogOptions = {
+	color?: boolean
+	console?: LogConsole
+}
+
+type LogSinkSelectionOptions = {
+	console?: LogConsole
+	environment?: NodeJS.ProcessEnv
+	stderrIsTTY?: boolean
+	stdoutIsTTY?: boolean
+}
+
+const ANSI = {
+	bold: "\u001b[1m",
+	cyan: "\u001b[36m",
+	dim: "\u001b[2m",
+	gray: "\u001b[90m",
+	green: "\u001b[32m",
+	magenta: "\u001b[35m",
+	red: "\u001b[31m",
+	reset: "\u001b[0m",
+	yellow: "\u001b[33m",
+}
+const MAX_DETAIL_LINES = 36
+
+function paint(value: string, color: string, enabled: boolean): string {
+	return enabled ? `${color}${value}${ANSI.reset}` : value
+}
+
+function shortId(value: string | undefined): string | undefined {
+	return value?.slice(0, 8)
+}
+
+function terminalColorEnabled(environment: NodeJS.ProcessEnv): boolean {
+	if ("NO_COLOR" in environment || environment.FORCE_COLOR === "0") return false
+	return true
+}
+
+function prettyValue(value: unknown, color: boolean): string {
+	return inspect(value, {
+		breakLength: 92,
+		colors: color,
+		compact: 2,
+		depth: null,
+		maxArrayLength: 40,
+		maxStringLength: 500,
+		sorted: true,
+	})
+}
+
+function indentedDetails(
+	label: string,
+	value: unknown,
+	color: boolean,
+): string {
+	const rendered = prettyValue(value, color)
+	const lines = rendered.split("\n")
+	if (lines.length === 1) return `${label}=${rendered}`
+	const visibleLines = lines.slice(0, MAX_DETAIL_LINES)
+	const omittedLineCount = lines.length - visibleLines.length
+	const omission =
+		omittedLineCount === 0
+			? []
+			: [
+					paint(
+						`… ${omittedLineCount} more lines; use LOG_FORMAT=json for the complete record`,
+						ANSI.dim,
+						color,
+					),
+				]
+	return `${label}=\n${[...visibleLines, ...omission]
+		.map((line) => `    ${line}`)
+		.join("\n")}`
+}
+
+function displayName(record: LogRecord, color: boolean): string {
+	if (record.event === "span.start" && record.spanName !== undefined) {
+		return `${paint("▶", ANSI.magenta, color)} ${paint(
+			record.spanName,
+			ANSI.bold,
+			color,
+		)}`
+	}
+	if (record.event === "span.end" && record.spanName !== undefined) {
+		const failed = record.outcome === "error"
+		const symbol = failed ? "✗" : "✓"
+		const outcomeColor = failed ? ANSI.red : ANSI.green
+		return `${paint(symbol, outcomeColor, color)} ${paint(
+			record.spanName,
+			outcomeColor,
+			color,
+		)}`
+	}
+	const nesting = record.parentSpanId === undefined ? "•" : "↳"
+	const spanContext =
+		record.spanName === undefined
+			? ""
+			: paint(` (${record.spanName})`, ANSI.dim, color)
+	return `${paint(nesting, ANSI.cyan, color)} ${record.event}${spanContext}`
+}
+
+export function formatPrettyLogRecord(
+	record: LogRecord,
+	options: { color?: boolean } = {},
+): string {
+	const color = options.color ?? true
+	const timestamp = Number.isNaN(Date.parse(record.timestamp))
+		? record.timestamp
+		: record.timestamp.slice(11, 23)
+	const levelColor =
+		record.level === "error"
+			? ANSI.red
+			: record.level === "warn"
+				? ANSI.yellow
+				: record.level === "debug"
+					? ANSI.gray
+					: ANSI.cyan
+	const level = record.level.toUpperCase().padEnd(5)
+	const correlation = [
+		shortId(record.traceId) === undefined
+			? undefined
+			: `trace=${shortId(record.traceId)}`,
+		shortId(record.spanId) === undefined
+			? undefined
+			: `span=${shortId(record.spanId)}`,
+		shortId(record.parentSpanId) === undefined
+			? undefined
+			: `parent=${shortId(record.parentSpanId)}`,
+	]
+		.filter((value) => value !== undefined)
+		.join(" ")
+	const summary = [
+		paint(timestamp, ANSI.gray, color),
+		paint(level, levelColor, color),
+		paint(record.service, ANSI.cyan, color),
+		displayName(record, color),
+		record.durationMs === undefined
+			? undefined
+			: paint(`${record.durationMs.toFixed(2)}ms`, ANSI.magenta, color),
+		correlation === "" ? undefined : paint(correlation, ANSI.dim, color),
+	]
+		.filter((value) => value !== undefined)
+		.join("  ")
+	const details = [
+		record.attributes === undefined
+			? undefined
+			: indentedDetails("attributes", record.attributes, color),
+		record.error === undefined
+			? undefined
+			: indentedDetails("error", record.error, color),
+	]
+		.filter((value) => value !== undefined)
+		.join("\n")
+	return details === ""
+		? summary
+		: `${summary}\n  ${details.replaceAll("\n", "\n  ")}`
+}
+
+export function createPrettyLogSink(options: PrettyLogOptions = {}): LogSink {
+	const targetConsole = options.console ?? console
+	const color = options.color ?? terminalColorEnabled(process.env)
+	return (record) => {
+		const line = formatPrettyLogRecord(record, { color })
+		if (record.level === "error") {
+			targetConsole.error(line)
+			return
+		}
+		if (record.level === "warn") {
+			targetConsole.warn(line)
+			return
+		}
+		targetConsole.log(line)
+	}
+}
+
+export function selectServerLogSink(
+	options: LogSinkSelectionOptions = {},
+): LogSink {
+	const environment = options.environment ?? process.env
+	const format = environment.LOG_FORMAT?.toLowerCase()
+	const interactive =
+		(options.stdoutIsTTY ?? Boolean(process.stdout.isTTY)) &&
+		(options.stderrIsTTY ?? Boolean(process.stderr.isTTY))
+	const usePretty =
+		format === "pretty" ||
+		(format !== "json" && environment.NODE_ENV !== "production" && interactive)
+	if (!usePretty) return consoleSink
+	return createPrettyLogSink({
+		color: terminalColorEnabled(environment),
+		...(options.console === undefined ? {} : { console: options.console }),
+	})
 }
 
 export class ActiveSpan {
@@ -326,4 +522,5 @@ export class SpanLogger {
 
 export const serverLogger = new SpanLogger({
 	service: "wayfarer-hearts",
+	sink: selectServerLogSink(),
 })
