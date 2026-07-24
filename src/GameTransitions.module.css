@@ -210,25 +210,15 @@ game-transitions.class {
 						transform: translate(-50%, -50%);
 					}
 
-					> player-avatar {
+					> review-avatar {
 						position: absolute;
 						z-index: 5;
 						left: -0.6rem;
 						bottom: -0.7rem;
-						width: 1.75rem;
-						aspect-ratio: 1;
-						display: grid;
-						place-items: center;
-						border: 2px solid #f2e7d1;
-						border-radius: 50%;
-						box-shadow: 0 0.28rem 0.45rem rgb(0 0 0 / 0.38);
-						color: white;
-						font-size: 0.48rem;
-						font-weight: 900;
-						letter-spacing: -0.03em;
+						display: block;
 					}
 
-					&[data-winner] > player-avatar {
+					> review-avatar[data-winner] {
 						right: -0.6rem;
 						left: auto;
 					}

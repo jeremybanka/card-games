@@ -15,11 +15,7 @@ import {
 	createAiPlayer,
 	type AiPlayerRuntime,
 } from "../src/ai/ai-player.node.ts"
-import {
-	aiModelLabel,
-	isAiModelId,
-	type AiModelId,
-} from "../src/ai/ai-models.ts"
+import { isAiModelId, type AiModelId } from "../src/ai/ai-models.ts"
 import {
 	parsePassCardsPayload,
 	parsePlayCardPayload,
@@ -59,6 +55,7 @@ import {
 	type ActiveSpan,
 	serverLogger,
 } from "../src/observability/span-logger.node.ts"
+import { generateAiPlayerName } from "./ai-player-name.node.ts"
 
 const SERVER_PORT = Number.parseInt(process.env.PORT ?? "8787", 10)
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ"
@@ -74,6 +71,7 @@ type GameServerSocket = Socket<
 >
 
 type Room = {
+	aiNameRandom: SeededRandom
 	aiPlayers: Map<PlayerId, AiPlayerRuntime>
 	connections: Map<PlayerId, { dispose: () => void; socket: GameServerSocket }>
 	dealRandom: SeededRandom
@@ -356,6 +354,7 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 				const playerName = normalizePlayerName(playerNameInput)
 				const roomCode = createRoomCode()
 				const room: Room = {
+					aiNameRandom: createSeededRandom(`ai-name:${roomCode}:${GAME_SEED}`),
 					aiPlayers: new Map(),
 					connections: new Map(),
 					dealRandom: createSeededRandom(`deal:${roomCode}:${GAME_SEED}`),
@@ -445,10 +444,10 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 				const rawPlayerId = room.identityRandom.uuid()
 				const aiPlayerId = `user::${rawPlayerId}` satisfies PlayerId
 				const playerSecret = randomUUID()
-				const sameModelCount = state.players.filter(
-					(player) => player.aiModel === modelIdInput,
-				).length
-				const name = `${aiModelLabel(modelIdInput).replace("GPT-5.6 ", "")} AI ${sameModelCount + 1}`
+				const name = generateAiPlayerName(
+					room.aiNameRandom,
+					state.players.map((player) => player.name),
+				)
 				aiModelsByPlayer.set(aiPlayerId, modelIdInput)
 				try {
 					const runtime = await createAiPlayer({

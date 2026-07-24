@@ -1,0 +1,66 @@
+player-nameplate.class {
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 0.42rem;
+
+	> nameplate-copy {
+		min-width: 0;
+		display: grid;
+		flex: 1;
+		line-height: 1.1;
+
+		> nameplate-line {
+			min-width: 0;
+			display: flex;
+			align-items: center;
+			gap: 0.3rem;
+
+			> strong {
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			> small {
+				flex: none;
+				padding: 0.12rem 0.28rem 0.1rem;
+				border: 1px solid rgb(225 190 105 / 0.34);
+				border-radius: 999px;
+				background: rgb(225 190 105 / 0.13);
+				color: var(--gold);
+				font-size: 0.42rem;
+				font-weight: 900;
+				line-height: 1;
+			}
+		}
+
+		> small {
+			margin-top: 0.12rem;
+			overflow: hidden;
+			color: var(--ink-muted);
+			font-size: 0.48rem;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+
+	> span {
+		flex: none;
+		color: var(--ink-muted);
+		white-space: nowrap;
+	}
+
+	&[data-surface="lobby"] {
+		max-width: 12rem;
+	}
+
+	&[data-surface="opponent"] {
+		font-size: 0.68rem;
+	}
+
+	&[data-surface="score"] {
+		width: 100%;
+	}
+}

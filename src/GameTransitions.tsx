@@ -9,8 +9,7 @@ import type {
 } from "./game/hearts-types.ts"
 import { orderedTrickReviewPlays } from "./game-presentation.ts"
 import css from "./GameTransitions.module.css"
-
-const avatarColors = ["#bb5a65", "#547fa8", "#a17645", "#5f8c72"] as const
+import { PlayerAvatar } from "./PlayerAvatar.tsx"
 
 function suitMark(suit: Suit): string {
 	switch (suit) {
@@ -38,15 +37,6 @@ function rankMark(rank: VisibleCard["rank"]): string {
 		default:
 			return String(rank)
 	}
-}
-
-function playerInitials(name: string): string {
-	return name
-		.split(/\s+/)
-		.filter(Boolean)
-		.map((part) => part[0]?.toUpperCase())
-		.join("")
-		.slice(0, 2)
 }
 
 function TurnBanner({
@@ -141,12 +131,14 @@ function TrickReview({
 								<card-suit aria-hidden="true">
 									{suitMark(play.card.suit)}
 								</card-suit>
-								<player-avatar
-									aria-label={player?.name ?? "Player"}
-									style={{ backgroundColor: avatarColors[seat % 4] }}
-								>
-									{playerInitials(player?.name ?? "Player")}
-								</player-avatar>
+								<review-avatar data-winner={isWinner || undefined}>
+									<PlayerAvatar
+										decorative
+										name={player?.name ?? "Player"}
+										seatIndex={seat}
+										size="large"
+									/>
+								</review-avatar>
 								{isWinner ? (
 									<winning-halo
 										aria-hidden="true"

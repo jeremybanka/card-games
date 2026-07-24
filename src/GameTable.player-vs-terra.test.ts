@@ -440,7 +440,8 @@ describe("recorded player versus Terra table", () => {
 				{ target: { value: "gpt-5.6-terra" } },
 			)
 			fireEvent.click(screen.getByRole("button", { name: "Fill AI seat" }))
-			await screen.findByText("Terra AI 1")
+			await screen.findByRole("button", { name: "Remove Terra AI 1" })
+			expect(screen.getAllByLabelText("AI player")).toHaveLength(2)
 
 			fireEvent.click(screen.getByRole("button", { name: "Deal the cards" }))
 			await screen.findByRole("button", { name: "A of clubs" })
@@ -517,9 +518,30 @@ describe("recorded player versus Terra table", () => {
 			const scoreRows = within(scoreSheet as HTMLElement).getAllByRole(
 				"listitem",
 			)
-			expect(scoreRows.map((row) => row.textContent)).toEqual([
-				"Terra AI 1+00",
-				"Player+2626",
+			expect(
+				scoreRows.map((row) => ({
+					aiTag:
+						row.querySelector("[aria-label='AI player']")?.textContent ?? null,
+					avatar: row.querySelector("player-avatar")?.textContent,
+					delta: row.querySelector(":scope > small")?.textContent,
+					name: row.querySelector("nameplate-line > strong")?.textContent,
+					score: row.querySelector(":scope > strong")?.textContent,
+				})),
+			).toEqual([
+				{
+					aiTag: "AI",
+					avatar: "TA",
+					delta: "+0",
+					name: "Terra AI 1",
+					score: "0",
+				},
+				{
+					aiTag: null,
+					avatar: "P",
+					delta: "+26",
+					name: "Player",
+					score: "26",
+				},
 			])
 			const finalState = getState(heartsStateAtoms, roomCode)
 			const terra = finalState.players.find((player) => player.id === terraId)
