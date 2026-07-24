@@ -315,7 +315,7 @@ export function selectServerLogSink(
 		(format !== "json" && environment.NODE_ENV !== "production" && interactive)
 	if (!usePretty) return consoleSink
 	return createPrettyLogSink({
-		color: terminalColorEnabled(environment),
+		color: interactive && terminalColorEnabled(environment),
 		...(options.console === undefined ? {} : { console: options.console }),
 	})
 }

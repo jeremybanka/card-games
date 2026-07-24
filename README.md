@@ -116,8 +116,10 @@ errors keep their standard-error routing. Set `NO_COLOR` (or `FORCE_COLOR=0`)
 for the same human-oriented layout without terminal color.
 
 Production, CI, and piped output remain newline-delimited JSON suitable for
-machines. Set `LOG_FORMAT=json` to force JSON while debugging locally, or
-`LOG_FORMAT=pretty` to explicitly request the human-oriented layout.
+machines, including when `pnpm dev` is piped or redirected. Set
+`LOG_FORMAT=json` to force JSON while debugging locally, or
+`LOG_FORMAT=pretty` to explicitly request the human-oriented layout. An
+explicit pretty format remains color-free when its output is not a terminal.
 Realtime actions, room lifecycle, deals, passes, plays, trick resolution, AI
 connection state, rendered model facts, decisions, fallbacks, OpenAI response
 metadata, token usage, and action acknowledgements carry trace and span IDs,
