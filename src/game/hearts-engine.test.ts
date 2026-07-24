@@ -31,6 +31,8 @@ function physicalIds(): CardId[] {
 
 const seededRandom = (seed: number): (() => number) =>
 	createSeededRandom(seed).next
+const FIRST_TRICK_WINNER_SEEDS = [1, 2, 4] as const
+const POINT_LEFTOVER_SEED = 1178
 
 function lobby(playerCount: 2 | 3 | 4): HeartsState {
 	let state = createHeartsGame("WIND", playerIds[0], "Ada", physicalIds())
@@ -66,6 +68,16 @@ function playRound(state: HeartsState): HeartsState {
 	return next
 }
 
+function playFirstTrick(state: HeartsState): HeartsState {
+	let next = resolvePassing(state)
+	while (next.completedTricks.length === 0) {
+		const playerId = next.currentPlayerId as PlayerId
+		const cardId = playableCardIdsFor(next, playerId)[0] as CardId
+		next = playCard(next, playerId, cardId)
+	}
+	return next
+}
+
 describe("Hearts dealing and visibility", () => {
 	for (const playerCount of [2, 3, 4] as const) {
 		it(`deals an even, playable deck to ${playerCount} players`, () => {
@@ -79,8 +91,9 @@ describe("Hearts dealing and visibility", () => {
 			expect(state.players.map((player) => player.hand.length)).toEqual(
 				Array.from({ length: playerCount }, () => expectedHandSize),
 			)
-			expect(Object.keys(state.cardValues)).toHaveLength(
-				expectedHandSize * playerCount,
+			expect(Object.keys(state.cardValues)).toHaveLength(52)
+			expect(toPublicGameView(state).deckCardIds).toHaveLength(
+				playerCount === 3 ? 1 : 0,
 			)
 		})
 	}
@@ -137,6 +150,66 @@ describe("Hearts dealing and visibility", () => {
 				}),
 			]),
 		)
+	})
+
+	for (const [winnerIndex, seed] of FIRST_TRICK_WINNER_SEEDS.entries()) {
+		it(`awards the three-player leftover card to first-trick winner ${winnerIndex + 1}`, () => {
+			const dealt = startGame(lobby(3), playerIds[0], seededRandom(seed))
+			const leftoverCardId = dealt.leftoverCardId as CardId
+			const complete = playFirstTrick(dealt)
+			const trick = complete.completedTricks[0]
+			const winner = complete.players[winnerIndex]
+
+			expect(trick?.winnerId).toBe(playerIds[winnerIndex])
+			expect(trick?.leftoverAward).toEqual({
+				cardId: leftoverCardId,
+				recipientId: playerIds[winnerIndex],
+			})
+			expect(winner?.taken).toContain(leftoverCardId)
+			expect(complete.leftoverCardId).toBeNull()
+			expect(toPublicGameView(complete).deckCardIds).toEqual([])
+		})
+	}
+
+	it("reveals the awarded leftover value only to its recipient", () => {
+		const dealt = startGame(
+			lobby(3),
+			playerIds[0],
+			seededRandom(POINT_LEFTOVER_SEED),
+		)
+		const leftoverCardId = dealt.leftoverCardId as CardId
+		expect(dealt.cardValues[leftoverCardId]).toEqual({
+			rank: 12,
+			suit: "spades",
+		})
+
+		const complete = playFirstTrick(dealt)
+		const award = complete.completedTricks[0]?.leftoverAward
+		const recipient = award?.recipientId as PlayerId
+		const nonRecipients = playerIds
+			.slice(0, 3)
+			.filter((playerId) => playerId !== recipient)
+		const publicAward =
+			toPublicGameView(complete).completedTricks[0]?.leftoverAward
+
+		expect(publicAward).toEqual({
+			cardId: leftoverCardId,
+			recipientId: recipient,
+		})
+		expect(publicAward).not.toHaveProperty("rank")
+		expect(publicAward).not.toHaveProperty("suit")
+		expect(
+			toPrivatePlayerView(complete, recipient).awardedLeftoverCard,
+		).toEqual({
+			id: leftoverCardId,
+			rank: 12,
+			suit: "spades",
+		})
+		for (const playerId of nonRecipients) {
+			expect(
+				toPrivatePlayerView(complete, playerId).awardedLeftoverCard,
+			).toBeNull()
+		}
 	})
 })
 
@@ -200,7 +273,7 @@ describe("Hearts rules", () => {
 					(total, player) => total + player.taken.length,
 					0,
 				),
-			).toBe(playerCount === 3 ? 51 : 52)
+			).toBe(52)
 		})
 	}
 

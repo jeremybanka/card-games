@@ -79,7 +79,7 @@ game-transitions.class {
 		z-index: 230;
 		inset: 0;
 		display: grid;
-		grid-template-rows: auto minmax(12rem, 1fr) auto;
+		grid-template-rows: auto minmax(10rem, 1fr) auto auto;
 		place-items: center;
 		gap: 0.8rem;
 		padding: max(4.6rem, calc(env(safe-area-inset-top) + 3.8rem)) 1.2rem
@@ -240,6 +240,74 @@ game-transitions.class {
 
 				&:nth-child(even) > review-card {
 					animation-name: review-card-slam-right;
+				}
+			}
+		}
+
+		> leftover-award {
+			width: min(100%, 22rem);
+			display: grid;
+			grid-template-columns: 3.2rem 1fr;
+			align-items: center;
+			gap: 0.75rem;
+			padding: 0.55rem 0.7rem;
+			border: 1px solid rgb(225 190 105 / 0.34);
+			border-radius: 0.8rem;
+			background: rgb(8 31 25 / 0.84);
+			box-shadow: 0 0.65rem 1.4rem rgb(0 0 0 / 0.22);
+			animation: review-heading-in 360ms 720ms ease-out both;
+
+			> award-card {
+				width: 2.7rem;
+				aspect-ratio: 5 / 7;
+				display: grid;
+				place-items: center;
+				border: 1px solid rgb(30 34 31 / 0.16);
+				border-radius: 0.36rem;
+				background: var(--card);
+				color: var(--card-ink);
+				box-shadow: 0 0.3rem 0.55rem rgb(0 0 0 / 0.3);
+				line-height: 1;
+
+				&[data-red] {
+					color: #b72d43;
+				}
+
+				&[data-hidden] {
+					border-color: rgb(255 255 255 / 0.38);
+					background:
+						repeating-linear-gradient(
+							45deg,
+							transparent 0 3px,
+							rgb(255 255 255 / 0.16) 3px 4px
+						),
+						#8c3549;
+					color: rgb(255 255 255 / 0.7);
+				}
+
+				> strong {
+					font-family: Georgia, "Times New Roman", serif;
+					font-size: 1rem;
+				}
+
+				> span {
+					font-size: 0.9rem;
+				}
+			}
+
+			> award-copy {
+				display: grid;
+				gap: 0.16rem;
+
+				> strong {
+					color: var(--gold);
+					font-size: 0.68rem;
+				}
+
+				> span {
+					color: var(--ink-muted);
+					font-size: 0.58rem;
+					line-height: 1.35;
 				}
 			}
 		}

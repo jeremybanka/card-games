@@ -38,6 +38,7 @@ function gameContext(
 		completedTricks: [],
 		currentPlayerId: aiPlayerId,
 		currentTrick: [],
+		deckCardIds: [],
 		heartsBroken: false,
 		hostId: humanPlayerId,
 		lastTrickWinnerId: null,
@@ -173,6 +174,7 @@ describe("AI Hearts generators", () => {
 			{
 				completedTricks: [
 					{
+						leftoverAward: null,
 						plays: [{ card: completedCard, playerId: humanPlayerId }],
 						winnerId: humanPlayerId,
 					},

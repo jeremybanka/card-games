@@ -34,6 +34,10 @@ export type HeartsPlayer = {
 export type HeartsState = {
 	cardValues: Partial<Record<CardId, CardValue>>
 	completedTricks: Array<{
+		leftoverAward: {
+			cardId: CardId
+			recipientId: PlayerId
+		} | null
 		plays: Array<{ cardId: CardId; playerId: PlayerId }>
 		winnerId: PlayerId
 	}>
@@ -42,6 +46,7 @@ export type HeartsState = {
 	heartsBroken: boolean
 	hostId: PlayerId | null
 	lastTrickWinnerId: PlayerId | null
+	leftoverCardId: CardId | null
 	passDirection: PassDirection
 	phase: GamePhase
 	physicalCardIds: CardId[]
@@ -188,6 +193,7 @@ export function createHeartsGame(
 		heartsBroken: false,
 		hostId,
 		lastTrickWinnerId: null,
+		leftoverCardId: null,
 		passDirection: "hold",
 		phase: "lobby",
 		physicalCardIds,
@@ -272,12 +278,11 @@ export function disconnectPlayer(
 	return next
 }
 
-export function createDeck(playerCount: number): CardValue[] {
+export function createDeck(): CardValue[] {
 	const suits: Suit[] = ["clubs", "diamonds", "spades", "hearts"]
 	const deck: CardValue[] = []
 	for (const suit of suits) {
 		for (let rank = 2; rank <= 14; rank += 1) {
-			if (playerCount === 3 && suit === "diamonds" && rank === 2) continue
 			deck.push({ rank: rank as Rank, suit })
 		}
 	}
@@ -305,6 +310,7 @@ export function dealRound(
 	next.currentTrick = []
 	next.heartsBroken = false
 	next.lastTrickWinnerId = null
+	next.leftoverCardId = null
 	next.trickNumber = 0
 	next.winnerIds = []
 
@@ -315,13 +321,17 @@ export function dealRound(
 		player.passSelection = null
 	}
 
-	const values = shuffled(createDeck(next.players.length), random)
+	const values = shuffled(createDeck(), random)
 	const activeIds = shuffled(next.physicalCardIds, random).slice(
 		0,
 		values.length,
 	)
 	for (const [index, cardId] of activeIds.entries()) {
 		next.cardValues[cardId] = values[index] as CardValue
+		if (next.players.length === 3 && index === activeIds.length - 1) {
+			next.leftoverCardId = cardId
+			continue
+		}
 		const player = next.players[index % next.players.length] as HeartsPlayer
 		player.hand.push(cardId)
 	}
@@ -544,11 +554,20 @@ export function playCard(
 
 	const winnerId = trickWinner(next)
 	const winner = next.players[playerIndex(next, winnerId)] as HeartsPlayer
+	const leftoverAward =
+		next.trickNumber === 0 && next.leftoverCardId !== null
+			? { cardId: next.leftoverCardId, recipientId: winnerId }
+			: null
 	next.completedTricks.push({
+		leftoverAward,
 		plays: next.currentTrick.map((play) => ({ ...play })),
 		winnerId,
 	})
 	winner.taken.push(...next.currentTrick.map((play) => play.cardId))
+	if (leftoverAward !== null) {
+		winner.taken.push(leftoverAward.cardId)
+		next.leftoverCardId = null
+	}
 	next.lastTrickWinnerId = winnerId
 	next.currentTrick = []
 	next.trickNumber += 1
@@ -577,6 +596,7 @@ export function restartGame(state: HeartsState, hostId: PlayerId): HeartsState {
 	next.currentTrick = []
 	next.heartsBroken = false
 	next.lastTrickWinnerId = null
+	next.leftoverCardId = null
 	next.passDirection = "hold"
 	next.statusMessage = "The host can start a new game."
 	next.trickLeaderId = null
@@ -630,6 +650,8 @@ function publicTrick(state: HeartsState): TrickPlay[] {
 export function toPublicGameView(state: HeartsState): PublicGameView {
 	return {
 		completedTricks: state.completedTricks.map((trick) => ({
+			leftoverAward:
+				trick.leftoverAward === null ? null : { ...trick.leftoverAward },
 			plays: trick.plays.map((play) => ({
 				card: visibleCard(state, play.cardId),
 				playerId: play.playerId,
@@ -638,6 +660,7 @@ export function toPublicGameView(state: HeartsState): PublicGameView {
 		})),
 		currentPlayerId: state.currentPlayerId,
 		currentTrick: publicTrick(state),
+		deckCardIds: state.leftoverCardId === null ? [] : [state.leftoverCardId],
 		heartsBroken: state.heartsBroken,
 		hostId: state.hostId,
 		lastTrickWinnerId: state.lastTrickWinnerId,
@@ -673,13 +696,21 @@ export function toPrivatePlayerView(
 	const player = state.players.find((candidate) => candidate.id === playerId)
 	if (player === undefined) {
 		return {
+			awardedLeftoverCard: null,
 			cards: [],
 			passSubmitted: false,
 			playableCardIds: [],
 			playerId: null,
 		}
 	}
+	const awardedLeftoverCardId = state.completedTricks.find(
+		(trick) => trick.leftoverAward?.recipientId === playerId,
+	)?.leftoverAward?.cardId
 	return {
+		awardedLeftoverCard:
+			awardedLeftoverCardId === undefined
+				? null
+				: visibleCard(state, awardedLeftoverCardId),
 		cards: player.hand.map((cardId) => visibleCard(state, cardId)),
 		passSubmitted: player.passSelection !== null,
 		playableCardIds: playableCardIdsFor(state, playerId),

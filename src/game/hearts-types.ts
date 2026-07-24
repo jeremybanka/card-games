@@ -20,6 +20,10 @@ export type TrickPlay = {
 }
 
 export type CompletedTrick = {
+	leftoverAward: {
+		cardId: CardId
+		recipientId: PlayerId
+	} | null
 	plays: TrickPlay[]
 	winnerId: PlayerId
 }
@@ -49,6 +53,7 @@ export type PublicGameView = {
 	completedTricks: CompletedTrick[]
 	currentPlayerId: PlayerId | null
 	currentTrick: TrickPlay[]
+	deckCardIds: CardId[]
 	heartsBroken: boolean
 	hostId: PlayerId | null
 	lastTrickWinnerId: PlayerId | null
@@ -65,6 +70,7 @@ export type PublicGameView = {
 }
 
 export type PrivatePlayerView = {
+	awardedLeftoverCard?: VisibleCard | null
 	cards: VisibleCard[]
 	passSubmitted: boolean
 	playableCardIds: CardId[]
@@ -98,6 +104,7 @@ export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
 	completedTricks: [],
 	currentPlayerId: null,
 	currentTrick: [],
+	deckCardIds: [],
 	heartsBroken: false,
 	hostId: null,
 	lastTrickWinnerId: null,
@@ -114,6 +121,7 @@ export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
 }
 
 export const EMPTY_PRIVATE_PLAYER_VIEW: PrivatePlayerView = {
+	awardedLeftoverCard: null,
 	cards: [],
 	passSubmitted: false,
 	playableCardIds: [],

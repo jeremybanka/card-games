@@ -13,6 +13,7 @@ import {
 import { advanceCardGesture, handCardLayout } from "./card-hand-layout.ts"
 import { useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
+import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
 	completedTrickKey,
 	shouldAutoDismissTrickReview,
@@ -267,11 +268,7 @@ function TrickCenter({
 			data-drag-active={dragState?.phase === "dragging" || undefined}
 			data-dropzone="trick"
 		>
-			<deck-pile aria-hidden="true" data-card-motion-origin="deck">
-				<span />
-				<span />
-				<span />
-			</deck-pile>
+			<DeckRemainder cardIds={game.deckCardIds} />
 			<trick-heading>
 				<strong>
 					{game.currentPlayerId === myPlayerId
@@ -925,6 +922,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			/>
 
 			<GameTransitions
+				awardedLeftoverCard={privateView.awardedLeftoverCard ?? null}
 				game={game}
 				myPlayerId={myUserKey}
 				onDismissTrick={() => {
