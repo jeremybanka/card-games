@@ -12,6 +12,7 @@ scorecard-lockup.class {
 	color: var(--gold);
 
 	> score-counter {
+		/* cspell:ignore nums */
 		min-width: 0;
 		display: grid;
 		grid-template-rows: auto 1fr;
