@@ -9,6 +9,7 @@ export type CardSnapshot = {
 	rotation: number
 	top: number
 	width: number
+	zone: "hand" | "other" | "taken" | "trick"
 }
 
 export type CardTransition =
@@ -28,6 +29,7 @@ export type CardTransition =
 
 const cardSelector = "playing-card[data-card-id], card-back[data-card-id]"
 const dealStepMilliseconds = 24
+const opponentPlayDurationMilliseconds = 520
 
 function cardFace(element: HTMLElement): CardSnapshot["face"] {
 	return element.matches("playing-card") ? "up" : "down"
@@ -43,6 +45,13 @@ function rotationDegrees(element: HTMLElement): number {
 	const transform = element.style.transform
 	const match = /rotate\((-?\d+(?:\.\d+)?)deg\)/.exec(transform)
 	return match === null ? 0 : Number(match[1])
+}
+
+function cardMotionZone(element: HTMLElement): CardSnapshot["zone"] {
+	if (element.closest("trick-slot") !== null) return "trick"
+	if (element.closest("player-hand, opponent-hand") !== null) return "hand"
+	if (element.closest("taken-stack") !== null) return "taken"
+	return "other"
 }
 
 export function planCardTransition(
@@ -61,6 +70,9 @@ export function planCardTransition(
 	if (before === undefined) return { kind: "none" }
 	if (before.face === "down" && after.face === "up") {
 		return { kind: "opponent-play" }
+	}
+	if (before.zone === "trick" && after.zone === "trick") {
+		return { kind: "none" }
 	}
 	const moved =
 		Math.hypot(before.left - after.left, before.top - after.top) > 0.5 ||
@@ -81,7 +93,8 @@ function takeSnapshots(
 		if (
 			committedSnapshot !== undefined &&
 			committedSnapshot.face === cardFace(element) &&
-			committedSnapshot.dealRound === (element.dataset.dealRound ?? null)
+			committedSnapshot.dealRound === (element.dataset.dealRound ?? null) &&
+			committedSnapshot.zone === cardMotionZone(element)
 		) {
 			snapshots.set(cardId, committedSnapshot)
 			continue
@@ -98,6 +111,7 @@ function takeSnapshots(
 			rotation: rotationDegrees(element),
 			top: rect.top + (rect.height - height) / 2,
 			width,
+			zone: cardMotionZone(element),
 		})
 	}
 	return snapshots
@@ -166,19 +180,16 @@ function animateOpponentPlay(
 	after: CardSnapshot,
 ): Animation {
 	const flight = document.createElement("card-flight")
-	const flyingCard = element.cloneNode(true) as HTMLElement
 	const flyingBack = document.createElement("flight-back")
-	flyingCard.removeAttribute("data-card-id")
-	flyingCard.querySelector("button")?.setAttribute("tabindex", "-1")
 	flight.setAttribute("aria-hidden", "true")
 	flight.dataset.motionKind = "opponent-play"
 	flight.dataset.motionCardId = element.dataset.cardId
+	root.dataset.lastCardMotionFace = "authoritative"
 	flight.style.left = `${before.left}px`
 	flight.style.top = `${before.top}px`
 	flight.style.width = `${before.width}px`
 	flight.style.height = `${before.height}px`
 	flight.append(flyingBack)
-	flight.append(flyingCard)
 	root.append(flight)
 
 	element.style.opacity = "0"
@@ -186,46 +197,59 @@ function animateOpponentPlay(
 	const deltaY = after.top - before.top
 	const scaleX = after.width / Math.max(before.width, 1)
 	const scaleY = after.height / Math.max(before.height, 1)
-	const animation = flight.animate(
+	const flightAnimation = flight.animate(
 		[
 			{
 				transform: `translate3d(0, 0, 0) scale(1) rotate(${before.rotation}deg)`,
 			},
 			{
-				offset: 0.72,
-				transform: `translate3d(${deltaX * 0.82}px, ${deltaY * 0.82}px, 0) scale(${1 + (scaleX - 1) * 0.72}, ${1 + (scaleY - 1) * 0.72}) rotate(${before.rotation * 0.2}deg)`,
+				offset: 0.68,
+				transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY}) rotate(${after.rotation}deg)`,
 			},
 			{
 				transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY}) rotate(${after.rotation}deg)`,
 			},
 		],
 		{
-			duration: 440,
+			duration: opponentPlayDurationMilliseconds,
 			easing: "cubic-bezier(.2,.72,.2,1)",
 		},
 	)
-	flyingCard.animate(
+	const faceAnimation = element.animate(
 		[
 			{ opacity: 0, transform: "rotateY(88deg)" },
-			{ opacity: 0, offset: 0.56, transform: "rotateY(88deg)" },
-			{ opacity: 1, transform: "rotateY(0deg)" },
+			{ opacity: 0, offset: 0.68, transform: "rotateY(88deg)" },
+			{ opacity: 1, transform: settledTransform(element) },
 		],
-		{ duration: 440, easing: "ease-in-out", fill: "both" },
+		{
+			duration: opponentPlayDurationMilliseconds,
+			easing: "ease-in-out",
+			fill: "both",
+		},
 	)
-	flyingBack.animate(
+	const backAnimation = flyingBack.animate(
 		[
 			{ opacity: 1, transform: "rotateY(0deg)" },
-			{ opacity: 1, offset: 0.56, transform: "rotateY(0deg)" },
+			{ opacity: 1, offset: 0.68, transform: "rotateY(0deg)" },
 			{ opacity: 0, transform: "rotateY(-88deg)" },
 		],
-		{ duration: 440, easing: "ease-in-out", fill: "both" },
+		{
+			duration: opponentPlayDurationMilliseconds,
+			easing: "ease-in-out",
+			fill: "both",
+		},
 	)
 	const finishFlight = (): void => {
+		faceAnimation.cancel()
 		element.style.opacity = ""
 		flight.remove()
 	}
-	void animation.finished.then(finishFlight, finishFlight)
-	return animation
+	void Promise.allSettled([
+		flightAnimation.finished,
+		faceAnimation.finished,
+		backAnimation.finished,
+	]).then(finishFlight)
+	return flightAnimation
 }
 
 function animateCardChanges(
