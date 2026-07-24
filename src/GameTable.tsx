@@ -96,6 +96,8 @@ function handleResult(result: ActionResult): void {
 function PlayingCard({
 	card,
 	compact = false,
+	dealIndex,
+	dealRound,
 	disabled = false,
 	dragState,
 	onDragEnd,
@@ -107,6 +109,8 @@ function PlayingCard({
 }: {
 	card: VisibleCard
 	compact?: boolean
+	dealIndex?: number
+	dealRound?: number
 	disabled?: boolean
 	dragState: DragState | null
 	onDragEnd: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
@@ -124,6 +128,8 @@ function PlayingCard({
 			data-card-id={card.id}
 			data-card-face="up"
 			data-compact={compact || undefined}
+			data-deal-index={dealIndex}
+			data-deal-round={dealRound}
 			data-dragging={gesturePhase === "dragging" || undefined}
 			data-picking={gesturePhase === "picking" || undefined}
 			data-red={isRed || undefined}
@@ -188,12 +194,18 @@ function TakenStack({
 
 function OpponentZone({
 	current,
+	dealRound,
 	hiddenCardIds,
 	player,
+	playerCount,
+	seatIndex,
 }: {
 	current: boolean
+	dealRound: number
 	hiddenCardIds: ReadonlySet<CardId>
 	player: PublicPlayerView
+	playerCount: number
+	seatIndex: number
 }): VNode {
 	return (
 		<opponent-zone
@@ -214,6 +226,8 @@ function OpponentZone({
 					<card-back
 						data-card-id={cardId}
 						data-card-face="down"
+						data-deal-index={index * playerCount + seatIndex}
+						data-deal-round={dealRound}
 						key={cardId}
 						style={{
 							transform: `translateX(${Math.min(index, 12) * 2.4}px) rotate(${(index - (player.handCardIds.length - 1) / 2) * 0.45}deg)`,
@@ -250,6 +264,11 @@ function TrickCenter({
 			data-drag-active={dragState?.phase === "dragging" || undefined}
 			data-dropzone="trick"
 		>
+			<deck-pile aria-hidden="true" data-card-motion-origin="deck">
+				<span />
+				<span />
+				<span />
+			</deck-pile>
 			<trick-heading>
 				<strong>
 					{game.currentPlayerId === myPlayerId
@@ -373,6 +392,7 @@ function ScoreSheet({
 }
 
 function PlayerZone({
+	dealRound,
 	dragState,
 	game,
 	hiddenCardIds,
@@ -385,7 +405,10 @@ function PlayerZone({
 	passSelection,
 	privateView,
 	selectedCard,
+	playerCount,
+	seatIndex,
 }: {
+	dealRound: number
 	dragState: DragState | null
 	game: PublicGameView
 	hiddenCardIds: ReadonlySet<CardId>
@@ -410,6 +433,8 @@ function PlayerZone({
 	passSelection: CardId[]
 	privateView: PrivatePlayerView
 	selectedCard: CardId | null
+	playerCount: number
+	seatIndex: number
 }): VNode {
 	const playable = new Set(privateView.playableCardIds)
 	const passing = game.phase === "passing"
@@ -448,6 +473,8 @@ function PlayerZone({
 						>
 							<PlayingCard
 								card={card}
+								dealIndex={index * playerCount + seatIndex}
+								dealRound={dealRound}
 								disabled={!(passing || playable.has(card.id))}
 								dragState={dragState}
 								onDragCancel={(event) => onDragCancel(card, event)}
@@ -477,7 +504,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const [dismissedTrickKey, setDismissedTrickKey] = useState<string | null>(
 		null,
 	)
-	const tableRef = useRef<HTMLElement>(null)
+	const [tableRoot, setTableRoot] = useState<HTMLElement | null>(null)
 	const pointerOrigin = useRef<{
 		pointerId: number
 		x: number
@@ -488,7 +515,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const dragMoved = useRef(false)
 	const suppressClick = useRef(false)
 
-	useCardMotion(tableRef)
+	useCardMotion(tableRoot)
 
 	const latestCompletedTrick = game.completedTricks.at(-1) ?? null
 	const latestTrickKey = completedTrickKey(game)
@@ -566,7 +593,8 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		<game-table
 			className={css.class}
 			data-card-gesture={dragState?.phase}
-			ref={tableRef}
+			data-card-round={game.roundNumber}
+			ref={setTableRoot}
 		>
 			<table-header>
 				<button type="button" onClick={onLeave} aria-label="Leave table">
@@ -594,9 +622,14 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				{opponents.map((player) => (
 					<OpponentZone
 						current={game.currentPlayerId === player.id}
+						dealRound={game.roundNumber}
 						hiddenCardIds={hiddenReviewCardIds}
 						key={player.id}
 						player={player}
+						playerCount={game.players.length}
+						seatIndex={game.players.findIndex(
+							(candidate) => candidate.id === player.id,
+						)}
 					/>
 				))}
 			</opponents-row>
@@ -722,6 +755,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			) : null}
 
 			<PlayerZone
+				dealRound={game.roundNumber}
 				dragState={dragState}
 				game={game}
 				hiddenCardIds={hiddenReviewCardIds}
@@ -844,6 +878,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				passSelection={passSelection}
 				privateView={privateView}
 				selectedCard={selectedCard}
+				playerCount={game.players.length}
+				seatIndex={game.players.findIndex(
+					(candidate) => candidate.id === myPlayer.id,
+				)}
 			/>
 
 			<GameTransitions
