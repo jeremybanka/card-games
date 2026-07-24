@@ -20,6 +20,12 @@
   relationship to card values on every deal.
 - Route replay-sensitive game randomness through domain-separated instances of
   the seeded LCG. Give deterministic tests invariant, named seeds.
+- Run development servers through `pnpm dev -- --name <agent-or-task-name>`.
+  The launcher assigns isolated client and room-server ports, browser origins,
+  Vite caches, and AI caches so concurrent agents do not share mutable runtime
+  state. Do not hard-code development ports or bypass the launcher when testing
+  agent work. Preserve an explicitly supplied `VARMINT_CACHE_DIRECTORY` only
+  when a task intentionally uses a shared recording.
 - Treat every AI seat as an ordinary realtime player with its own private
   atom.io Silo. Keep AI observations, plans, prompts, and private hand facts out
   of public room state. Privileged server logs may record them for diagnostics.
