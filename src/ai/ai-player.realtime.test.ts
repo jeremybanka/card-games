@@ -28,6 +28,7 @@ function publicView(playerId: PlayerId): PublicGameView {
 		completedTricks: [],
 		currentPlayerId: playerId,
 		currentTrick: [],
+		deckCardIds: [],
 		heartsBroken: false,
 		hostId: playerId,
 		lastTrickWinnerId: null,
@@ -65,6 +66,7 @@ function privateView(
 			? { id: aiCardId, rank: 12 as const, suit: "spades" as const }
 			: { id: humanCardId, rank: 14 as const, suit: "hearts" as const }
 	return {
+		awardedLeftoverCard: null,
 		cards: [ownCard],
 		passSubmitted: false,
 		playableCardIds: [ownCard.id],

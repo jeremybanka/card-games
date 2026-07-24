@@ -71,11 +71,15 @@ function TurnBanner({
 }
 
 function TrickReview({
+	awardedLeftoverCard,
 	game,
+	myPlayerId,
 	onDismiss,
 	trick,
 }: {
+	awardedLeftoverCard: VisibleCard | null
 	game: PublicGameView
+	myPlayerId: PlayerId
 	onDismiss: () => void
 	trick: CompletedTrick
 }): VNode {
@@ -152,6 +156,41 @@ function TrickReview({
 					)
 				})}
 			</review-stack>
+			{trick.leftoverAward === null ? null : (
+				<leftover-award
+					aria-label={`${winner?.name ?? "The trick winner"} receives the leftover card`}
+				>
+					{trick.leftoverAward.recipientId === myPlayerId &&
+					awardedLeftoverCard !== null ? (
+						<award-card
+							aria-label={`${rankMark(awardedLeftoverCard.rank)} of ${awardedLeftoverCard.suit}`}
+							data-red={
+								awardedLeftoverCard.suit === "diamonds" ||
+								awardedLeftoverCard.suit === "hearts" ||
+								undefined
+							}
+						>
+							<strong>{rankMark(awardedLeftoverCard.rank)}</strong>
+							<span>{suitMark(awardedLeftoverCard.suit)}</span>
+						</award-card>
+					) : (
+						<award-card aria-label="Face-down card" data-hidden>
+							<span aria-hidden="true">✦</span>
+						</award-card>
+					)}
+					<award-copy>
+						<strong>
+							{trick.leftoverAward.recipientId === myPlayerId
+								? "You receive the leftover card"
+								: `${winner?.name ?? "The trick winner"} receives the leftover card`}
+						</strong>
+						<span>
+							The first trick winner collects the remaining card. The deck is
+							now empty.
+						</span>
+					</award-copy>
+				</leftover-award>
+			)}
 			<button type="button" onClick={onDismiss}>
 				Continue to next trick
 			</button>
@@ -160,11 +199,13 @@ function TrickReview({
 }
 
 export function GameTransitions({
+	awardedLeftoverCard,
 	game,
 	myPlayerId,
 	onDismissTrick,
 	review,
 }: {
+	awardedLeftoverCard: VisibleCard | null
 	game: PublicGameView
 	myPlayerId: PlayerId
 	onDismissTrick: () => void
@@ -183,7 +224,13 @@ export function GameTransitions({
 					<TurnBanner game={game} key={turnKey} myPlayerId={myPlayerId} />
 				) : null
 			) : (
-				<TrickReview game={game} onDismiss={onDismissTrick} trick={review} />
+				<TrickReview
+					awardedLeftoverCard={awardedLeftoverCard}
+					game={game}
+					myPlayerId={myPlayerId}
+					onDismiss={onDismissTrick}
+					trick={review}
+				/>
 			)}
 		</game-transitions>
 	)

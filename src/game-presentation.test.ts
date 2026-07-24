@@ -14,6 +14,7 @@ import {
 const me = "user::me" as PlayerId
 const other = "user::other" as PlayerId
 const trick: CompletedTrick = {
+	leftoverAward: null,
 	plays: [
 		{
 			card: { id: "card::low", rank: 2, suit: "clubs" },
@@ -32,6 +33,7 @@ function game(overrides: Partial<PublicGameView> = {}): PublicGameView {
 		completedTricks: [trick],
 		currentPlayerId: other,
 		currentTrick: [],
+		deckCardIds: [],
 		heartsBroken: false,
 		hostId: me,
 		lastTrickWinnerId: other,

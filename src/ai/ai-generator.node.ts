@@ -56,19 +56,37 @@ export function wrapAiGeneratorWithVarmint(
 	squirrel: Squirrel = aiGeneratorSquirrel,
 ): AiTurnGenerator {
 	const wrapped = squirrel.add(key, generate)
-	return async (context) =>
-		wrapped
+	return async (context) => {
+		const {
+			awardedLeftoverCard: _awardedLeftoverCard,
+			...cacheablePrivateView
+		} = context.privateView
+		const { deckCardIds: _deckCardIds, ...publicViewWithoutDeck } =
+			context.publicView
+		const cacheablePublicView = {
+			...publicViewWithoutDeck,
+			completedTricks: publicViewWithoutDeck.completedTricks.map(
+				({ leftoverAward: _leftoverAward, ...trick }) => trick,
+			),
+		}
+		const cacheableContext = {
+			...context,
+			privateView: cacheablePrivateView,
+			publicView: cacheablePublicView,
+		} as typeof context
+		return wrapped
 			.for(
 				JSON.stringify({
 					memoryLedger: context.memoryLedger,
 					observations: context.observations,
 					playerId: context.playerId,
 					previousPlan: context.previousPlan,
-					privateView: context.privateView,
-					publicView: context.publicView,
+					privateView: cacheablePrivateView,
+					publicView: cacheablePublicView,
 				}),
 			)
-			.get(context)
+			.get(cacheableContext)
+	}
 }
 
 const systemPrompt = [
