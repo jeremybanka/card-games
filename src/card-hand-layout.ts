@@ -4,6 +4,13 @@ export type HandCardLayout = {
 	rise: number
 }
 
+export type CardGesture<CardId extends string = string> = {
+	cardId: CardId
+	phase: "dragging" | "picking"
+}
+
+export const HAND_SCRUBBING_BAND_TOP = -28
+
 export function handCardLayout(
 	cardCount: number,
 	cardIndex: number,
@@ -24,5 +31,20 @@ export function handCardLayout(
 export function cardGesturePhase(
 	verticalDistance: number,
 ): "dragging" | "picking" {
-	return verticalDistance < -28 ? "dragging" : "picking"
+	return verticalDistance < HAND_SCRUBBING_BAND_TOP ? "dragging" : "picking"
+}
+
+export function advanceCardGesture<CardId extends string>(
+	gesture: CardGesture<CardId>,
+	scrubbedCardId: CardId,
+	verticalDistance: number,
+): CardGesture<CardId> {
+	if (gesture.phase === "dragging") {
+		return gesture
+	}
+	const phase = cardGesturePhase(verticalDistance)
+	return {
+		cardId: phase === "dragging" ? gesture.cardId : scrubbedCardId,
+		phase,
+	}
 }
