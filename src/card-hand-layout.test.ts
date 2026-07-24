@@ -52,11 +52,7 @@ describe("card hand layout", () => {
 		)
 		expect(dragged).toEqual({ cardId: "card-b", phase: "dragging" })
 		expect(
-			advanceCardGesture(
-				dragged,
-				"card-z",
-				HAND_SCRUBBING_BAND_TOP + 100,
-			),
+			advanceCardGesture(dragged, "card-z", HAND_SCRUBBING_BAND_TOP + 100),
 		).toBe(dragged)
 	})
 })

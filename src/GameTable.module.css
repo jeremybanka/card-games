@@ -808,9 +808,7 @@ game-table.class {
 	game-table.class {
 		> player-zone {
 			> player-hand {
-				> hand-card:not([data-disabled]):hover:not(
-					:has(playing-card[data-picking], playing-card[data-dragging])
-				) {
+				> hand-card:not([data-disabled]):hover:not(:has(playing-card[data-picking], playing-card[data-dragging])) {
 					z-index: 250;
 
 					> playing-card {

@@ -805,10 +805,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					setDragState({
 						cardId: gesture.cardId,
 						phase: gesture.phase,
-						x:
-							gesture.phase === "dragging"
-								? event.clientX - activeCenterX
-								: 0,
+						x: gesture.phase === "dragging" ? event.clientX - activeCenterX : 0,
 						y: gesture.phase === "dragging" ? y : 0,
 					})
 				}}
