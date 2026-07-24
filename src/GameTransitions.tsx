@@ -185,8 +185,8 @@ function TrickReview({
 								: `${winner?.name ?? "The trick winner"} receives the leftover card`}
 						</strong>
 						<span>
-							The first trick winner collects the undealt card. The deck is now
-							empty.
+							The first trick winner collects the remaining card. The deck is
+							now empty.
 						</span>
 					</award-copy>
 				</leftover-award>
