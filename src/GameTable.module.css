@@ -770,8 +770,7 @@ game-table.class {
 		}
 	}
 
-	/* @lasertag-disable [selector-crosses-ownership-boundary] These selectors target
-	   GameTable's own card descendants; shared identity leaves cannot render cards. */
+	/* @lasertag-disable [selector-crosses-ownership-boundary] shared identity leaves cannot render GameTable card descendants */
 	> table-center playing-card,
 	> player-zone playing-card {
 		position: absolute;
@@ -998,8 +997,7 @@ game-table.class {
 			}
 		}
 
-		/* @lasertag-disable [selector-crosses-ownership-boundary] Shared identity
-		   leaves cannot render playing-card descendants. */
+		/* @lasertag-disable [selector-crosses-ownership-boundary] shared identity leaves cannot render playing-card descendants */
 		> table-center playing-card,
 		> player-zone playing-card {
 			transition: none;

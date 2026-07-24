@@ -1,17 +1,9 @@
 import type { VNode } from "preact"
 
+import { playerInitials } from "./player-avatar.ts"
 import css from "./PlayerAvatar.module.css"
 
 const avatarColors = ["#bb5a65", "#547fa8", "#a17645", "#5f8c72"] as const
-
-export function playerInitials(name: string): string {
-	return name
-		.split(/\s+/)
-		.filter(Boolean)
-		.map((part) => part[0]?.toUpperCase())
-		.join("")
-		.slice(0, 2)
-}
 
 export function PlayerAvatar({
 	decorative = false,

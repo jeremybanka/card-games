@@ -5,7 +5,8 @@ import { createElement, type FunctionComponent } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import type { PublicPlayerView } from "./game/hearts-types.ts"
-import { PlayerAvatar, playerInitials } from "./PlayerAvatar.tsx"
+import { playerInitials } from "./player-avatar.ts"
+import { PlayerAvatar } from "./PlayerAvatar.tsx"
 import { PlayerNameplate } from "./PlayerNameplate.tsx"
 
 vi.mock("preact/jsx-runtime", async () => {
