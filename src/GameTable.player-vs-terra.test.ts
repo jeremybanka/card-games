@@ -459,12 +459,34 @@ describe("recorded player versus Terra table", () => {
 					expect(button.disabled).toBe(false)
 					return button
 				})
-				fireEvent.click(cardButton)
-				fireEvent.click(
-					screen.getByRole("button", {
-						name: "Play selected card",
-					}),
-				)
+				if (cardName === "2 of clubs") {
+					const gameTable = document.querySelector("game-table")
+					fireEvent.pointerDown(cardButton, {
+						clientX: 0,
+						clientY: 100,
+						pointerId: 1,
+					})
+					expect(gameTable?.getAttribute("data-card-gesture")).toBe("picking")
+					fireEvent.pointerMove(cardButton, {
+						clientX: 0,
+						clientY: 0,
+						pointerId: 1,
+					})
+					expect(gameTable?.getAttribute("data-card-gesture")).toBe("dragging")
+					fireEvent.pointerUp(cardButton, {
+						clientX: 0,
+						clientY: 0,
+						pointerId: 1,
+					})
+					expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+				} else {
+					fireEvent.click(cardButton)
+					fireEvent.click(
+						screen.getByRole("button", {
+							name: "Play selected card",
+						}),
+					)
+				}
 				await waitFor(() => {
 					const hand = screen.getByLabelText(/^Your hand:/)
 					expect(

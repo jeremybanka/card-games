@@ -10,6 +10,8 @@ import {
 	isAiModelId,
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
+import { cardGesturePhase, handCardLayout } from "./card-hand-layout.ts"
+import { useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
@@ -36,7 +38,7 @@ type GameTableProps = {
 
 type DragState = {
 	cardId: CardId
-	moved: boolean
+	phase: "dragging" | "picking"
 	x: number
 	y: number
 }
@@ -93,6 +95,7 @@ function PlayingCard({
 	dragState,
 	onDragEnd,
 	onDragMove,
+	onDragCancel,
 	onDragStart,
 	onSelect,
 	selected = false,
@@ -103,21 +106,25 @@ function PlayingCard({
 	dragState: DragState | null
 	onDragEnd: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
+	onDragCancel: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragStart: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onSelect: () => void
 	selected?: boolean
 }): VNode {
 	const isRed = card.suit === "diamonds" || card.suit === "hearts"
-	const isDragging = dragState?.cardId === card.id
+	const gesturePhase =
+		dragState?.cardId === card.id ? dragState.phase : undefined
 	return (
 		<playing-card
 			data-card-id={card.id}
+			data-card-face="up"
 			data-compact={compact || undefined}
-			data-dragging={isDragging || undefined}
+			data-dragging={gesturePhase === "dragging" || undefined}
+			data-picking={gesturePhase === "picking" || undefined}
 			data-red={isRed || undefined}
 			data-selected={selected || undefined}
 			style={
-				isDragging
+				dragState?.cardId === card.id && dragState.phase === "dragging"
 					? {
 							transform: `translate3d(${dragState.x}px, ${dragState.y}px, 0) rotate(0deg)`,
 						}
@@ -130,6 +137,7 @@ function PlayingCard({
 				aria-pressed={selected}
 				disabled={disabled}
 				onClick={onSelect}
+				onPointerCancel={onDragCancel}
 				onPointerDown={onDragStart}
 				onPointerMove={onDragMove}
 				onPointerUp={onDragEnd}
@@ -157,6 +165,7 @@ function TakenStack({
 				{cardIds.map((cardId, index) => (
 					<card-back
 						data-card-id={cardId}
+						data-card-face="down"
 						key={cardId}
 						style={{
 							transform: `translate(${Math.min(index, 10) * 1.4}px, ${Math.min(index, 10) * -0.7}px)`,
@@ -194,6 +203,7 @@ function OpponentZone({
 				{player.handCardIds.map((cardId, index) => (
 					<card-back
 						data-card-id={cardId}
+						data-card-face="down"
 						key={cardId}
 						style={{
 							transform: `translateX(${Math.min(index, 12) * 2.4}px) rotate(${(index - (player.handCardIds.length - 1) / 2) * 0.45}deg)`,
@@ -225,7 +235,10 @@ function TrickCenter({
 }): VNode {
 	const myIndex = game.players.findIndex((player) => player.id === myPlayerId)
 	return (
-		<trick-center data-dropzone="trick">
+		<trick-center
+			data-drag-active={dragState?.phase === "dragging" || undefined}
+			data-dropzone="trick"
+		>
 			<trick-heading>
 				<strong>
 					{game.currentPlayerId === myPlayerId
@@ -269,6 +282,7 @@ function TrickCenter({
 									dragState={dragState}
 									onDragEnd={() => {}}
 									onDragMove={() => {}}
+									onDragCancel={() => {}}
 									onDragStart={() => {}}
 									onSelect={() => {}}
 								/>
@@ -351,6 +365,7 @@ function PlayerZone({
 	dragState,
 	game,
 	myPlayer,
+	onDragCancel,
 	onDragEnd,
 	onDragMove,
 	onDragStart,
@@ -362,6 +377,10 @@ function PlayerZone({
 	dragState: DragState | null
 	game: PublicGameView
 	myPlayer: PublicPlayerView
+	onDragCancel: (
+		card: VisibleCard,
+		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
+	) => void
 	onDragEnd: (
 		card: VisibleCard,
 		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
@@ -398,19 +417,18 @@ function PlayerZone({
 			/>
 			<player-hand aria-label={`Your hand: ${privateView.cards.length} cards`}>
 				{privateView.cards.map((card, index) => {
-					const middle = (privateView.cards.length - 1) / 2
 					const selected =
 						selectedCard === card.id || passSelection.includes(card.id)
-					const fanAngle =
-						(index - middle) *
-						Math.min(3.2, 31 / Math.max(privateView.cards.length, 1))
-					const fanRise = Math.abs(index - middle) * 1.2
+					const layout = handCardLayout(privateView.cards.length, index)
 					return (
 						<hand-card
 							key={card.id}
+							data-card-id={card.id}
 							data-disabled={!(passing || playable.has(card.id)) || undefined}
+							data-selected={selected || undefined}
 							style={{
-								transform: `translateY(${selected ? -18 : fanRise}px) rotate(${fanAngle}deg)`,
+								left: `${layout.left}%`,
+								transform: `translateX(-50%) translateY(${selected ? layout.rise - 18 : layout.rise}px) rotate(${layout.angle}deg)`,
 								zIndex: selected ? 100 : index,
 							}}
 						>
@@ -418,6 +436,7 @@ function PlayerZone({
 								card={card}
 								disabled={!(passing || playable.has(card.id))}
 								dragState={dragState}
+								onDragCancel={(event) => onDragCancel(card, event)}
 								onDragEnd={(event) => onDragEnd(card, event)}
 								onDragMove={(event) => onDragMove(card, event)}
 								onDragStart={(event) => onDragStart(card, event)}
@@ -441,12 +460,18 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const [selectedAiModel, setSelectedAiModel] = useState(DEFAULT_AI_MODEL_ID)
 	const [passSelection, setPassSelection] = useState<CardId[]>([])
 	const [dragState, setDragState] = useState<DragState | null>(null)
+	const tableRef = useRef<HTMLElement>(null)
 	const pointerOrigin = useRef<{
+		pointerId: number
 		x: number
 		y: number
 	} | null>(null)
 	const draggingCardId = useRef<CardId | null>(null)
+	const dragPhase = useRef<DragState["phase"]>("picking")
 	const dragMoved = useRef(false)
+	const suppressClick = useRef(false)
+
+	useCardMotion(tableRef)
 
 	useEffect(() => {
 		setPassSelection([])
@@ -498,7 +523,11 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	}
 
 	return (
-		<game-table className={css.class}>
+		<game-table
+			className={css.class}
+			data-card-gesture={dragState?.phase}
+			ref={tableRef}
+		>
 			<table-header>
 				<button type="button" onClick={onLeave} aria-label="Leave table">
 					←
@@ -634,7 +663,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					<span>
 						{privateView.passSubmitted
 							? "Waiting for the other players."
-							: "Tap three cards, then pass."}
+							: "Tap or slide across the hand to choose."}
 					</span>
 					<button
 						type="button"
@@ -655,17 +684,40 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				dragState={dragState}
 				game={game}
 				myPlayer={myPlayer}
-				onDragStart={(card, event) => {
-					if (!privateView.playableCardIds.includes(card.id)) return
-					pointerOrigin.current = { x: event.clientX, y: event.clientY }
-					draggingCardId.current = card.id
+				onDragCancel={(_card, event) => {
+					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+						event.currentTarget.releasePointerCapture?.(event.pointerId)
+					}
+					setDragState(null)
+					pointerOrigin.current = null
+					draggingCardId.current = null
+					dragPhase.current = "picking"
 					dragMoved.current = false
 				}}
-				onDragMove={(card, event) => {
-					if (
-						draggingCardId.current !== card.id ||
-						pointerOrigin.current === null
-					) {
+				onDragStart={(card, event) => {
+					const canPick =
+						game.phase === "passing"
+							? !privateView.passSubmitted
+							: privateView.playableCardIds.includes(card.id)
+					if (!canPick) return
+					pointerOrigin.current = {
+						pointerId: event.pointerId,
+						x: event.clientX,
+						y: event.clientY,
+					}
+					draggingCardId.current = card.id
+					dragPhase.current = "picking"
+					dragMoved.current = false
+					event.currentTarget.setPointerCapture?.(event.pointerId)
+					setDragState({
+						cardId: card.id,
+						phase: "picking",
+						x: 0,
+						y: 0,
+					})
+				}}
+				onDragMove={(_card, event) => {
+					if (pointerOrigin.current === null) {
 						return
 					}
 					const x = event.clientX - pointerOrigin.current.x
@@ -673,29 +725,80 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					const moved = Math.hypot(x, y) > 8
 					if (!moved) return
 					dragMoved.current = true
-					if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
-						event.currentTarget.setPointerCapture(event.pointerId)
-					}
+					const hand = event.currentTarget.closest("player-hand")
+					const candidates = Array.from(
+						hand?.querySelectorAll<HTMLElement>(
+							"hand-card:not([data-disabled])",
+						) ?? [],
+					)
+					const closest = candidates.reduce<{
+						cardId: CardId
+						centerX: number
+						distance: number
+					} | null>((nearest, candidate) => {
+						const cardId = candidate.dataset.cardId as CardId | undefined
+						if (cardId === undefined) return nearest
+						const rect = candidate.getBoundingClientRect()
+						const centerX = rect.left + rect.width / 2
+						const distance = Math.abs(centerX - event.clientX)
+						return nearest === null || distance < nearest.distance
+							? { cardId, centerX, distance }
+							: nearest
+					}, null)
+					if (closest === null) return
+					const phase = cardGesturePhase(y)
+					draggingCardId.current = closest.cardId
+					dragPhase.current = phase
 					setDragState({
-						cardId: card.id,
-						moved: true,
-						x,
-						y,
+						cardId: closest.cardId,
+						phase,
+						x: phase === "dragging" ? event.clientX - closest.centerX : 0,
+						y: phase === "dragging" ? y : 0,
 					})
 				}}
-				onDragEnd={(card, event) => {
-					if (draggingCardId.current !== card.id) return
-					const dropTarget = document
-						.elementFromPoint(event.clientX, event.clientY)
-						?.closest("trick-center")
-					const shouldPlay = dragMoved.current && dropTarget !== null
+				onDragEnd={(_card, event) => {
+					const cardId = draggingCardId.current
+					const origin = pointerOrigin.current
+					if (origin === null) return
+					const moved = dragMoved.current
+					const dropRect = document
+						.querySelector("trick-center")
+						?.getBoundingClientRect()
+					const releasedOverTrick =
+						dropRect !== undefined &&
+						event.clientX >= dropRect.left &&
+						event.clientX <= dropRect.right &&
+						event.clientY >= dropRect.top &&
+						event.clientY <= dropRect.bottom
+					const shouldPlay =
+						game.phase === "playing" &&
+						dragPhase.current === "dragging" &&
+						releasedOverTrick
+					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+						event.currentTarget.releasePointerCapture?.(event.pointerId)
+					}
 					setDragState(null)
 					pointerOrigin.current = null
 					draggingCardId.current = null
+					dragPhase.current = "picking"
 					dragMoved.current = false
-					if (shouldPlay) playCard(card.id)
+					if (moved) {
+						suppressClick.current = true
+						window.setTimeout(() => {
+							suppressClick.current = false
+						}, 0)
+					}
+					if (cardId === null || !moved) return
+					if (shouldPlay) {
+						playCard(cardId)
+					} else {
+						selectCard(cardId)
+					}
 				}}
-				onSelectCard={selectCard}
+				onSelectCard={(cardId) => {
+					if (suppressClick.current) return
+					selectCard(cardId)
+				}}
 				passSelection={passSelection}
 				privateView={privateView}
 				selectedCard={selectedCard}

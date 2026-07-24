@@ -343,6 +343,13 @@ game-table.class {
 			height: min(100%, 22rem);
 			min-height: 13rem;
 			display: block;
+			border-radius: 2rem;
+			transition: background 180ms ease, box-shadow 180ms ease;
+
+			&[data-drag-active] {
+				background: rgb(225 190 105 / 0.055);
+				box-shadow: inset 0 0 0 1px rgb(225 190 105 / 0.18);
+			}
 
 			> trick-heading {
 				position: absolute;
@@ -479,9 +486,10 @@ game-table.class {
 		z-index: 10;
 		min-height: 0;
 		display: grid;
-		grid-template-columns: 1fr auto;
+		grid-template-columns: minmax(0, 1fr) 3.15rem;
 		grid-template-rows: auto 1fr;
-		padding: 0 0.7rem max(0.4rem, env(safe-area-inset-bottom));
+		gap: 0 0.35rem;
+		padding: 0 0.55rem max(0.4rem, env(safe-area-inset-bottom));
 
 		> player-heading {
 			position: relative;
@@ -502,30 +510,45 @@ game-table.class {
 			align-self: end;
 			grid-column: 2;
 			grid-row: 1 / 3;
-			margin: 0 0.15rem 0.8rem 0.35rem;
+			margin: 0 0 0.8rem;
 		}
 
 		> player-hand {
+			--hand-card-width: clamp(3.5rem, 15vw, 5rem);
+
 			position: relative;
+			width: min(calc(100% - var(--hand-card-width) - 0.5rem), 32rem);
 			height: 100%;
 			min-height: 8.4rem;
-			display: flex;
+			display: block;
 			grid-column: 1;
-			align-items: end;
-			justify-content: center;
-			padding: 0 1.5rem;
+			justify-self: center;
 			perspective: 40rem;
+			touch-action: none;
 
 			> hand-card {
-				position: relative;
-				width: clamp(1.45rem, 6.5vw, 2.3rem);
-				height: clamp(7.2rem, 24vw, 10rem);
+				position: absolute;
+				bottom: 1.25rem;
+				width: var(--hand-card-width);
+				aspect-ratio: 5 / 7;
 				display: block;
 				transform-origin: 50% 125%;
-				transition: transform 150ms ease, opacity 150ms;
+				transition:
+					transform 180ms cubic-bezier(0.2, 0.75, 0.25, 1),
+					opacity 150ms;
+				will-change: transform;
 
 				&[data-disabled] {
 					opacity: 0.62;
+				}
+
+				&[data-selected] {
+					z-index: 100;
+				}
+
+				&:has(playing-card[data-picking]),
+				&:has(playing-card[data-dragging]) {
+					z-index: 300;
 				}
 			}
 		}
@@ -638,22 +661,38 @@ game-table.class {
 		color: var(--card-ink);
 		filter: drop-shadow(0 0.45rem 0.45rem var(--shadow));
 		transform-origin: center bottom;
-		transition: transform 120ms ease, filter 120ms ease;
+		transform-style: preserve-3d;
+		backface-visibility: hidden;
+		transition:
+			transform 160ms cubic-bezier(0.2, 0.75, 0.25, 1),
+			filter 160ms ease;
+		will-change: transform;
 
 		&[data-red] {
 			color: #b72d43;
 		}
 
 		&[data-selected] {
+			transform: translateY(-0.35rem) scale(1.015);
 			filter: drop-shadow(0 0.55rem 0.6rem rgb(0 0 0 / 0.42)) drop-shadow(
 				0 0 0.35rem rgb(225 190 105 / 0.7)
+			);
+		}
+
+		&[data-picking] {
+			z-index: 300;
+			transform: translateY(-1.15rem) scale(1.04);
+			filter: drop-shadow(0 0.75rem 0.7rem rgb(0 0 0 / 0.46)) drop-shadow(
+				0 0 0.45rem rgb(225 190 105 / 0.82)
 			);
 		}
 
 		&[data-dragging] {
 			z-index: 300;
 			transition: none;
-			pointer-events: none;
+			filter: drop-shadow(0 1rem 0.8rem rgb(0 0 0 / 0.5)) drop-shadow(
+				0 0 0.55rem rgb(225 190 105 / 0.9)
+			);
 		}
 
 		&[data-compact] {
@@ -667,6 +706,7 @@ game-table.class {
 			position: absolute;
 			inset: 0;
 			width: 100%;
+			height: 100%;
 			display: block;
 			overflow: hidden;
 			padding: 0;
@@ -679,6 +719,7 @@ game-table.class {
 			cursor: grab;
 			user-select: none;
 			touch-action: none;
+			-webkit-touch-callout: none;
 
 			&:disabled {
 				cursor: default;
@@ -713,6 +754,12 @@ game-table.class {
 		}
 	}
 
+	card-back {
+		transform-style: preserve-3d;
+		backface-visibility: hidden;
+		will-change: transform;
+	}
+
 	taken-stack {
 		width: 2.9rem;
 		display: grid;
@@ -728,7 +775,7 @@ game-table.class {
 				position: absolute;
 				inset: 0;
 				width: 1.7rem;
-				height: 2.4rem;
+				aspect-ratio: 5 / 7;
 				display: block;
 				border: 1px solid rgb(255 255 255 / 0.4);
 				border-radius: 0.25rem;
@@ -740,6 +787,9 @@ game-table.class {
 					),
 					#713448;
 				box-shadow: 0 0.2rem 0.35rem var(--shadow);
+				transform-style: preserve-3d;
+				backface-visibility: hidden;
+				will-change: transform;
 			}
 		}
 
@@ -747,6 +797,25 @@ game-table.class {
 			color: var(--ink-muted);
 			font-size: 0.5rem;
 			white-space: nowrap;
+		}
+	}
+}
+
+@media (hover: hover) and (pointer: fine) {
+	game-table.class {
+		> player-zone {
+			> player-hand {
+				> hand-card:not([data-disabled]):has(playing-card:hover) {
+					z-index: 250;
+
+					> playing-card {
+						transform: translateY(-1rem) scale(1.035);
+						filter: drop-shadow(0 0.75rem 0.7rem rgb(0 0 0 / 0.46)) drop-shadow(
+							0 0 0.4rem rgb(225 190 105 / 0.72)
+						);
+					}
+				}
+			}
 		}
 	}
 }
@@ -791,6 +860,18 @@ game-table.class {
 					}
 				}
 			}
+		}
+
+		> player-zone {
+			> player-hand {
+				> hand-card {
+					transition: none;
+				}
+			}
+		}
+
+		playing-card {
+			transition: none;
 		}
 	}
 }
