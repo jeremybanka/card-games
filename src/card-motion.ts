@@ -312,6 +312,15 @@ function animateCardChanges(
 				break
 			case "move":
 				if (before !== undefined) {
+					root.dataset.lastCardMotion = "move"
+					root.dataset.lastCardMotionId = cardId
+					root.dataset.lastCardMotionFrom = `${before.left},${before.top}`
+					root.dataset.lastCardMotionTo = `${after.left},${after.top}`
+					if (before.zone === "hand" && after.zone === "trick") {
+						root.dataset.lastLocalPlayMotionId = cardId
+						root.dataset.lastLocalPlayMotionFrom = `${before.left},${before.top}`
+						root.dataset.lastLocalPlayMotionTo = `${after.left},${after.top}`
+					}
 					trackCommittedMotion(
 						cardId,
 						after,

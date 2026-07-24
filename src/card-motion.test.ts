@@ -139,8 +139,10 @@ describe("observeCardMotion", () => {
 		destination.dataset.cardId = "card::dragged"
 		destination.getBoundingClientRect = () =>
 			({ height: 92, left: 180, top: 160, width: 66 }) as DOMRect
+		const trickSlot = document.createElement("trick-slot")
+		trickSlot.append(destination)
 		source.remove()
-		root.append(destination)
+		root.append(trickSlot)
 
 		await vi.waitFor(() => {
 			expect(animate).toHaveBeenCalledWith(
@@ -148,11 +150,18 @@ describe("observeCardMotion", () => {
 					expect.objectContaining({
 						transform: expect.stringContaining("translate3d(-60px, 100px"),
 					}),
-					expect.anything(),
+					{ transform: expect.not.stringContaining("translate3d") },
 				],
 				expect.objectContaining({ duration: 320 }),
 			)
 		})
+		expect(root.dataset.lastCardMotion).toBe("move")
+		expect(root.dataset.lastCardMotionId).toBe("card::dragged")
+		expect(root.dataset.lastCardMotionFrom).toBe("120,260")
+		expect(root.dataset.lastCardMotionTo).toBe("180,160")
+		expect(root.dataset.lastLocalPlayMotionId).toBe("card::dragged")
+		expect(root.dataset.lastLocalPlayMotionFrom).toBe("120,260")
+		expect(root.dataset.lastLocalPlayMotionTo).toBe("180,160")
 		stop()
 	})
 

@@ -108,6 +108,7 @@ function PlayingCard({
 	dealRound,
 	disabled = false,
 	dragState,
+	gestureOwner = false,
 	handAngle = 0,
 	onDragEnd,
 	onDragMove,
@@ -122,6 +123,7 @@ function PlayingCard({
 	dealRound?: number
 	disabled?: boolean
 	dragState: DragState | null
+	gestureOwner?: boolean
 	handAngle?: number
 	onDragEnd: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
@@ -131,8 +133,9 @@ function PlayingCard({
 	selected?: boolean
 }): VNode {
 	const isRed = card.suit === "diamonds" || card.suit === "hearts"
-	const gesturePhase =
-		dragState?.cardId === card.id ? dragState.phase : undefined
+	const ownedDragState =
+		gestureOwner && dragState?.cardId === card.id ? dragState : null
+	const gesturePhase = ownedDragState?.phase
 	return (
 		<playing-card
 			data-card-id={card.id}
@@ -148,9 +151,9 @@ function PlayingCard({
 			data-red={isRed || undefined}
 			data-selected={selected || undefined}
 			style={
-				dragState?.cardId === card.id && dragState.phase !== "picking"
+				ownedDragState !== null && ownedDragState.phase !== "picking"
 					? {
-							transform: draggedCardTransform(handAngle, dragState),
+							transform: draggedCardTransform(handAngle, ownedDragState),
 						}
 					: undefined
 			}
@@ -506,6 +509,7 @@ function PlayerZone({
 								dealRound={dealRound}
 								disabled={!(passing || playable.has(card.id))}
 								dragState={dragState}
+								gestureOwner
 								handAngle={layout.angle}
 								onDragCancel={(event) => onDragCancel(card, event)}
 								onDragEnd={(event) => onDragEnd(card, event)}

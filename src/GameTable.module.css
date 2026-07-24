@@ -719,6 +719,10 @@ game-table.class {
 			);
 		}
 
+		&[data-play-pending] > button {
+			animation: pending-card-pulse 1.5s ease-in-out infinite alternate;
+		}
+
 		&[data-compact] {
 			position: relative;
 			width: 100%;
@@ -868,6 +872,16 @@ game-table.class {
 			0 0 1.6rem rgb(225 190 105 / 0.26);
 	}
 }
+
+@keyframes pending-card-pulse {
+	from {
+		transform: scale(1);
+	}
+
+	to {
+		transform: scale(1.018);
+	}
+}
 /* @lasertag-enable [dead-selector] */
 
 @media (min-width: 48rem) {
@@ -907,6 +921,10 @@ game-table.class {
 		> table-center playing-card,
 		> player-zone playing-card {
 			transition: none;
+
+			&[data-play-pending] > button {
+				animation: none;
+			}
 		}
 		/* @lasertag-enable [selector-crosses-ownership-boundary] */
 	}
