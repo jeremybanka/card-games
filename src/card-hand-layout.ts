@@ -9,7 +9,13 @@ export type CardGesture<CardId extends string = string> = {
 	phase: "dragging" | "picking"
 }
 
+export type DragTranslation = {
+	x: number
+	y: number
+}
+
 export const HAND_SCRUBBING_BAND_TOP = -28
+export const DRAGGED_CARD_SCALE = 1.06
 
 export function handCardLayout(
 	cardCount: number,
@@ -47,4 +53,29 @@ export function advanceCardGesture<CardId extends string>(
 		cardId: phase === "dragging" ? gesture.cardId : scrubbedCardId,
 		phase,
 	}
+}
+
+export function dragTranslationFromPointer(
+	angle: number,
+	base: DragTranslation,
+	pointerDelta: DragTranslation,
+): DragTranslation {
+	const radians = (-angle * Math.PI) / 180
+	return {
+		x:
+			base.x +
+			pointerDelta.x * Math.cos(radians) -
+			pointerDelta.y * Math.sin(radians),
+		y:
+			base.y +
+			pointerDelta.x * Math.sin(radians) +
+			pointerDelta.y * Math.cos(radians),
+	}
+}
+
+export function draggedCardTransform(
+	angle: number,
+	translation: DragTranslation,
+): string {
+	return `translate3d(${translation.x}px, ${translation.y}px, 0) rotate(${-angle}deg) scale(${DRAGGED_CARD_SCALE})`
 }

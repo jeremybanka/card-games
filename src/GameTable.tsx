@@ -10,7 +10,12 @@ import {
 	isAiModelId,
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
-import { advanceCardGesture, handCardLayout } from "./card-hand-layout.ts"
+import {
+	advanceCardGesture,
+	draggedCardTransform,
+	dragTranslationFromPointer,
+	handCardLayout,
+} from "./card-hand-layout.ts"
 import { useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
 import {
@@ -102,6 +107,7 @@ function PlayingCard({
 	dealRound,
 	disabled = false,
 	dragState,
+	handAngle = 0,
 	onDragEnd,
 	onDragMove,
 	onDragCancel,
@@ -115,6 +121,7 @@ function PlayingCard({
 	dealRound?: number
 	disabled?: boolean
 	dragState: DragState | null
+	handAngle?: number
 	onDragEnd: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragCancel: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
@@ -139,7 +146,7 @@ function PlayingCard({
 			style={
 				dragState?.cardId === card.id && dragState.phase === "dragging"
 					? {
-							transform: `translate3d(${dragState.x}px, ${dragState.y}px, 0) rotate(0deg)`,
+							transform: draggedCardTransform(handAngle, dragState),
 						}
 					: undefined
 			}
@@ -485,6 +492,7 @@ function PlayerZone({
 							key={card.id}
 							data-card-id={card.id}
 							data-disabled={!(passing || playable.has(card.id)) || undefined}
+							data-hand-angle={layout.angle}
 							data-selected={selected || undefined}
 							style={{
 								left: `${layout.left}%`,
@@ -498,6 +506,7 @@ function PlayerZone({
 								dealRound={dealRound}
 								disabled={!(passing || playable.has(card.id))}
 								dragState={dragState}
+								handAngle={layout.angle}
 								onDragCancel={(event) => onDragCancel(card, event)}
 								onDragEnd={(event) => onDragEnd(card, event)}
 								onDragMove={(event) => onDragMove(card, event)}
@@ -533,6 +542,13 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	} | null>(null)
 	const draggingCardId = useRef<CardId | null>(null)
 	const dragPhase = useRef<DragState["phase"]>("picking")
+	const dragCommit = useRef<{
+		angle: number
+		baseX: number
+		baseY: number
+		pointerX: number
+		pointerY: number
+	} | null>(null)
 	const dragMoved = useRef(false)
 	const suppressClick = useRef(false)
 
@@ -797,6 +813,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					pointerOrigin.current = null
 					draggingCardId.current = null
 					dragPhase.current = "picking"
+					dragCommit.current = null
 					dragMoved.current = false
 				}}
 				onDragStart={(card, event) => {
@@ -812,6 +829,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					}
 					draggingCardId.current = card.id
 					dragPhase.current = "picking"
+					dragCommit.current = null
 					dragMoved.current = false
 					event.currentTarget.setPointerCapture?.(event.pointerId)
 					setDragState({
@@ -861,15 +879,41 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						(candidate) => candidate.dataset.cardId === gesture.cardId,
 					)
 					if (activeCandidate === undefined) return
-					const activeRect = activeCandidate.getBoundingClientRect()
-					const activeCenterX = activeRect.left + activeRect.width / 2
+					if (gesture.phase === "dragging" && dragCommit.current === null) {
+						const activeCard =
+							activeCandidate.querySelector<HTMLElement>("playing-card")
+						const matrix = new DOMMatrixReadOnly(
+							activeCard === null
+								? undefined
+								: getComputedStyle(activeCard).transform,
+						)
+						dragCommit.current = {
+							angle: Number(activeCandidate.dataset.handAngle ?? 0),
+							baseX: matrix.m41,
+							baseY: matrix.m42,
+							pointerX: event.clientX,
+							pointerY: event.clientY,
+						}
+					}
+					const commit = dragCommit.current
+					const translation =
+						gesture.phase === "dragging" && commit !== null
+							? dragTranslationFromPointer(
+									commit.angle,
+									{ x: commit.baseX, y: commit.baseY },
+									{
+										x: event.clientX - commit.pointerX,
+										y: event.clientY - commit.pointerY,
+									},
+								)
+							: { x: 0, y: 0 }
 					draggingCardId.current = gesture.cardId
 					dragPhase.current = gesture.phase
 					setDragState({
 						cardId: gesture.cardId,
 						phase: gesture.phase,
-						x: gesture.phase === "dragging" ? event.clientX - activeCenterX : 0,
-						y: gesture.phase === "dragging" ? y : 0,
+						x: gesture.phase === "dragging" ? translation.x : 0,
+						y: gesture.phase === "dragging" ? translation.y : 0,
 					})
 				}}
 				onDragEnd={(_card, event) => {
@@ -897,6 +941,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					pointerOrigin.current = null
 					draggingCardId.current = null
 					dragPhase.current = "picking"
+					dragCommit.current = null
 					dragMoved.current = false
 					if (moved) {
 						suppressClick.current = true
