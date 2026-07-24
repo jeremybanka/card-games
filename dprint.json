@@ -10,7 +10,8 @@
 		"**/pnpm-lock.yaml",
 		"**/coverage/**",
 		"**/dist/**",
-		"**/node_modules/**"
+		"**/node_modules/**",
+		"test-fixtures/**"
 	],
 	"oxc": {
 		"associations": ["**/*.{ts,tsx,js,jsx,mjs,cjs}"],
