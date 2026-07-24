@@ -475,7 +475,21 @@ describe("recorded player versus Terra table", () => {
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBe("picking")
 					fireEvent.pointerMove(cardButton, {
-						clientX: 0,
+						clientX: 30,
+						clientY: 80,
+						pointerId: 1,
+					})
+					expect(gameTable?.getAttribute("data-card-gesture")).toBe("picking")
+					expect(
+						gameTable
+							?.querySelector("playing-card[data-picking]")
+							?.getAttribute("data-card-id"),
+					).toBe(
+						(cardButton.closest("playing-card") as HTMLElement | null)?.dataset
+							.cardId,
+					)
+					fireEvent.pointerMove(cardButton, {
+						clientX: 35,
 						clientY: 0,
 						pointerId: 1,
 					})
@@ -485,7 +499,10 @@ describe("recorded player versus Terra table", () => {
 						clientY: 0,
 						pointerId: 1,
 					})
-					expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+					expect(gameTable?.getAttribute("data-card-gesture")).toBe("pending")
+					await waitFor(() => {
+						expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+					})
 				} else {
 					fireEvent.click(cardButton)
 					fireEvent.click(

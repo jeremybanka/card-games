@@ -16,7 +16,7 @@ import {
 	dragTranslationFromPointer,
 	handCardLayout,
 } from "./card-hand-layout.ts"
-import { useCardMotion } from "./card-motion.ts"
+import { capturePendingCardMotion, useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
 import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
@@ -51,7 +51,7 @@ type GameTableProps = {
 
 type DragState = {
 	cardId: CardId
-	phase: "dragging" | "picking"
+	phase: "dragging" | "pending" | "picking"
 	x: number
 	y: number
 }
@@ -108,6 +108,7 @@ function PlayingCard({
 	dealRound,
 	disabled = false,
 	dragState,
+	gestureOwner = false,
 	handAngle = 0,
 	onDragEnd,
 	onDragMove,
@@ -122,6 +123,7 @@ function PlayingCard({
 	dealRound?: number
 	disabled?: boolean
 	dragState: DragState | null
+	gestureOwner?: boolean
 	handAngle?: number
 	onDragEnd: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
@@ -131,8 +133,9 @@ function PlayingCard({
 	selected?: boolean
 }): VNode {
 	const isRed = card.suit === "diamonds" || card.suit === "hearts"
-	const gesturePhase =
-		dragState?.cardId === card.id ? dragState.phase : undefined
+	const ownedDragState =
+		gestureOwner && dragState?.cardId === card.id ? dragState : null
+	const gesturePhase = ownedDragState?.phase
 	return (
 		<playing-card
 			data-card-id={card.id}
@@ -140,14 +143,17 @@ function PlayingCard({
 			data-compact={compact || undefined}
 			data-deal-index={dealIndex}
 			data-deal-round={dealRound}
-			data-dragging={gesturePhase === "dragging" || undefined}
+			data-dragging={
+				gesturePhase === "dragging" || gesturePhase === "pending" || undefined
+			}
+			data-play-pending={gesturePhase === "pending" || undefined}
 			data-picking={gesturePhase === "picking" || undefined}
 			data-red={isRed || undefined}
 			data-selected={selected || undefined}
 			style={
-				dragState?.cardId === card.id && dragState.phase === "dragging"
+				ownedDragState !== null && ownedDragState.phase !== "picking"
 					? {
-							transform: draggedCardTransform(handAngle, dragState),
+							transform: draggedCardTransform(handAngle, ownedDragState),
 						}
 					: undefined
 			}
@@ -503,6 +509,7 @@ function PlayerZone({
 								dealRound={dealRound}
 								disabled={!(passing || playable.has(card.id))}
 								dragState={dragState}
+								gestureOwner
 								handAngle={layout.angle}
 								onDragCancel={(event) => onDragCancel(card, event)}
 								onDragEnd={(event) => onDragEnd(card, event)}
@@ -538,7 +545,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		y: number
 	} | null>(null)
 	const draggingCardId = useRef<CardId | null>(null)
-	const dragPhase = useRef<DragState["phase"]>("picking")
+	const dragPhase = useRef<"dragging" | "picking">("picking")
 	const dragCommit = useRef<{
 		angle: number
 		baseX: number
@@ -548,6 +555,12 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	} | null>(null)
 	const dragMoved = useRef(false)
 	const suppressClick = useRef(false)
+	const pendingPlay = useRef<{
+		cardId: CardId
+		requestId: number
+		timeout: number
+	} | null>(null)
+	const nextPlayRequestId = useRef(0)
 
 	useCardMotion(tableRoot)
 
@@ -588,11 +601,54 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			: [...game.players.slice(index + 1), ...game.players.slice(0, index)]
 	}, [game.players, myUserKey])
 
-	const playCard = (cardId: CardId): void => {
+	const clearPendingPlay = (requestId: number): void => {
+		if (pendingPlay.current?.requestId !== requestId) return
+		window.clearTimeout(pendingPlay.current.timeout)
+		pendingPlay.current = null
+		setDragState(null)
+	}
+
+	useEffect(() => {
+		const clearDisconnectedPlay = (): void => {
+			const pending = pendingPlay.current
+			if (pending === null) return
+			clearPendingPlay(pending.requestId)
+		}
+		socket.on("disconnect", clearDisconnectedPlay)
+		return () => {
+			socket.off("disconnect", clearDisconnectedPlay)
+			const pending = pendingPlay.current
+			if (pending !== null) window.clearTimeout(pending.timeout)
+		}
+	}, [socket])
+
+	useEffect(() => {
+		const pending = pendingPlay.current
+		if (
+			pending !== null &&
+			!privateView.cards.some((card) => card.id === pending.cardId)
+		) {
+			clearPendingPlay(pending.requestId)
+		}
+	}, [privateView.cards])
+
+	const playCard = (cardId: CardId, fromDrag = false): void => {
 		if (!privateView.playableCardIds.includes(cardId)) return
+		if (pendingPlay.current !== null) return
+		const requestId = ++nextPlayRequestId.current
+		if (fromDrag) {
+			const timeout = window.setTimeout(() => {
+				if (pendingPlay.current?.requestId !== requestId) return
+				setState(actionErrorAtom, "The play timed out. Please try again.")
+				clearPendingPlay(requestId)
+			}, 10_000)
+			pendingPlay.current = { cardId, requestId, timeout }
+		}
 		socket.emit("playCard", cardId, (result) => {
+			if (fromDrag && pendingPlay.current?.requestId !== requestId) return
 			handleResult(result)
 			if (result.ok) setSelectedCard(null)
+			if (fromDrag && !result.ok) clearPendingPlay(requestId)
 		})
 	}
 
@@ -870,7 +926,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					const gesture = advanceCardGesture(
 						{ cardId: activeCardId, phase: dragPhase.current },
 						closest.cardId,
-						y,
+						{ x, y },
 					)
 					const activeCandidate = candidates.find(
 						(candidate) => candidate.dataset.cardId === gesture.cardId,
@@ -934,7 +990,6 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
 						event.currentTarget.releasePointerCapture?.(event.pointerId)
 					}
-					setDragState(null)
 					pointerOrigin.current = null
 					draggingCardId.current = null
 					dragPhase.current = "picking"
@@ -946,10 +1001,22 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 							suppressClick.current = false
 						}, 0)
 					}
-					if (cardId === null || !moved) return
+					if (cardId === null || !moved) {
+						setDragState(null)
+						return
+					}
 					if (shouldPlay) {
-						playCard(cardId)
+						if (tableRoot !== null) {
+							capturePendingCardMotion(tableRoot, cardId)
+						}
+						setDragState((current) =>
+							current?.cardId === cardId
+								? { ...current, phase: "pending" }
+								: current,
+						)
+						playCard(cardId, true)
 					} else {
+						setDragState(null)
 						selectCard(cardId)
 					}
 				}}
