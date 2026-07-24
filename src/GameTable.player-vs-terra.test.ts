@@ -452,6 +452,12 @@ describe("recorded player versus Terra table", () => {
 			await screen.findByText("Your play")
 
 			for (const cardName of recordedHumanPlays) {
+				const continueButton = screen.queryByRole("button", {
+					name: "Continue to next trick",
+				})
+				if (continueButton !== null) {
+					fireEvent.click(continueButton)
+				}
 				const cardButton = await waitFor(() => {
 					const button = screen.getByRole("button", {
 						name: cardName,
@@ -495,6 +501,12 @@ describe("recorded player versus Terra table", () => {
 				})
 			}
 
+			const finalContinueButton = screen.queryByRole("button", {
+				name: "Continue to next trick",
+			})
+			if (finalContinueButton !== null) {
+				fireEvent.click(finalContinueButton)
+			}
 			const scores = await screen.findByRole("heading", {
 				name: "Scores",
 			})

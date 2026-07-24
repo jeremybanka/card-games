@@ -654,7 +654,8 @@ game-table.class {
 		}
 	}
 
-	playing-card {
+	> table-center playing-card,
+	> player-zone playing-card {
 		position: absolute;
 		inset: 0;
 		display: block;
@@ -754,13 +755,15 @@ game-table.class {
 		}
 	}
 
-	card-back {
+	> opponents-row card-back,
+	> player-zone card-back {
 		transform-style: preserve-3d;
 		backface-visibility: hidden;
 		will-change: transform;
 	}
 
-	taken-stack {
+	> opponents-row taken-stack,
+	> player-zone > taken-stack {
 		width: 2.9rem;
 		display: grid;
 		gap: 0.15rem;
@@ -870,7 +873,8 @@ game-table.class {
 			}
 		}
 
-		playing-card {
+		> table-center playing-card,
+		> player-zone playing-card {
 			transition: none;
 		}
 	}

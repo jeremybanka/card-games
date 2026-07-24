@@ -13,6 +13,10 @@ import {
 import { cardGesturePhase, handCardLayout } from "./card-hand-layout.ts"
 import { useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
+import {
+	completedTrickKey,
+	shouldAutoDismissTrickReview,
+} from "./game-presentation.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
@@ -30,6 +34,7 @@ import type {
 	VisibleCard,
 } from "./game/hearts-types.ts"
 import css from "./GameTable.module.css"
+import { GameTransitions } from "./GameTransitions.tsx"
 
 type GameTableProps = {
 	onLeave: () => void
@@ -154,15 +159,18 @@ function PlayingCard({
 
 function TakenStack({
 	cardIds,
+	hiddenCardIds,
 	label,
 }: {
 	cardIds: CardId[]
+	hiddenCardIds: ReadonlySet<CardId>
 	label: string
 }): VNode {
+	const visibleCardIds = cardIds.filter((cardId) => !hiddenCardIds.has(cardId))
 	return (
 		<taken-stack aria-label={`${label}: ${cardIds.length} cards`}>
 			<stack-cards>
-				{cardIds.map((cardId, index) => (
+				{visibleCardIds.map((cardId, index) => (
 					<card-back
 						data-card-id={cardId}
 						data-card-face="down"
@@ -180,9 +188,11 @@ function TakenStack({
 
 function OpponentZone({
 	current,
+	hiddenCardIds,
 	player,
 }: {
 	current: boolean
+	hiddenCardIds: ReadonlySet<CardId>
 	player: PublicPlayerView
 }): VNode {
 	return (
@@ -214,6 +224,7 @@ function OpponentZone({
 			</opponent-hand>
 			<TakenStack
 				cardIds={player.capturedCardIds}
+				hiddenCardIds={hiddenCardIds}
 				label={`${player.name}'s captured cards`}
 			/>
 		</opponent-zone>
@@ -364,6 +375,7 @@ function ScoreSheet({
 function PlayerZone({
 	dragState,
 	game,
+	hiddenCardIds,
 	myPlayer,
 	onDragCancel,
 	onDragEnd,
@@ -376,6 +388,7 @@ function PlayerZone({
 }: {
 	dragState: DragState | null
 	game: PublicGameView
+	hiddenCardIds: ReadonlySet<CardId>
 	myPlayer: PublicPlayerView
 	onDragCancel: (
 		card: VisibleCard,
@@ -413,6 +426,7 @@ function PlayerZone({
 			</player-heading>
 			<TakenStack
 				cardIds={myPlayer.capturedCardIds}
+				hiddenCardIds={hiddenCardIds}
 				label="Your captured cards"
 			/>
 			<player-hand aria-label={`Your hand: ${privateView.cards.length} cards`}>
@@ -460,6 +474,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const [selectedAiModel, setSelectedAiModel] = useState(DEFAULT_AI_MODEL_ID)
 	const [passSelection, setPassSelection] = useState<CardId[]>([])
 	const [dragState, setDragState] = useState<DragState | null>(null)
+	const [dismissedTrickKey, setDismissedTrickKey] = useState<string | null>(
+		null,
+	)
 	const tableRef = useRef<HTMLElement>(null)
 	const pointerOrigin = useRef<{
 		pointerId: number
@@ -472,6 +489,29 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const suppressClick = useRef(false)
 
 	useCardMotion(tableRef)
+
+	const latestCompletedTrick = game.completedTricks.at(-1) ?? null
+	const latestTrickKey = completedTrickKey(game)
+	const shouldAutoDismissReview =
+		myUserKey !== null &&
+		latestCompletedTrick !== null &&
+		shouldAutoDismissTrickReview(game, myUserKey, latestCompletedTrick)
+	const trickReview =
+		latestTrickKey !== null &&
+		latestTrickKey !== dismissedTrickKey &&
+		!shouldAutoDismissReview
+			? latestCompletedTrick
+			: null
+	const hiddenReviewCardIds = useMemo(
+		() => new Set<CardId>(trickReview?.plays.map((play) => play.card.id) ?? []),
+		[trickReview],
+	)
+
+	useEffect(() => {
+		if (shouldAutoDismissReview && latestTrickKey !== null) {
+			setDismissedTrickKey(latestTrickKey)
+		}
+	}, [latestTrickKey, shouldAutoDismissReview])
 
 	useEffect(() => {
 		setPassSelection([])
@@ -554,6 +594,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				{opponents.map((player) => (
 					<OpponentZone
 						current={game.currentPlayerId === player.id}
+						hiddenCardIds={hiddenReviewCardIds}
 						key={player.id}
 						player={player}
 					/>
@@ -683,6 +724,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			<PlayerZone
 				dragState={dragState}
 				game={game}
+				hiddenCardIds={hiddenReviewCardIds}
 				myPlayer={myPlayer}
 				onDragCancel={(_card, event) => {
 					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
@@ -802,6 +844,17 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				passSelection={passSelection}
 				privateView={privateView}
 				selectedCard={selectedCard}
+			/>
+
+			<GameTransitions
+				game={game}
+				myPlayerId={myUserKey}
+				onDismissTrick={() => {
+					if (latestTrickKey !== null) {
+						setDismissedTrickKey(latestTrickKey)
+					}
+				}}
+				review={trickReview}
 			/>
 
 			{actionError === null ? null : (
