@@ -1,7 +1,7 @@
 {
 	"version": "0.2",
 	"useGitignore": true,
-	"ignorePaths": ["pnpm-lock.yaml"],
+	"ignorePaths": ["pnpm-lock.yaml", "test-fixtures/**"],
 	"words": [
 		"ABCDEFGHJKLMNPQRSTUVWXYZ",
 		"accesstoken",
@@ -26,6 +26,7 @@
 		"viteplus",
 		"vitest",
 		"voidzero",
-		"wayfarer"
+		"wayfarer",
+		"ZVHB"
 	]
 }
