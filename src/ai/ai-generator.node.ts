@@ -47,7 +47,7 @@ function cacheMode(): CacheMode {
 
 export const aiGeneratorSquirrel = new Squirrel(
 	cacheMode(),
-	".varmint/hearts-ai",
+	process.env.VARMINT_CACHE_DIRECTORY?.trim() || ".varmint/hearts-ai",
 )
 
 export function wrapAiGeneratorWithVarmint(

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead hearts; P0’s hearts are lower and will become void, then may shed high spades.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::db91d81f-7e9d-4e62-8526-9bb66069ff1c"
+	},
+	"observation": "P0 has passed QS/KS/AS and only lower hearts remain."
+}

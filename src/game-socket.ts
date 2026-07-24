@@ -23,10 +23,11 @@ const playerSecret = existingSecret ?? crypto.randomUUID()
 if (existingIdentity === null) localStorage.setItem(identityKey, playerId)
 if (existingSecret === null) localStorage.setItem(secretKey, playerSecret)
 
-export const gameSocket: Socket<ServerToClientEvents, ClientToServerEvents> =
-	io({
-		auth: { playerId, playerSecret },
-	})
+export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>
+
+export const gameSocket: GameSocket = io({
+	auth: { playerId, playerSecret },
+})
 
 gameSocket.on("connect", () => {
 	setState(connectionStateAtom, "connected")

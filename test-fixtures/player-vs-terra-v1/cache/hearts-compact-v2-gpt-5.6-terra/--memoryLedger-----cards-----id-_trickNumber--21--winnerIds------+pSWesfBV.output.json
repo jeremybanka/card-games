@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead ascending hearts; P0 must follow twice, then discard spades.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::8f35518a-a2a5-4cd8-99e8-735624b9ef85"
+	},
+	"observation": "P0 has two hearts and three passed high spades remaining."
+}

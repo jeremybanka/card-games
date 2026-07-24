@@ -33,7 +33,9 @@ Copy `.env.example` to `.env` and set `OPENAI_API_KEY` to enable model-generated
 strategy. Without a key, AI seats remain fully playable through the deterministic
 strategic fallback. `VARMINT_CACHE_MODE` can be set to `read`, `write`, or
 `read-write` when recording or replaying generator results; it defaults to
-`off`.
+`off`. `VARMINT_CACHE_DIRECTORY` overrides the default
+`.varmint/hearts-ai` location when a recording should be saved as a tracked
+fixture.
 
 Every AI is a separate Socket.IO player. It receives the same public projection
 and one private hand projection through atom.io realtime, stores them in its own
@@ -78,6 +80,15 @@ cache-only replay and requires the same decisions, actions, and final state
 without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
 recorder to stream the same complete local spans exposed by the debug test
 commands.
+
+The player-versus-Terra Testing Library test replays the browser recording in
+`test-fixtures/player-vs-terra-v1/` with the invariant
+`player-vs-terra-browser-v1` seed. A simulated human uses the rendered controls
+to pass and play all 26 cards while Terra participates through its ordinary
+realtime boundary. The fixture contains 27 real Terra decisions. Replay uses a
+read-only Varmint cache with a throwing underlying generator and asserts that
+all 27 decisions are cache hits. In the recorded round, Terra captures every
+scoring card and shoots the moon, producing the final score Terra 0, Player 26.
 
 ## Observability
 
@@ -125,19 +136,20 @@ publicly visible player ID.
 
 ## Commands
 
-| Command               | Purpose                                                  |
-| --------------------- | -------------------------------------------------------- |
-| `pnpm dev`            | Start the Vite client and realtime room server           |
-| `pnpm build`          | Type-check and create the production client              |
-| `pnpm start`          | Serve the production client and realtime rooms           |
-| `pnpm test`           | Run rules, generators, realtime privacy, and simulations |
-| `pnpm test:debug`     | Run tests with complete debug-level server spans         |
-| `pnpm test:e2e`       | Record and replay the deterministic four-bot round       |
-| `pnpm test:e2e:debug` | Run the four-bot replay with debug-level server spans    |
-| `pnpm check`          | Run Oxc, TypeScript, ESLint, and Lasertag checks         |
-| `pnpm fmt`            | Format source and configuration files                    |
-| `pnpm record:ai-game` | Record and replay a real Sol-versus-Luna round           |
-| `pnpm spellcheck`     | Check prose and identifiers                              |
+| Command                     | Purpose                                                  |
+| --------------------------- | -------------------------------------------------------- |
+| `pnpm dev`                  | Start the Vite client and realtime room server           |
+| `pnpm build`                | Type-check and create the production client              |
+| `pnpm start`                | Serve the production client and realtime rooms           |
+| `pnpm test`                 | Run rules, generators, realtime privacy, and simulations |
+| `pnpm test:debug`           | Run tests with complete debug-level server spans         |
+| `pnpm test:e2e`             | Record and replay the deterministic four-bot round       |
+| `pnpm test:e2e:debug`       | Run the four-bot replay with debug-level server spans    |
+| `pnpm test:player-vs-terra` | Replay the recorded human-versus-Terra round             |
+| `pnpm check`                | Run Oxc, TypeScript, ESLint, and Lasertag checks         |
+| `pnpm fmt`                  | Format source and configuration files                    |
+| `pnpm record:ai-game`       | Record and replay a real Sol-versus-Luna round           |
+| `pnpm spellcheck`           | Check prose and identifiers                              |
 
 Repository-specific authoring and secrecy policies live in
 [AGENTS.md](./AGENTS.md).

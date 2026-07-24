@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Void diamonds quickly; shed low winners before hearts open.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::e75ca811-1ab5-4e49-b181-60845c0f4b13"
+	},
+	"observation": "Must cover 2D; 6D is the lowest forced winner."
+}

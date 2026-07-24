@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lose club tricks under P0; retain low clubs and avoid control.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::831b1349-068b-483f-ad66-782c28185a7e"
+	},
+	"observation": "P0 led JC; TC safely loses while hearts are closed."
+}

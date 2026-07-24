@@ -11,7 +11,7 @@ import {
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
 import { actionErrorAtom } from "./client-state.ts"
-import { gameSocket } from "./game-socket.ts"
+import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
@@ -31,6 +31,7 @@ import css from "./GameTable.module.css"
 
 type GameTableProps = {
 	onLeave: () => void
+	socket: GameSocket
 }
 
 type DragState = {
@@ -292,9 +293,11 @@ function TrickCenter({
 function ScoreSheet({
 	game,
 	myPlayerId,
+	socket,
 }: {
 	game: PublicGameView
 	myPlayerId: PlayerId
+	socket: GameSocket
 }): VNode {
 	return (
 		<score-sheet>
@@ -329,7 +332,7 @@ function ScoreSheet({
 				<button
 					type="button"
 					onClick={() => {
-						gameSocket.emit(
+						socket.emit(
 							game.phase === "gameComplete" ? "restartGame" : "startNextRound",
 							handleResult,
 						)
@@ -429,7 +432,7 @@ function PlayerZone({
 	)
 }
 
-export function GameTable({ onLeave }: GameTableProps): VNode {
+export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const game = usePullAtom(publicGameViewAtom)
 	const privateView = usePullAtom(privatePlayerViewAtom)
 	const myUserKey = usePullAtom(myUserKeyAtom) as PlayerId | null
@@ -461,7 +464,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 
 	const playCard = (cardId: CardId): void => {
 		if (!privateView.playableCardIds.includes(cardId)) return
-		gameSocket.emit("playCard", cardId, (result) => {
+		socket.emit("playCard", cardId, (result) => {
 			handleResult(result)
 			if (result.ok) setSelectedCard(null)
 		})
@@ -549,11 +552,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 													type="button"
 													aria-label={`Remove ${player.name}`}
 													onClick={() => {
-														gameSocket.emit(
-															"removeAiSeat",
-															player.id,
-															handleResult,
-														)
+														socket.emit("removeAiSeat", player.id, handleResult)
 													}}
 												>
 													×
@@ -589,7 +588,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 										<button
 											type="button"
 											onClick={() => {
-												gameSocket.emit(
+												socket.emit(
 													"assignAiSeat",
 													selectedAiModel,
 													handleResult,
@@ -604,7 +603,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 									type="button"
 									disabled={game.players.length < 2}
 									onClick={() => {
-										gameSocket.emit("startGame", handleResult)
+										socket.emit("startGame", handleResult)
 									}}
 								>
 									Deal the cards
@@ -641,7 +640,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 						type="button"
 						disabled={passSelection.length !== 3 || privateView.passSubmitted}
 						onClick={() => {
-							gameSocket.emit("passCards", passSelection, (result) => {
+							socket.emit("passCards", passSelection, (result) => {
 								handleResult(result)
 								if (result.ok) setPassSelection([])
 							})
@@ -716,7 +715,7 @@ export function GameTable({ onLeave }: GameTableProps): VNode {
 			)}
 
 			{game.phase === "roundComplete" || game.phase === "gameComplete" ? (
-				<ScoreSheet game={game} myPlayerId={myUserKey} />
+				<ScoreSheet game={game} myPlayerId={myUserKey} socket={socket} />
 			) : null}
 		</game-table>
 	)

@@ -18,7 +18,8 @@
 		"test": "vp test --run",
 		"test:debug": "LOG_LEVEL=debug TEST_LOG_LEVEL=debug vp test --run --disableConsoleIntercept",
 		"test:e2e": "vp test --run src/ai/ai-game.e2e.test.ts",
-		"test:e2e:debug": "LOG_LEVEL=debug TEST_LOG_LEVEL=debug vp test --run --disableConsoleIntercept src/ai/ai-game.e2e.test.ts"
+		"test:e2e:debug": "LOG_LEVEL=debug TEST_LOG_LEVEL=debug vp test --run --disableConsoleIntercept src/ai/ai-game.e2e.test.ts",
+		"test:player-vs-terra": "vp test --run src/GameTable.player-vs-terra.test.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/openai": "3.0.64",

@@ -27,6 +27,7 @@ export function AppShell(): VNode {
 			<app-shell className={css.class}>
 				<GameTable
 					key={`${roomSession.roomCode}:${roomSession.generation}`}
+					socket={gameSocket}
 					onLeave={() => {
 						gameSocket.emit("leaveRoom", () => {})
 						clearRoomSession()

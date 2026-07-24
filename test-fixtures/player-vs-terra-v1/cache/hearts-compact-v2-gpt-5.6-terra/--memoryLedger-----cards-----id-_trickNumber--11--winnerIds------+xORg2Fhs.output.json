@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead low spades to P0’s passed high spades; preserve heart exits.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::4715db79-fa51-48ca-91b9-1e7d3c1f64e7"
+	},
+	"observation": "P0 retains passed QS/KS/AS; 7S safely loses."
+}

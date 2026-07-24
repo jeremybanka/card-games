@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Cash QD, then lead 3S to P0’s known high spades.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::53505f67-9619-424e-bd03-42cd38f5145a"
+	},
+	"observation": "P0’s exposed diamonds are below QD; hearts remain closed."
+}

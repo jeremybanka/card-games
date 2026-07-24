@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Force P0 discards, then shed hearts under their spade leads.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::ef29c67f-824e-4bc6-b9bb-7b7d04b5ed43"
+	},
+	"observation": "P0 void C/D; AC forces a discard."
+}

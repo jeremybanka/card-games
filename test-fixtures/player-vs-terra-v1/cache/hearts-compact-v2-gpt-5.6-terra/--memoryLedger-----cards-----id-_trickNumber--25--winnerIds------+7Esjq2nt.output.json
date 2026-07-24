@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead AH; P0 discards last spade.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::93bc0413-d618-4a81-bd7a-5dfe7876d755"
+	},
+	"observation": "P0 is void hearts with one spade left."
+}

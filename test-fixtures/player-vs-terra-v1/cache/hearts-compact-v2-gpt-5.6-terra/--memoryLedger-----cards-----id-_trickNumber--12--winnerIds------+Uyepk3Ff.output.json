@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead spades into P0’s known high spades; preserve heart exits.",
+	"nextAction": {
+		"action": "playCard",
+		"cardId": "card::6b71d2ed-ce57-423c-957c-675430283af2"
+	},
+	"observation": "P0 holds passed QS/KS/AS; TS pressures a spade cover."
+}
