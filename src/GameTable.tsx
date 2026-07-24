@@ -10,7 +10,7 @@ import {
 	isAiModelId,
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
-import { cardGesturePhase, handCardLayout } from "./card-hand-layout.ts"
+import { advanceCardGesture, handCardLayout } from "./card-hand-layout.ts"
 import { useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
 import {
@@ -773,9 +773,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 							"hand-card:not([data-disabled])",
 						) ?? [],
 					)
+					const activeCardId = draggingCardId.current
+					if (activeCardId === null) return
 					const closest = candidates.reduce<{
 						cardId: CardId
-						centerX: number
 						distance: number
 					} | null>((nearest, candidate) => {
 						const cardId = candidate.dataset.cardId as CardId | undefined
@@ -784,18 +785,31 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						const centerX = rect.left + rect.width / 2
 						const distance = Math.abs(centerX - event.clientX)
 						return nearest === null || distance < nearest.distance
-							? { cardId, centerX, distance }
+							? { cardId, distance }
 							: nearest
 					}, null)
 					if (closest === null) return
-					const phase = cardGesturePhase(y)
-					draggingCardId.current = closest.cardId
-					dragPhase.current = phase
+					const gesture = advanceCardGesture(
+						{ cardId: activeCardId, phase: dragPhase.current },
+						closest.cardId,
+						y,
+					)
+					const activeCandidate = candidates.find(
+						(candidate) => candidate.dataset.cardId === gesture.cardId,
+					)
+					if (activeCandidate === undefined) return
+					const activeRect = activeCandidate.getBoundingClientRect()
+					const activeCenterX = activeRect.left + activeRect.width / 2
+					draggingCardId.current = gesture.cardId
+					dragPhase.current = gesture.phase
 					setDragState({
-						cardId: closest.cardId,
-						phase,
-						x: phase === "dragging" ? event.clientX - closest.centerX : 0,
-						y: phase === "dragging" ? y : 0,
+						cardId: gesture.cardId,
+						phase: gesture.phase,
+						x:
+							gesture.phase === "dragging"
+								? event.clientX - activeCenterX
+								: 0,
+						y: gesture.phase === "dragging" ? y : 0,
 					})
 				}}
 				onDragEnd={(_card, event) => {
