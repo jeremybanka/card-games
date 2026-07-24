@@ -48,9 +48,15 @@ game-transitions.class {
 			}
 
 			> strong {
+				width: 100%;
+				max-width: 20ch;
 				font-family: Georgia, "Times New Roman", serif;
 				font-size: clamp(1.4rem, 7vw, 2.2rem);
 				font-weight: 500;
+				line-height: 1.05;
+				overflow-wrap: anywhere;
+				text-align: center;
+				text-wrap: balance;
 			}
 		}
 
@@ -176,12 +182,6 @@ game-transitions.class {
 						color: #b72d43;
 					}
 
-					&[data-winner] {
-						box-shadow:
-							0 1rem 1.35rem rgb(0 0 0 / 0.38),
-							0 0 0 1px rgb(225 190 105 / 0.46);
-					}
-
 					> card-corner {
 						position: absolute;
 						top: 0.42rem;
@@ -221,20 +221,6 @@ game-transitions.class {
 					> review-avatar[data-winner] {
 						right: -0.6rem;
 						left: auto;
-					}
-
-					> winning-halo {
-						position: absolute;
-						z-index: -1;
-						inset: -0.72rem;
-						display: block;
-						border: 1px solid rgb(225 190 105 / 0.72);
-						border-radius: 1rem;
-						box-shadow:
-							0 0 1rem rgb(225 190 105 / 0.22),
-							inset 0 0 0.8rem rgb(225 190 105 / 0.12);
-						opacity: 0;
-						animation: winning-halo-in 480ms ease-out both;
 					}
 				}
 
@@ -422,17 +408,6 @@ game-transitions.class {
 	}
 }
 
-@keyframes winning-halo-in {
-	from {
-		opacity: 0;
-		transform: scale(0.82);
-	}
-
-	to {
-		opacity: 1;
-		transform: scale(1);
-	}
-}
 /* @lasertag-enable [dead-selector] */
 
 @media (prefers-reduced-motion: reduce) {
@@ -455,8 +430,7 @@ game-transitions.class {
 
 			> review-stack {
 				> review-position {
-					> review-card,
-					> review-card > winning-halo {
+					> review-card {
 						animation: none;
 						opacity: 1;
 					}

@@ -96,6 +96,7 @@ describe("GameTransitions", () => {
 		expect(cards).toHaveLength(2)
 		expect(cards.at(-1)?.getAttribute("data-winner")).not.toBeNull()
 		expect(cards.at(-1)?.getAttribute("aria-label")).toContain("and won")
+		expect(document.querySelector("winning-halo")).toBeNull()
 
 		fireEvent.click(
 			screen.getByRole("button", { name: "Continue to next trick" }),
@@ -116,6 +117,41 @@ describe("GameTransitions", () => {
 		)
 		expect(screen.getByRole("status", { name: "Your turn" })).toBeTruthy()
 	})
+
+	it.each([
+		["Loopy Night Hag", "Loopy Night Hag's\u00a0turn"],
+		[
+			"ExtraordinarilyLongUnbrokenPlayerName",
+			"ExtraordinarilyLongUnbrokenPlayerName's\u00a0turn",
+		],
+	])(
+		"keeps the full accessible turn label while protecting its final phrase for %s",
+		(name, visualLabel) => {
+			const longNameGame: PublicGameView = {
+				...game,
+				players: game.players.map((player) =>
+					player.id === terra ? { ...player, name } : player,
+				),
+			}
+			render(
+				createElement(GameTransitions, {
+					awardedLeftoverCard: null,
+					game: longNameGame,
+					myPlayerId: me,
+					onDismissTrick: () => {},
+					review: null,
+				}),
+				document.body,
+			)
+
+			expect(
+				screen.getByRole("status", { name: `${name}'s turn` }),
+			).toBeTruthy()
+			expect(document.querySelector("banner-panel > strong")?.textContent).toBe(
+				visualLabel,
+			)
+		},
+	)
 
 	it("shows the leftover card face to its recipient", () => {
 		const awardedTrick: CompletedTrick = {
