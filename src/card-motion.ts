@@ -6,6 +6,7 @@ export type CardSnapshot = {
 	face: "down" | "up"
 	height: number
 	left: number
+	rotation: number
 	top: number
 	width: number
 }
@@ -38,6 +39,12 @@ function dataNumber(value: string | undefined): number | null {
 	return Number.isFinite(parsed) ? parsed : null
 }
 
+function rotationDegrees(element: HTMLElement): number {
+	const transform = element.style.transform
+	const match = /rotate\((-?\d+(?:\.\d+)?)deg\)/.exec(transform)
+	return match === null ? 0 : Number(match[1])
+}
+
 export function planCardTransition(
 	before: CardSnapshot | undefined,
 	after: CardSnapshot,
@@ -62,20 +69,35 @@ export function planCardTransition(
 	return { kind: moved ? "move" : "none" }
 }
 
-function takeSnapshots(root: HTMLElement): Map<string, CardSnapshot> {
+function takeSnapshots(
+	root: HTMLElement,
+	committed: ReadonlyMap<string, CardSnapshot> = new Map(),
+): Map<string, CardSnapshot> {
 	const snapshots = new Map<string, CardSnapshot>()
 	for (const element of root.querySelectorAll<HTMLElement>(cardSelector)) {
 		const cardId = element.dataset.cardId
 		if (cardId === undefined) continue
+		const committedSnapshot = committed.get(cardId)
+		if (
+			committedSnapshot !== undefined &&
+			committedSnapshot.face === cardFace(element) &&
+			committedSnapshot.dealRound === (element.dataset.dealRound ?? null)
+		) {
+			snapshots.set(cardId, committedSnapshot)
+			continue
+		}
 		const rect = element.getBoundingClientRect()
+		const width = element.offsetWidth || rect.width
+		const height = element.offsetHeight || rect.height
 		snapshots.set(cardId, {
 			dealIndex: dataNumber(element.dataset.dealIndex),
 			dealRound: element.dataset.dealRound ?? null,
 			face: cardFace(element),
-			height: rect.height,
-			left: rect.left,
-			top: rect.top,
-			width: rect.width,
+			height,
+			left: rect.left + (rect.width - width) / 2,
+			rotation: rotationDegrees(element),
+			top: rect.top + (rect.height - height) / 2,
+			width,
 		})
 	}
 	return snapshots
@@ -166,13 +188,15 @@ function animateOpponentPlay(
 	const scaleY = after.height / Math.max(before.height, 1)
 	const animation = flight.animate(
 		[
-			{ transform: "translate3d(0, 0, 0) scale(1)" },
 			{
-				offset: 0.72,
-				transform: `translate3d(${deltaX * 0.82}px, ${deltaY * 0.82}px, 0) scale(${1 + (scaleX - 1) * 0.72}, ${1 + (scaleY - 1) * 0.72})`,
+				transform: `translate3d(0, 0, 0) scale(1) rotate(${before.rotation}deg)`,
 			},
 			{
-				transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY})`,
+				offset: 0.72,
+				transform: `translate3d(${deltaX * 0.82}px, ${deltaY * 0.82}px, 0) scale(${1 + (scaleX - 1) * 0.72}, ${1 + (scaleY - 1) * 0.72}) rotate(${before.rotation * 0.2}deg)`,
+			},
+			{
+				transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY}) rotate(${after.rotation}deg)`,
 			},
 		],
 		{
@@ -207,8 +231,9 @@ function animateOpponentPlay(
 function animateCardChanges(
 	root: HTMLElement,
 	previous: Map<string, CardSnapshot>,
+	committed: Map<string, CardSnapshot>,
 ): Map<string, CardSnapshot> {
-	const current = takeSnapshots(root)
+	const current = takeSnapshots(root, committed)
 	if (
 		root.dataset.cardGesture !== undefined ||
 		matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -241,12 +266,24 @@ function animateCardChanges(
 				) {
 					plannedDealCards += 1
 					dealAnimations.push(
-						animateDeal(element, after, deckRect, transition.delay),
+						trackCommittedMotion(
+							cardId,
+							after,
+							animateDeal(element, after, deckRect, transition.delay),
+							committed,
+						),
 					)
 				}
 				break
 			case "move":
-				if (before !== undefined) animateMove(element, before, after)
+				if (before !== undefined) {
+					trackCommittedMotion(
+						cardId,
+						after,
+						animateMove(element, before, after),
+						committed,
+					)
+				}
 				break
 			case "opponent-play":
 				if (before !== undefined) {
@@ -280,11 +317,44 @@ function animateCardChanges(
 	return current
 }
 
+function trackCommittedMotion(
+	cardId: string,
+	snapshot: CardSnapshot,
+	animation: Animation,
+	committed: Map<string, CardSnapshot>,
+): Animation {
+	committed.set(cardId, snapshot)
+	const release = (): void => {
+		if (committed.get(cardId) === snapshot) committed.delete(cardId)
+	}
+	void animation.finished.then(release, release)
+	return animation
+}
+
+function isMotionOverlayMutation(record: MutationRecord): boolean {
+	if (record.type !== "childList") return false
+	if (
+		record.target instanceof Element &&
+		record.target.closest("card-flight") !== null
+	) {
+		return true
+	}
+	const changedNodes = [...record.addedNodes, ...record.removedNodes]
+	return (
+		changedNodes.length > 0 &&
+		changedNodes.every(
+			(node) => node instanceof Element && node.matches("card-flight"),
+		)
+	)
+}
+
 export function observeCardMotion(root: HTMLElement): () => void {
 	root.dataset.motionReadyRound = root.dataset.cardRound ?? ""
 	let snapshots = takeSnapshots(root)
-	const animateMutation = (): void => {
-		snapshots = animateCardChanges(root, snapshots)
+	const committed = new Map<string, CardSnapshot>()
+	const animateMutation = (records: MutationRecord[]): void => {
+		if (records.length > 0 && records.every(isMotionOverlayMutation)) return
+		snapshots = animateCardChanges(root, snapshots, committed)
 	}
 	const observer = new MutationObserver(animateMutation)
 	observer.observe(root, {
