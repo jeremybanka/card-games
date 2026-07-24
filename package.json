@@ -5,7 +5,7 @@
 	"scripts": {
 		"build": "tsc --noEmit && vite build",
 		"check": "vp check --no-fmt && tsc --noEmit && eslint . && lasertag check",
-		"dev": "concurrently -k -n server,vite \"pnpm dev:server\" \"pnpm dev:vite\"",
+		"dev": "node scripts/dev-instance.node.ts",
 		"dev:server": "node --env-file-if-exists=.env --watch-path=server --watch-path=src/game --watch-path=src/ai server/main.node.ts",
 		"dev:vite": "vite",
 		"fmt": "dprint fmt",

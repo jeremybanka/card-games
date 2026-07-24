@@ -20,6 +20,23 @@ pnpm install
 pnpm dev
 ```
 
+Each `pnpm dev` invocation automatically receives its own client and room-server
+ports, browser origin, and temporary Vite and AI cache directories. This lets
+multiple agents run the application concurrently without sharing rooms, browser
+identities, or mutable development caches. Give an instance a recognizable
+label when several are running:
+
+```sh
+pnpm dev -- --name card-motion
+pnpm dev -- --name ai-names
+```
+
+The launcher prints the isolated client URL for that instance and shuts down
+both processes together. `WAYFARER_DEV_NAME=card-motion pnpm dev` is equivalent.
+An explicitly supplied `VARMINT_CACHE_DIRECTORY` is preserved for work that
+intentionally uses a shared recording; otherwise the launcher allocates an
+instance-specific directory.
+
 Open the Vite URL on two to four devices or browser profiles. One player creates
 a table and shares its four-letter room code; the others join with that code.
 
@@ -138,7 +155,7 @@ publicly visible player ID.
 
 | Command                     | Purpose                                                  |
 | --------------------------- | -------------------------------------------------------- |
-| `pnpm dev`                  | Start the Vite client and realtime room server           |
+| `pnpm dev`                  | Start an isolated Vite client and realtime room server   |
 | `pnpm build`                | Type-check and create the production client              |
 | `pnpm start`                | Serve the production client and realtime rooms           |
 | `pnpm test`                 | Run rules, generators, realtime privacy, and simulations |
