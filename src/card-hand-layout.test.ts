@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest"
 import {
 	advanceCardGesture,
 	cardGesturePhase,
+	draggedCardTransform,
+	dragTranslationFromPointer,
 	handCardLayout,
 	HAND_SCRUBBING_BAND_TOP,
 } from "./card-hand-layout.ts"
@@ -54,5 +56,39 @@ describe("card hand layout", () => {
 		expect(
 			advanceCardGesture(dragged, "card-z", HAND_SCRUBBING_BAND_TOP + 100),
 		).toBe(dragged)
+	})
+
+	it("counter-rotates and enlarges a committed card from either fan edge", () => {
+		expect(draggedCardTransform(-12, { x: 3, y: -18 })).toBe(
+			"translate3d(3px, -18px, 0) rotate(12deg) scale(1.06)",
+		)
+		expect(draggedCardTransform(12, { x: -3, y: -18 })).toBe(
+			"translate3d(-3px, -18px, 0) rotate(-12deg) scale(1.06)",
+		)
+		expect(draggedCardTransform(0, { x: 0, y: -18 })).toBe(
+			"translate3d(0px, -18px, 0) rotate(0deg) scale(1.06)",
+		)
+	})
+
+	it("projects pointer movement into the rotated hand-card coordinates", () => {
+		const pointerDelta = { x: 24, y: -36 }
+		for (const angle of [-12, 0, 12]) {
+			const local = dragTranslationFromPointer(
+				angle,
+				{ x: 0, y: -18 },
+				pointerDelta,
+			)
+			const radians = (angle * Math.PI) / 180
+			const viewportDelta = {
+				x:
+					(local.x - 0) * Math.cos(radians) -
+					(local.y + 18) * Math.sin(radians),
+				y:
+					(local.x - 0) * Math.sin(radians) +
+					(local.y + 18) * Math.cos(radians),
+			}
+			expect(viewportDelta.x).toBeCloseTo(pointerDelta.x)
+			expect(viewportDelta.y).toBeCloseTo(pointerDelta.y)
+		}
 	})
 })
