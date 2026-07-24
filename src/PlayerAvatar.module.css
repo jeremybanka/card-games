@@ -13,6 +13,14 @@ player-avatar.class {
 	line-height: 1;
 	text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
 
+	> span {
+		height: 1em;
+		display: grid;
+		place-items: center;
+		line-height: 1;
+		transform: translateY(-0.04em);
+	}
+
 	&[data-size="small"] {
 		--player-avatar-size: 1.55rem;
 	}

@@ -20,6 +20,7 @@ import { useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
 import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
+	capturedTrickCount,
 	completedTrickKey,
 	shouldAutoDismissTrickReview,
 } from "./game-presentation.ts"
@@ -43,6 +44,7 @@ import css from "./GameTable.module.css"
 import { GameTransitions } from "./GameTransitions.tsx"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 import { PlayerNameplate } from "./PlayerNameplate.tsx"
+import { ScorecardLockup } from "./ScorecardLockup.tsx"
 
 type GameTableProps = {
 	onLeave: () => void
@@ -177,12 +179,17 @@ function TakenStack({
 	cardIds,
 	hiddenCardIds,
 	label,
+	playerCount,
+	points,
 }: {
 	cardIds: CardId[]
 	hiddenCardIds: ReadonlySet<CardId>
 	label: string
+	playerCount: number
+	points: number
 }): VNode {
 	const visibleCardIds = cardIds.filter((cardId) => !hiddenCardIds.has(cardId))
+	const trickCount = capturedTrickCount(cardIds.length, playerCount)
 	return (
 		<taken-stack aria-label={`${label}: ${cardIds.length} cards`}>
 			<stack-cards>
@@ -197,7 +204,7 @@ function TakenStack({
 					/>
 				))}
 			</stack-cards>
-			<span>{Math.floor(cardIds.length / 2)} tricks</span>
+			<ScorecardLockup points={points} tricks={trickCount} />
 		</taken-stack>
 	)
 }
@@ -224,7 +231,6 @@ function OpponentZone({
 		>
 			<opponent-heading>
 				<PlayerNameplate
-					meta={`${player.score} pts`}
 					player={player}
 					seatIndex={seatIndex}
 					surface="opponent"
@@ -251,6 +257,8 @@ function OpponentZone({
 				cardIds={player.capturedCardIds}
 				hiddenCardIds={hiddenCardIds}
 				label={`${player.name}'s captured cards`}
+				playerCount={playerCount}
+				points={player.score}
 			/>
 		</opponent-zone>
 	)
@@ -303,8 +311,13 @@ function TrickCenter({
 						<trick-slot
 							data-current={isCurrent || undefined}
 							data-filled={play !== undefined || undefined}
+							data-local={player.id === myPlayerId || undefined}
 							key={player.id}
-							style={{ left: `${left}%`, top: `${top}%` }}
+							style={
+								player.id === myPlayerId
+									? { bottom: "2.5rem", left: "50%" }
+									: { left: `${left}%`, top: `${top}%` }
+							}
 						>
 							<trick-avatar>
 								<PlayerAvatar
@@ -465,9 +478,11 @@ function PlayerZone({
 		>
 			<player-heading>
 				<PlayerNameplate
-					meta={`${myPlayer.score} pts${
-						myPlayer.roundPoints > 0 ? ` · +${myPlayer.roundPoints}` : ""
-					}`}
+					detail={
+						myPlayer.roundPoints > 0
+							? `+${myPlayer.roundPoints} this round`
+							: undefined
+					}
 					player={myPlayer}
 					seatIndex={game.players.findIndex(
 						(candidate) => candidate.id === myPlayer.id,
@@ -478,6 +493,8 @@ function PlayerZone({
 				cardIds={myPlayer.capturedCardIds}
 				hiddenCardIds={hiddenCardIds}
 				label="Your captured cards"
+				playerCount={playerCount}
+				points={myPlayer.score}
 			/>
 			<player-hand aria-label={`Your hand: ${privateView.cards.length} cards`}>
 				{privateView.cards.map((card, index) => {

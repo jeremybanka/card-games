@@ -368,6 +368,10 @@ game-table.class {
 					color: rgb(255 255 255 / 0.3);
 					transition: border-color 160ms, box-shadow 160ms;
 
+					&[data-local] {
+						transform: translateX(-50%);
+					}
+
 					&[data-current] {
 						border-color: var(--gold);
 						border-style: solid;
@@ -471,7 +475,7 @@ game-table.class {
 		z-index: 10;
 		min-height: 0;
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 3.15rem;
+		grid-template-columns: minmax(0, 1fr) 4.6rem;
 		grid-template-rows: auto 1fr;
 		gap: 0 0.35rem;
 		padding: 0 0.55rem max(0.4rem, env(safe-area-inset-bottom));
@@ -788,7 +792,7 @@ game-table.class {
 
 	> opponents-row taken-stack,
 	> player-zone > taken-stack {
-		width: 2.9rem;
+		width: 4.35rem;
 		display: grid;
 		gap: 0.15rem;
 
@@ -818,12 +822,6 @@ game-table.class {
 				backface-visibility: hidden;
 				will-change: transform;
 			}
-		}
-
-		> span {
-			color: var(--ink-muted);
-			font-size: 0.5rem;
-			white-space: nowrap;
 		}
 	}
 	/* @lasertag-enable [selector-crosses-ownership-boundary] */
@@ -875,6 +873,26 @@ game-table.class {
 		width: min(100%, 38rem);
 		margin-inline: auto;
 		box-shadow: 0 0 8rem rgb(0 0 0 / 0.45);
+	}
+}
+
+@media (max-width: 30rem) {
+	game-table.class {
+		> opponents-row {
+			> opponent-zone {
+				column-gap: 0;
+
+				> opponent-hand {
+					width: 1.85rem;
+					overflow: hidden;
+					border-radius: 0.3rem;
+				}
+
+				> taken-stack {
+					width: max-content;
+				}
+			}
+		}
 	}
 }
 

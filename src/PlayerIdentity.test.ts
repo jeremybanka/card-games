@@ -92,5 +92,11 @@ describe("player identity", () => {
 		expect(screen.getByLabelText("Pouting War Hog's avatar").textContent).toBe(
 			"PW",
 		)
+		expect(
+			screen
+				.getByLabelText("Pouting War Hog's avatar")
+				.querySelector("span")
+				?.getAttribute("aria-hidden"),
+		).toBe("true")
 	})
 })

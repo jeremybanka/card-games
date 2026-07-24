@@ -26,7 +26,7 @@ export function PlayerAvatar({
 				backgroundColor: avatarColors[Math.max(0, seatIndex) % 4],
 			}}
 		>
-			{playerInitials(name)}
+			<span aria-hidden="true">{playerInitials(name)}</span>
 		</player-avatar>
 	)
 }

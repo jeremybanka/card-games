@@ -1,0 +1,64 @@
+scorecard-lockup.class {
+	width: max-content;
+	max-width: 100%;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(2rem, 1fr));
+	overflow: hidden;
+	border: 1px solid rgb(225 190 105 / 0.5);
+	border-radius: 0.35rem;
+	box-shadow:
+		0 0.18rem 0.35rem rgb(0 0 0 / 0.34),
+		inset 0 1px rgb(255 255 255 / 0.08);
+	color: var(--gold);
+
+	> score-counter {
+		min-width: 0;
+		display: grid;
+		grid-template-rows: auto 1fr;
+		place-items: center;
+		padding: 0.18rem 0.24rem 0.2rem;
+		font-variant-numeric: tabular-nums;
+
+		&[data-kind="tricks"] {
+			background: #101512;
+		}
+
+		&[data-kind="points"] {
+			border-left: 1px solid rgb(225 190 105 / 0.35);
+			background: #8c2940;
+		}
+
+		> small {
+			font-size: 0.38rem;
+			font-weight: 850;
+			letter-spacing: 0.06em;
+			line-height: 1;
+			text-transform: uppercase;
+		}
+
+		> output {
+			font-family: Georgia, "Times New Roman", serif;
+			font-size: 0.78rem;
+			font-weight: 800;
+			line-height: 1;
+		}
+	}
+}
+
+@media (max-width: 20rem) {
+	scorecard-lockup.class {
+		grid-template-columns: repeat(2, minmax(1.6rem, 1fr));
+
+		> score-counter {
+			padding-inline: 0.12rem;
+
+			> small {
+				font-size: 0.32rem;
+			}
+
+			> output {
+				font-size: 0.7rem;
+			}
+		}
+	}
+}
