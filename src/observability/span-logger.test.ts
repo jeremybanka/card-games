@@ -320,9 +320,20 @@ describe("pretty log formatting", () => {
 		}
 		const pretty = selectServerLogSink({
 			console: target,
-			environment: { LOG_FORMAT: "pretty", NO_COLOR: "" },
+			environment: { LOG_FORMAT: "pretty" },
 			stderrIsTTY: false,
 			stdoutIsTTY: false,
+		})
+		const noColorTarget = {
+			error: vi.fn(),
+			log: vi.fn(),
+			warn: vi.fn(),
+		}
+		const noColor = selectServerLogSink({
+			console: noColorTarget,
+			environment: { LOG_FORMAT: "pretty", NO_COLOR: "" },
+			stderrIsTTY: true,
+			stdoutIsTTY: true,
 		})
 
 		expect(json).toBe(
@@ -334,6 +345,28 @@ describe("pretty log formatting", () => {
 		)
 		pretty(representativeRecord)
 		expect(target.log.mock.calls[0]?.[0]).not.toContain("\u001b[")
+		expect(target.log.mock.calls[0]?.[0]).not.toMatch(/^\{/)
+		noColor(representativeRecord)
+		expect(noColorTarget.log.mock.calls[0]?.[0]).not.toContain("\u001b[")
+	})
+
+	it("keeps default non-interactive development output as JSON without ANSI", () => {
+		const consoleLog = vi
+			.spyOn(console, "log")
+			.mockImplementation(() => undefined)
+		const sink = selectServerLogSink({
+			environment: { NODE_ENV: "development" },
+			stderrIsTTY: true,
+			stdoutIsTTY: false,
+		})
+
+		sink(representativeRecord)
+
+		const line = consoleLog.mock.calls[0]?.[0]
+		expect(line).toBeTypeOf("string")
+		expect(line).not.toContain("\u001b[")
+		expect(JSON.parse(line as string)).toEqual(representativeRecord)
+		consoleLog.mockRestore()
 	})
 
 	it("keeps machine output as newline-delimited JSON", () => {

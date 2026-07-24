@@ -91,7 +91,6 @@ const runtimeDirectory = join(tmpdir(), "wayfarer.quest", runtimeId)
 const serverPort = await findAvailablePort()
 const commonEnvironment = {
 	...process.env,
-	LOG_FORMAT: process.env.LOG_FORMAT ?? "pretty",
 	VARMINT_CACHE_DIRECTORY:
 		process.env.VARMINT_CACHE_DIRECTORY ?? join(runtimeDirectory, "varmint"),
 }
