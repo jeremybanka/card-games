@@ -80,7 +80,6 @@ game-table.class {
 
 			> strong {
 				font-size: 0.82rem;
-				letter-spacing: 0.08em;
 			}
 		}
 
@@ -606,7 +605,6 @@ game-table.class {
 				font-family: Georgia, "Times New Roman", serif;
 				font-size: clamp(2.8rem, 13vw, 4.5rem);
 				font-weight: 500;
-				letter-spacing: -0.05em;
 			}
 		}
 
@@ -732,7 +730,8 @@ game-table.class {
 				left: 0.4rem;
 				display: grid;
 				place-items: center;
-				line-height: 0.85;
+				gap: 0.08rem;
+				line-height: 1;
 
 				> strong {
 					font-family: Georgia, "Times New Roman", serif;
