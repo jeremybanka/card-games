@@ -35,6 +35,8 @@ import type {
 } from "./game/hearts-types.ts"
 import css from "./GameTable.module.css"
 import { GameTransitions } from "./GameTransitions.tsx"
+import { PlayerAvatar } from "./PlayerAvatar.tsx"
+import { PlayerNameplate } from "./PlayerNameplate.tsx"
 
 type GameTableProps = {
 	onLeave: () => void
@@ -213,11 +215,12 @@ function OpponentZone({
 			data-disconnected={!player.connected || undefined}
 		>
 			<opponent-heading>
-				<strong>
-					{player.name}
-					{player.kind === "ai" ? " · AI" : ""}
-				</strong>
-				<span>{player.score} pts</span>
+				<PlayerNameplate
+					meta={`${player.score} pts`}
+					player={player}
+					seatIndex={seatIndex}
+					surface="opponent"
+				/>
 			</opponent-heading>
 			<opponent-hand
 				aria-label={`${player.handCardIds.length} cards in ${player.name}'s hand`}
@@ -299,9 +302,15 @@ function TrickCenter({
 							key={player.id}
 							style={{ left: `${left}%`, top: `${top}%` }}
 						>
+							<trick-avatar>
+								<PlayerAvatar
+									name={player.name}
+									seatIndex={index}
+									size="small"
+								/>
+							</trick-avatar>
 							{play === undefined ? (
 								<>
-									<span>{player.name.slice(0, 1).toUpperCase()}</span>
 									<small>{isCurrent ? "play" : "open"}</small>
 								</>
 							) : (
@@ -366,7 +375,15 @@ function ScoreSheet({
 					.sort((left, right) => left.score - right.score)
 					.map((player) => (
 						<li key={player.id}>
-							<span>{player.name}</span>
+							<score-identity>
+								<PlayerNameplate
+									player={player}
+									seatIndex={game.players.findIndex(
+										(candidate) => candidate.id === player.id,
+									)}
+									surface="score"
+								/>
+							</score-identity>
 							<small>+{player.roundPoints}</small>
 							<strong>{player.score}</strong>
 						</li>
@@ -443,11 +460,15 @@ function PlayerZone({
 			data-current={game.currentPlayerId === myPlayer.id || undefined}
 		>
 			<player-heading>
-				<strong>{myPlayer.name}</strong>
-				<span>
-					{myPlayer.score} pts
-					{myPlayer.roundPoints > 0 ? ` · +${myPlayer.roundPoints}` : ""}
-				</span>
+				<PlayerNameplate
+					meta={`${myPlayer.score} pts${
+						myPlayer.roundPoints > 0 ? ` · +${myPlayer.roundPoints}` : ""
+					}`}
+					player={myPlayer}
+					seatIndex={game.players.findIndex(
+						(candidate) => candidate.id === myPlayer.id,
+					)}
+				/>
 			</player-heading>
 			<TakenStack
 				cardIds={myPlayer.capturedCardIds}
@@ -646,10 +667,18 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 									key={player.id}
 									data-connected={player.connected || undefined}
 								>
-									<span>{player.name}</span>
+									<PlayerNameplate
+										detail={
+											player.aiModel === null ? undefined : player.aiModel
+										}
+										player={player}
+										seatIndex={game.players.findIndex(
+											(candidate) => candidate.id === player.id,
+										)}
+										surface="lobby"
+									/>
 									{player.kind === "ai" ? (
 										<>
-											<small>{player.aiModel}</small>
 											{game.hostId === myUserKey ? (
 												<button
 													type="button"

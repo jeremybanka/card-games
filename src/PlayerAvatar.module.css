@@ -1,0 +1,23 @@
+player-avatar.class {
+	flex: none;
+	width: var(--player-avatar-size, 1.65rem);
+	aspect-ratio: 1;
+	display: grid;
+	place-items: center;
+	border: 2px solid rgb(245 234 211 / 0.9);
+	border-radius: 50%;
+	box-shadow: 0 0.2rem 0.4rem rgb(0 0 0 / 0.3);
+	color: white;
+	font-size: calc(var(--player-avatar-size, 1.65rem) * 0.28);
+	font-weight: 900;
+	line-height: 1;
+	text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
+
+	&[data-size="small"] {
+		--player-avatar-size: 1.55rem;
+	}
+
+	&[data-size="large"] {
+		--player-avatar-size: 1.75rem;
+	}
+}
