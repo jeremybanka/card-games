@@ -177,6 +177,8 @@ try {
 			"--strictPort",
 			"--configLoader",
 			"runner",
+			"--clearScreen",
+			"false",
 		],
 		{
 			detached: process.platform !== "win32",
