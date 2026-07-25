@@ -159,7 +159,10 @@ function stop(signal: NodeJS.Signals, exitCode = 0): void {
 	process.exitCode = exitCode
 }
 
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
+const shutdownSignals: NodeJS.Signals[] = ["SIGINT", "SIGTERM"]
+if (process.platform !== "win32") shutdownSignals.push("SIGHUP", "SIGQUIT")
+
+for (const signal of shutdownSignals) {
 	process.once(signal, () => stop(signal))
 }
 
