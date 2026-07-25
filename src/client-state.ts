@@ -7,19 +7,24 @@ export type RoomSession = {
 }
 
 function storedPlayerName(): string {
-	return localStorage.getItem("wayfarer.playerName") ?? ""
+	return window.localStorage.getItem("wayfarer.playerName") ?? ""
 }
 
 function storedRoomSession(): RoomSession | null {
-	const roomCode = localStorage.getItem("wayfarer.roomCode")
+	const roomCode = window.localStorage.getItem("wayfarer.roomCode")
 	const playerName = storedPlayerName()
 	if (roomCode === null || playerName === "") return null
 	return { generation: 0, playerName, roomCode }
 }
 
-export const connectionStateAtom = atom<
-	"connected" | "connecting" | "disconnected"
->({
+export type ConnectionState =
+	| "connected"
+	| "connecting"
+	| "disconnected"
+	| "reconnected"
+	| "reconnecting"
+
+export const connectionStateAtom = atom<ConnectionState>({
 	key: "connectionState",
 	default: "connecting",
 })
@@ -46,8 +51,8 @@ export const actionErrorAtom = atom<string | null>({
 })
 
 export function saveRoomSession(roomCode: string, playerName: string): void {
-	localStorage.setItem("wayfarer.playerName", playerName)
-	localStorage.setItem("wayfarer.roomCode", roomCode)
+	window.localStorage.setItem("wayfarer.playerName", playerName)
+	window.localStorage.setItem("wayfarer.roomCode", roomCode)
 	const url = new URL(window.location.href)
 	url.searchParams.set("room", roomCode)
 	history.replaceState(null, "", url)
@@ -59,7 +64,7 @@ export function saveRoomSession(roomCode: string, playerName: string): void {
 }
 
 export function clearRoomSession(): void {
-	localStorage.removeItem("wayfarer.roomCode")
+	window.localStorage.removeItem("wayfarer.roomCode")
 	const url = new URL(window.location.href)
 	url.searchParams.delete("room")
 	history.replaceState(null, "", url)
