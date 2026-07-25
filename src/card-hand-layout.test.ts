@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
 	advanceCardGesture,
 	cardGesturePhase,
+	compactHandCardLayout,
 	draggedCardTransform,
 	dragTranslationFromPointer,
 	handCardLayout,
@@ -32,6 +33,35 @@ describe("card hand layout", () => {
 		expect([0, 1].map((index) => handCardLayout(2, index).left)).toEqual([
 			43, 57,
 		])
+	})
+
+	it.each([0, 1, 2, 7, 13])(
+		"keeps a compact %i-card hand in the same bounded coordinate space",
+		(cardCount) => {
+			const layouts = Array.from({ length: cardCount }, (_, index) =>
+				compactHandCardLayout(cardCount, index),
+			)
+			expect(layouts.every(({ left }) => left >= 8 && left <= 92)).toBe(true)
+			expect(layouts.every(({ angle }) => Math.abs(angle) <= 15.5)).toBe(true)
+			expect(layouts.every(({ rise }) => rise >= 0)).toBe(true)
+		},
+	)
+
+	it("uses a centered, gentler fan for a full opponent hand", () => {
+		const layouts = Array.from({ length: 13 }, (_, index) =>
+			compactHandCardLayout(13, index),
+		)
+		expect(layouts[0]).toEqual({
+			angle: -7.153846153846153,
+			left: 8,
+			rise: 1.7999999999999998,
+		})
+		expect(layouts[6]).toEqual({ angle: 0, left: 50, rise: 0 })
+		expect(layouts.at(-1)).toEqual({
+			angle: 7.153846153846153,
+			left: 92,
+			rise: 1.7999999999999998,
+		})
 	})
 
 	it("promotes an upward pick into a card drag", () => {

@@ -4,6 +4,8 @@ export type HandCardLayout = {
 	rise: number
 }
 
+export type CompactHandCardLayout = HandCardLayout
+
 export type CardGesture<CardId extends string = string> = {
 	cardId: CardId
 	phase: "dragging" | "picking"
@@ -34,6 +36,18 @@ export function handCardLayout(
 		angle: distanceFromMiddle * Math.min(3.2, 31 / Math.max(cardCount, 1)),
 		left: 50 + (distanceFromMiddle / middle) * (spread / 2),
 		rise: Math.abs(distanceFromMiddle) * 1.2,
+	}
+}
+
+export function compactHandCardLayout(
+	cardCount: number,
+	cardIndex: number,
+): CompactHandCardLayout {
+	const layout = handCardLayout(cardCount, cardIndex)
+	return {
+		angle: layout.angle * 0.5,
+		left: layout.left,
+		rise: layout.rise * 0.25,
 	}
 }
 

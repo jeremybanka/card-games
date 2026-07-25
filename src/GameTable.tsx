@@ -12,6 +12,7 @@ import {
 } from "./ai/ai-models.ts"
 import {
 	advanceCardGesture,
+	compactHandCardLayout,
 	draggedCardTransform,
 	dragTranslationFromPointer,
 	handCardLayout,
@@ -245,19 +246,30 @@ function OpponentZone({
 			<opponent-hand
 				aria-label={`${player.handCardIds.length} cards in ${player.name}'s hand`}
 			>
-				{player.handCardIds.map((cardId, index) => (
-					<card-back
-						data-card-id={cardId}
-						data-card-face="down"
-						data-deal-index={index * playerCount + seatIndex}
-						data-deal-round={dealRound}
-						key={cardId}
-						style={{
-							transform: `translateX(${Math.min(index, 12) * 2.4}px) rotate(${(index - (player.handCardIds.length - 1) / 2) * 0.45}deg)`,
-						}}
-					/>
-				))}
-				<output>{player.handCardIds.length}</output>
+				<hand-cards aria-hidden="true">
+					{player.handCardIds.map((cardId, index) => {
+						const layout = compactHandCardLayout(
+							player.handCardIds.length,
+							index,
+						)
+						return (
+							<card-back
+								data-card-id={cardId}
+								data-card-face="down"
+								data-deal-index={index * playerCount + seatIndex}
+								data-deal-round={dealRound}
+								key={cardId}
+								style={{
+									left: `clamp(calc(var(--opponent-card-width) / 2 + 0.4rem), ${layout.left}%, calc(100% - var(--opponent-card-width) / 2 - 0.4rem))`,
+									transform: `translateX(-50%) translateY(${layout.rise}px) rotate(${layout.angle}deg)`,
+								}}
+							/>
+						)
+					})}
+				</hand-cards>
+				<output aria-label={`${player.handCardIds.length} cards`}>
+					{player.handCardIds.length}
+				</output>
 			</opponent-hand>
 			<TakenStack
 				cardIds={player.capturedCardIds}
@@ -535,6 +547,9 @@ function PlayerZone({
 						</hand-card>
 					)
 				})}
+				<output aria-label={`${privateView.cards.length} cards in your hand`}>
+					{privateView.cards.length}
+				</output>
 			</player-hand>
 		</player-zone>
 	)
