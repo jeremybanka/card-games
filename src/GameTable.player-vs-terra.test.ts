@@ -445,6 +445,15 @@ describe("recorded player versus Terra table", () => {
 
 			fireEvent.click(screen.getByRole("button", { name: "Deal the cards" }))
 			await screen.findByRole("button", { name: "A of clubs" })
+			const localHand = screen.getByLabelText("Your hand: 26 cards")
+			expect(
+				within(localHand).getByLabelText("26 cards in your hand"),
+			).toHaveProperty("textContent", "26")
+			const terraHand = screen.getByLabelText("26 cards in Terra AI 1's hand")
+			expect(within(terraHand).getByLabelText("26 cards")).toHaveProperty(
+				"textContent",
+				"26",
+			)
 
 			fireEvent.click(screen.getByRole("button", { name: "A of clubs" }))
 			fireEvent.click(screen.getByRole("button", { name: "A of diamonds" }))
@@ -481,7 +490,7 @@ describe("recorded player versus Terra table", () => {
 				y: -50,
 			})
 
-			for (const cardName of recordedHumanPlays) {
+			for (const [playIndex, cardName] of recordedHumanPlays.entries()) {
 				const continueButton = screen.queryByRole("button", {
 					name: "Continue to next trick",
 				})
@@ -569,10 +578,18 @@ describe("recorded player versus Terra table", () => {
 					)
 				}
 				await waitFor(() => {
-					const hand = screen.getByLabelText(/^Your hand:/)
+					const remainingCardCount = 25 - playIndex
+					const hand = screen.getByLabelText(
+						`Your hand: ${remainingCardCount} cards`,
+					)
 					expect(
 						within(hand).queryByRole("button", { name: cardName }),
 					).toBeNull()
+					expect(
+						within(hand).getByLabelText(
+							`${remainingCardCount} cards in your hand`,
+						),
+					).toHaveProperty("textContent", String(remainingCardCount))
 				})
 			}
 
