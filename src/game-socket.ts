@@ -5,7 +5,6 @@ import type { Socket } from "socket.io-client"
 import {
 	actionErrorAtom,
 	clearRoomSession,
-	connectionStateAtom,
 	roomSessionAtom,
 	saveRoomSession,
 } from "./client-state.ts"
@@ -13,6 +12,7 @@ import type {
 	ClientToServerEvents,
 	ServerToClientEvents,
 } from "./game/hearts-types.ts"
+import { trackConnectionStatus } from "./connection-status.ts"
 
 const identityKey = "wayfarer.playerId"
 const secretKey = "wayfarer.playerSecret"
@@ -29,9 +29,15 @@ export const gameSocket: GameSocket = io({
 	auth: { playerId, playerSecret },
 })
 
+trackConnectionStatus({
+	onConnect: (listener) => gameSocket.on("connect", listener),
+	onConnectError: (listener) => gameSocket.on("connect_error", listener),
+	onDisconnect: (listener) => gameSocket.on("disconnect", listener),
+	onReconnectAttempt: (listener) =>
+		gameSocket.io.on("reconnect_attempt", listener),
+})
+
 gameSocket.on("connect", () => {
-	setState(connectionStateAtom, "connected")
-	setState(actionErrorAtom, null)
 	const session = getState(roomSessionAtom)
 	if (session === null) return
 	gameSocket.emit(
@@ -47,15 +53,6 @@ gameSocket.on("connect", () => {
 			}
 		},
 	)
-})
-
-gameSocket.on("disconnect", () => {
-	setState(connectionStateAtom, "disconnected")
-})
-
-gameSocket.on("connect_error", (error) => {
-	setState(connectionStateAtom, "disconnected")
-	setState(actionErrorAtom, error.message)
 })
 
 gameSocket.on("roomClosed", (message) => {

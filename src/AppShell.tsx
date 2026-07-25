@@ -11,6 +11,10 @@ import {
 	roomSessionAtom,
 	saveRoomSession,
 } from "./client-state.ts"
+import {
+	connectionActionsEnabled,
+	connectionStatusMessage,
+} from "./connection-status.ts"
 import { GameTable } from "./GameTable.tsx"
 import { gameSocket } from "./game-socket.ts"
 import css from "./AppShell.module.css"
@@ -21,6 +25,7 @@ export function AppShell(): VNode {
 	const roomCode = useO(roomCodeInputAtom)
 	const roomSession = useO(roomSessionAtom)
 	const actionError = useO(actionErrorAtom)
+	const connectionMessage = connectionStatusMessage(connectionState)
 
 	if (roomSession !== null) {
 		return (
@@ -33,6 +38,15 @@ export function AppShell(): VNode {
 						clearRoomSession()
 					}}
 				/>
+				{connectionMessage === null ? null : (
+					<connection-status
+						data-state={connectionState}
+						role="status"
+						aria-live="polite"
+					>
+						{connectionMessage}
+					</connection-status>
+				)}
 			</app-shell>
 		)
 	}
@@ -95,7 +109,9 @@ export function AppShell(): VNode {
 						<action-row>
 							<button
 								type="button"
-								disabled={!playerNameReady || connectionState !== "connected"}
+								disabled={
+									!playerNameReady || !connectionActionsEnabled(connectionState)
+								}
 								onClick={() => {
 									setState(actionErrorAtom, null)
 									gameSocket.emit("createRoom", playerName, (result) => {
@@ -115,7 +131,7 @@ export function AppShell(): VNode {
 									!(
 										playerNameReady &&
 										roomCodeReady &&
-										connectionState === "connected"
+										connectionActionsEnabled(connectionState)
 									)
 								}
 							>
@@ -123,12 +139,12 @@ export function AppShell(): VNode {
 							</button>
 						</action-row>
 					</form>
-					<lobby-status aria-live="polite">
-						{actionError ??
-							(connectionState === "connected"
-								? "Ready to deal."
-								: "Connecting to the table…")}
+					<lobby-status role="status" aria-live="polite">
+						{connectionMessage ?? "Ready to deal."}
 					</lobby-status>
+					{actionError === null ? null : (
+						<lobby-error role="alert">{actionError}</lobby-error>
+					)}
 				</lobby-card>
 			</lobby-screen>
 		</app-shell>
