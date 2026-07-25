@@ -452,6 +452,35 @@ describe("recorded player versus Terra table", () => {
 			fireEvent.click(screen.getByRole("button", { name: "Pass across" }))
 			await screen.findByText("Your play")
 
+			const tableCenter = document.querySelector("table-center")
+			const trickCenter = document.querySelector("trick-center")
+			const gameTable = document.querySelector("game-table")
+			if (tableCenter === null || trickCenter === null || gameTable === null) {
+				throw new Error("Expected the playing surface to be rendered.")
+			}
+			vi.spyOn(tableCenter, "getBoundingClientRect").mockReturnValue({
+				bottom: 200,
+				height: 300,
+				left: 10,
+				right: 400,
+				toJSON: () => ({}),
+				top: -100,
+				width: 390,
+				x: 10,
+				y: -100,
+			})
+			vi.spyOn(trickCenter, "getBoundingClientRect").mockReturnValue({
+				bottom: 150,
+				height: 200,
+				left: 100,
+				right: 300,
+				toJSON: () => ({}),
+				top: -50,
+				width: 200,
+				x: 100,
+				y: -50,
+			})
+
 			for (const cardName of recordedHumanPlays) {
 				const continueButton = screen.queryByRole("button", {
 					name: "Continue to next trick",
@@ -467,7 +496,6 @@ describe("recorded player versus Terra table", () => {
 					return button
 				})
 				if (cardName === "2 of clubs") {
-					const gameTable = document.querySelector("game-table")
 					fireEvent.pointerDown(cardButton, {
 						clientX: 0,
 						clientY: 100,
@@ -495,7 +523,8 @@ describe("recorded player versus Terra table", () => {
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBe("dragging")
 					fireEvent.pointerUp(cardButton, {
-						clientX: 0,
+						// This point is inside table-center but outside trick-center.
+						clientX: 20,
 						clientY: 0,
 						pointerId: 1,
 					})
@@ -503,6 +532,34 @@ describe("recorded player versus Terra table", () => {
 					await waitFor(() => {
 						expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
 					})
+				} else if (cardName === "4 of clubs") {
+					fireEvent.pointerDown(cardButton, {
+						clientX: 0,
+						clientY: 100,
+						pointerId: 2,
+					})
+					fireEvent.pointerMove(cardButton, {
+						clientX: 35,
+						clientY: 0,
+						pointerId: 2,
+					})
+					expect(gameTable?.getAttribute("data-card-gesture")).toBe("dragging")
+					fireEvent.pointerUp(cardButton, {
+						clientX: 500,
+						clientY: 300,
+						pointerId: 2,
+					})
+					expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+					expect(
+						screen
+							.getByRole("button", { name: cardName })
+							.getAttribute("aria-pressed"),
+					).toBe("true")
+					fireEvent.click(
+						screen.getByRole("button", {
+							name: "Play selected card",
+						}),
+					)
 				} else {
 					fireEvent.click(cardButton)
 					fireEvent.click(
