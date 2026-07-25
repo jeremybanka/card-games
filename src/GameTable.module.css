@@ -182,6 +182,13 @@ game-table.class {
 		display: grid;
 		place-items: center;
 		padding: 0 0.5rem;
+		border-radius: 1.25rem;
+		transition: background 180ms ease, box-shadow 180ms ease;
+
+		&[data-drag-active] {
+			background: rgb(225 190 105 / 0.055);
+			box-shadow: inset 0 0 0 1px rgb(225 190 105 / 0.18);
+		}
 
 		> waiting-room {
 			width: min(90%, 23rem);
@@ -324,12 +331,6 @@ game-table.class {
 			min-height: 13rem;
 			display: block;
 			border-radius: 2rem;
-			transition: background 180ms ease, box-shadow 180ms ease;
-
-			&[data-drag-active] {
-				background: rgb(225 190 105 / 0.055);
-				box-shadow: inset 0 0 0 1px rgb(225 190 105 / 0.18);
-			}
 
 			> trick-heading {
 				position: absolute;
@@ -478,7 +479,18 @@ game-table.class {
 		grid-template-columns: minmax(0, 1fr) 4.6rem;
 		grid-template-rows: auto 1fr;
 		gap: 0 0.35rem;
-		padding: 0 0.55rem max(0.4rem, env(safe-area-inset-bottom));
+		padding: 0.65rem 0.55rem max(0.4rem, env(safe-area-inset-bottom));
+
+		&::before {
+			position: absolute;
+			top: 0;
+			right: 0.85rem;
+			left: 0.85rem;
+			height: 1px;
+			background: rgb(255 255 255 / 0.13);
+			content: "";
+			pointer-events: none;
+		}
 
 		> player-heading {
 			position: relative;

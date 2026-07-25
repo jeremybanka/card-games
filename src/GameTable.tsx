@@ -285,10 +285,7 @@ function TrickCenter({
 }): VNode {
 	const myIndex = game.players.findIndex((player) => player.id === myPlayerId)
 	return (
-		<trick-center
-			data-drag-active={dragState?.phase === "dragging" || undefined}
-			data-dropzone="trick"
-		>
+		<trick-center>
 			<DeckRemainder cardIds={game.deckCardIds} />
 			<trick-heading>
 				<strong>
@@ -741,7 +738,14 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				))}
 			</opponents-row>
 
-			<table-center>
+			<table-center
+				data-drag-active={
+					game.phase === "playing" && dragState?.phase === "dragging"
+						? true
+						: undefined
+				}
+				data-dropzone={game.phase === "playing" ? "trick" : undefined}
+			>
 				{game.phase === "lobby" ? (
 					<waiting-room>
 						<small>PASS THE CODE</small>
@@ -992,9 +996,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					if (origin === null) return
 					const moved = dragMoved.current
 					const dropRect = document
-						.querySelector("trick-center")
+						.querySelector("table-center[data-dropzone='trick']")
 						?.getBoundingClientRect()
-					const releasedOverTrick =
+					const releasedOverTable =
 						dropRect !== undefined &&
 						event.clientX >= dropRect.left &&
 						event.clientX <= dropRect.right &&
@@ -1003,7 +1007,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					const shouldPlay =
 						game.phase === "playing" &&
 						dragPhase.current === "dragging" &&
-						releasedOverTrick
+						releasedOverTable
 					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
 						event.currentTarget.releasePointerCapture?.(event.pointerId)
 					}
