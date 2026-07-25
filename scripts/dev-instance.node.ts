@@ -2,7 +2,8 @@ import { spawn, type ChildProcess } from "node:child_process"
 import { watch, type FSWatcher } from "node:fs"
 import { createConnection, createServer } from "node:net"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const LOOPBACK_HOST = "127.0.0.1"
 const PORT_READY_TIMEOUT_MS = 10_000
@@ -74,20 +75,17 @@ async function waitForPort(port: number, child: ChildProcess): Promise<void> {
 
 function terminate(child: ChildProcess, signal: NodeJS.Signals): void {
 	if (child.exitCode !== null || child.pid === undefined) return
-	if (process.platform === "win32") {
-		child.kill(signal)
-		return
-	}
-	try {
-		process.kill(-child.pid, signal)
-	} catch {
-		child.kill(signal)
-	}
+	child.kill(signal)
 }
 
 const name = instanceName()
 const runtimeId = `${slugify(name)}-${process.pid}`
 const runtimeDirectory = join(tmpdir(), "wayfarer.quest", runtimeId)
+const viteCliPath = join(
+	dirname(fileURLToPath(import.meta.resolve("vite/package.json"))),
+	"bin",
+	"vite.js",
+)
 const serverPort = await findAvailablePort()
 const commonEnvironment = {
 	...process.env,
@@ -106,7 +104,6 @@ function startRoomServer(): ChildProcess {
 		process.execPath,
 		["--env-file-if-exists=.env", "server/main.node.ts"],
 		{
-			detached: process.platform !== "win32",
 			env: {
 				...commonEnvironment,
 				PORT: String(serverPort),
@@ -170,9 +167,9 @@ try {
 	await waitForPort(serverPort, server)
 	const clientPort = await findAvailablePort()
 	vite = spawn(
-		process.platform === "win32" ? "pnpm.cmd" : "pnpm",
+		process.execPath,
 		[
-			"dev:vite",
+			viteCliPath,
 			"--host",
 			"0.0.0.0",
 			"--port",
@@ -184,7 +181,6 @@ try {
 			"false",
 		],
 		{
-			detached: process.platform !== "win32",
 			env: {
 				...commonEnvironment,
 				WAYFARER_SERVER_PORT: String(serverPort),
