@@ -445,6 +445,12 @@ describe("recorded player versus Terra table", () => {
 
 			fireEvent.click(screen.getByRole("button", { name: "Deal the cards" }))
 			await screen.findByRole("button", { name: "A of clubs" })
+			await waitFor(() => {
+				const terraPlayer = getState(heartsStateAtoms, roomCode).players.find(
+					(player) => player.id === terraId,
+				)
+				expect(terraPlayer?.passSelection).toHaveLength(3)
+			})
 			const localHand = screen.getByLabelText("Your hand: 26 cards")
 			expect(
 				within(localHand).getByLabelText("26 cards in your hand"),
