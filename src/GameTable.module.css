@@ -220,11 +220,7 @@ game-table.class {
 			box-shadow: inset 0 0 0 1px rgb(225 190 105 / 0.18);
 		}
 
-		> bid-panel {
-			display: contents;
-		}
-
-		> :is(waiting-room, bid-panel > waiting-room) {
+		> waiting-room {
 			width: min(90%, 23rem);
 			display: grid;
 			place-items: center;

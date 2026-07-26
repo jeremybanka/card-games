@@ -104,6 +104,31 @@ describe("Oh Hell engine", () => {
 		expect(state.cardValues).not.toEqual(firstMapping)
 	})
 
+	it("projects a live trick counter after each completed trick", () => {
+		let state = dealOhHellRound(
+			table(),
+			createSeededRandom("oh-hell-live-tricks").next,
+		)
+		state = bidRound(state)
+		while (state.phase === "playing" && state.completedTricks.length === 0) {
+			const id = state.currentPlayerId as PlayerId
+			const cardId = toOhHellPrivatePlayerView(state, id).playableCardIds?.[0]
+			state = playOhHellCard(state, id, cardId as `card::${string}`)
+		}
+		const publicView = toOhHellPublicGameView(state)
+		const winner = publicView.players.find(
+			(player) => player.id === state.lastTrickWinnerId,
+		)
+		expect(publicView.completedTricks).toHaveLength(1)
+		expect(winner?.tricksWon).toBe(1)
+		expect(
+			publicView.players.reduce(
+				(total, player) => total + (player.tricksWon ?? 0),
+				0,
+			),
+		).toBe(1)
+	})
+
 	it("plays the complete deterministic five-round game and declares high-score winners", () => {
 		let state = table()
 		const random = createSeededRandom("oh-hell-complete-game")

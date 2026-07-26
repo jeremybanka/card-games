@@ -11,6 +11,10 @@ scorecard-lockup.class {
 		inset 0 1px rgb(255 255 255 / 0.08);
 	color: var(--gold);
 
+	&[data-with-bid] {
+		grid-template-columns: repeat(3, minmax(1.85rem, 1fr));
+	}
+
 	> score-counter {
 		/* cspell:ignore nums */
 		min-width: 0;
@@ -22,6 +26,10 @@ scorecard-lockup.class {
 
 		&[data-kind="tricks"] {
 			background: #101512;
+		}
+
+		&[data-kind="bid"] {
+			background: #704f19;
 		}
 
 		&[data-kind="points"] {
@@ -49,6 +57,10 @@ scorecard-lockup.class {
 @media (max-width: 20rem) {
 	scorecard-lockup.class {
 		grid-template-columns: repeat(2, minmax(1.6rem, 1fr));
+
+		&[data-with-bid] {
+			grid-template-columns: repeat(3, minmax(1.45rem, 1fr));
+		}
 
 		> score-counter {
 			padding-inline: 0.12rem;

@@ -50,4 +50,28 @@ describe("ScorecardLockup", () => {
 
 		expect(screen.getByLabelText("1 trick, 1 point")).not.toBeNull()
 	})
+
+	it("adds a persistent Oh Hell bid counter without changing Hearts", () => {
+		const { rerender } = render(
+			createElement(ScorecardLockupCompat, {
+				bid: null,
+				points: 17,
+				tricks: 2,
+			}),
+		)
+
+		expect(screen.getByLabelText("2 tricks, no bid, 17 points")).not.toBeNull()
+		expect(screen.getByText("Bid")).not.toBeNull()
+		expect(screen.getByText("—")).not.toBeNull()
+
+		rerender(
+			createElement(ScorecardLockupCompat, {
+				bid: 3,
+				points: 17,
+				tricks: 2,
+			}),
+		)
+		expect(screen.getByLabelText("2 tricks, 3 bid, 17 points")).not.toBeNull()
+		expect(screen.getByText("3")).not.toBeNull()
+	})
 })

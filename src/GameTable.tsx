@@ -11,6 +11,7 @@ import {
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
 import { AiStrategyReview } from "./AiStrategyReview.tsx"
+import { BiddingConsole } from "./BiddingConsole.tsx"
 import {
 	advanceCardGesture,
 	compactHandCardLayout,
@@ -238,20 +239,24 @@ function PlayingCard({
 }
 
 function TakenStack({
+	bid,
 	cardIds,
 	hiddenCardIds,
 	label,
 	playerCount,
 	points,
+	tricks,
 }: {
+	bid?: number | null | undefined
 	cardIds: CardId[]
 	hiddenCardIds: ReadonlySet<CardId>
 	label: string
 	playerCount: number
 	points: number
+	tricks?: number | undefined
 }): VNode {
 	const visibleCardIds = cardIds.filter((cardId) => !hiddenCardIds.has(cardId))
-	const trickCount = capturedTrickCount(cardIds.length, playerCount)
+	const trickCount = tricks ?? capturedTrickCount(cardIds.length, playerCount)
 	return (
 		<taken-stack aria-label={`${label}: ${cardIds.length} cards`}>
 			<stack-cards>
@@ -266,7 +271,7 @@ function TakenStack({
 					/>
 				))}
 			</stack-cards>
-			<ScorecardLockup points={points} tricks={trickCount} />
+			<ScorecardLockup bid={bid} points={points} tricks={trickCount} />
 		</taken-stack>
 	)
 }
@@ -327,11 +332,13 @@ function OpponentZone({
 				</output>
 			</opponent-hand>
 			<TakenStack
+				bid={player.bid}
 				cardIds={player.capturedCardIds}
 				hiddenCardIds={hiddenCardIds}
 				label={`${player.name}'s captured cards`}
 				playerCount={playerCount}
 				points={player.score}
+				tricks={player.tricksWon}
 			/>
 		</opponent-zone>
 	)
@@ -431,58 +438,6 @@ function TrickCenter({
 				{selectedCard === null ? "Drag a card here" : "Play selected card"}
 			</button>
 		</trick-center>
-	)
-}
-
-function BidPanel({
-	game,
-	myPlayerId,
-	privateView,
-	socket,
-}: {
-	game: PublicGameView
-	myPlayerId: PlayerId
-	privateView: PrivatePlayerView
-	socket: GameSocket
-}): VNode {
-	const myTurn = game.bidPlayerId === myPlayerId
-	return (
-		<bid-panel aria-label="Oh Hell bidding">
-			<waiting-room>
-				<small>BIDDING · {game.trumpSuit?.toUpperCase()} TRUMP</small>
-				<h2>{myTurn ? "Your bid" : game.statusMessage}</h2>
-				<p>
-					{game.bidsSubmitted} of {game.players.length} bids ·{" "}
-					{game.roundHandSize} cards
-				</p>
-				<seated-list>
-					{game.players.map((player) => (
-						<seat-pill key={player.id}>
-							<strong>{player.name}</strong>
-							<span>
-								{player.bid === null ? "Waiting…" : `Bid ${player.bid}`}
-							</span>
-						</seat-pill>
-					))}
-				</seated-list>
-				{myTurn ? (
-					<action-row aria-label="Choose your bid">
-						{(privateView.legalBids ?? []).map((bid) => (
-							<button
-								type="button"
-								key={bid}
-								aria-label={`Bid ${bid}`}
-								onClick={() => socket.emit("submitBid", bid, handleResult)}
-							>
-								{bid}
-							</button>
-						))}
-					</action-row>
-				) : (
-					<p>Waiting for the next bidder.</p>
-				)}
-			</waiting-room>
-		</bid-panel>
 	)
 }
 
@@ -691,11 +646,13 @@ function PlayerZone({
 				/>
 			</player-heading>
 			<TakenStack
+				bid={myPlayer.bid}
 				cardIds={myPlayer.capturedCardIds}
 				hiddenCardIds={hiddenCardIds}
 				label="Your captured cards"
 				playerCount={playerCount}
 				points={myPlayer.score}
+				tricks={myPlayer.tricksWon}
 			/>
 			{passing ? (
 				<pass-zone
@@ -1145,11 +1102,11 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						)}
 					</waiting-room>
 				) : game.phase === "bidding" ? (
-					<BidPanel
+					<BiddingConsole
 						game={game}
+						legalBids={privateView.legalBids ?? []}
 						myPlayerId={myUserKey}
-						privateView={privateView}
-						socket={socket}
+						onSubmitBid={(bid) => socket.emit("submitBid", bid, handleResult)}
 					/>
 				) : (
 					<TrickCenter
