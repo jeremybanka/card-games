@@ -448,49 +448,6 @@ game-table.class {
 		}
 	}
 
-	> pass-banner {
-		position: absolute;
-		z-index: 80;
-		right: 0.75rem;
-		bottom: calc(min(9.5rem, 27vh) + clamp(3.5rem, 15vw, 5rem) + 0.5rem);
-		left: 0.75rem;
-		display: grid;
-		grid-template-columns: 1fr auto;
-		align-items: center;
-		gap: 0.05rem 0.75rem;
-		padding: 0.65rem 0.75rem;
-		border: 1px solid rgb(225 190 105 / 0.34);
-		border-radius: 0.9rem;
-		background: rgb(8 31 25 / 0.9);
-		box-shadow: 0 0.8rem 2rem var(--shadow);
-		backdrop-filter: blur(0.8rem);
-
-		> strong {
-			font-size: 0.75rem;
-		}
-
-		> span {
-			color: var(--ink-muted);
-			font-size: 0.6rem;
-		}
-
-		> button {
-			grid-row: 1 / 3;
-			grid-column: 2;
-			padding: 0.55rem 0.8rem;
-			border: 0;
-			border-radius: 999px;
-			background: var(--gold);
-			color: #17261f;
-			font-size: 0.68rem;
-			font-weight: 850;
-
-			&:disabled {
-				opacity: 0.35;
-			}
-		}
-	}
-
 	> player-zone {
 		position: relative;
 		z-index: 10;
@@ -510,6 +467,91 @@ game-table.class {
 			background: rgb(255 255 255 / 0.13);
 			content: "";
 			pointer-events: none;
+		}
+
+		> pass-zone {
+			--hand-card-width: clamp(3.5rem, 15vw, 5rem);
+
+			position: absolute;
+			z-index: 120;
+			right: 0.75rem;
+			bottom: calc(100% - 5rem);
+			left: 0.75rem;
+			height: 8.4rem;
+			display: grid;
+			grid-template-rows: auto 1fr;
+			border: 1px dashed rgb(225 190 105 / 0.48);
+			border-radius: 0.9rem;
+			background: rgb(8 31 25 / 0.82);
+			box-shadow: 0 0.8rem 2rem var(--shadow);
+			backdrop-filter: blur(0.7rem);
+			transition: border-color 160ms, background 160ms;
+
+			&[data-ready] {
+				border-style: solid;
+				border-color: rgb(225 190 105 / 0.82);
+				background: rgb(26 61 48 / 0.92);
+			}
+
+			> pass-heading {
+				min-width: 0;
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) auto;
+				align-items: center;
+				gap: 0.05rem 0.75rem;
+				padding: 0.45rem 0.6rem;
+
+				> strong {
+					font-size: 0.72rem;
+				}
+
+				> span {
+					overflow: hidden;
+					color: var(--ink-muted);
+					font-size: 0.56rem;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+				}
+
+				> button {
+					grid-row: 1 / 3;
+					grid-column: 2;
+					padding: 0.48rem 0.72rem;
+					border: 0;
+					border-radius: 999px;
+					background: var(--gold);
+					color: #17261f;
+					font-size: 0.64rem;
+					font-weight: 850;
+
+					&:disabled {
+						opacity: 0.35;
+					}
+				}
+			}
+
+			> pass-cards {
+				min-height: 0;
+				display: flex;
+				justify-content: center;
+				gap: 0.5rem;
+				padding: 0 0.6rem;
+				transform: translateY(-0.35rem);
+
+				> pass-card {
+					position: relative;
+					width: var(--hand-card-width);
+					aspect-ratio: 5 / 7;
+					flex: none;
+					display: block;
+					touch-action: none;
+
+					&:has(playing-card[data-picking]),
+					&:has(playing-card[data-dragging]) {
+						z-index: 300;
+					}
+				}
+			}
 		}
 
 		> player-heading {

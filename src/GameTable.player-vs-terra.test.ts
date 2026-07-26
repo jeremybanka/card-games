@@ -506,20 +506,125 @@ describe("recorded player versus Terra table", () => {
 			fireEvent.pointerLeave(hoveredCardButton)
 			expect(hoveredCard?.hasAttribute("data-raised")).toBe(false)
 
+			const passZone = screen.getByLabelText("Cards to pass: 0 of 3")
+			const gestureTable = document.querySelector("game-table")
+			expect(
+				(
+					screen.getByRole("button", {
+						name: "Pass across",
+					}) as HTMLButtonElement
+				).disabled,
+			).toBe(true)
+			fireEvent.pointerDown(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 40,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			fireEvent.pointerUp(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 40,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+
+			fireEvent.pointerDown(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 41,
+			})
+			fireEvent.pointerMove(hoveredCardButton, {
+				clientX: 100,
+				clientY: 40,
+				pointerId: 41,
+			})
+			expect(gestureTable?.getAttribute("data-card-gesture")).toBe("dragging")
+			fireEvent.pointerUp(hoveredCardButton, {
+				clientX: 500,
+				clientY: 300,
+				pointerId: 41,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(gestureTable?.getAttribute("data-card-gesture")).toBeNull()
+
+			vi.spyOn(passZone, "getBoundingClientRect").mockReturnValue({
+				bottom: 120,
+				height: 120,
+				left: 50,
+				right: 350,
+				toJSON: () => ({}),
+				top: 0,
+				width: 300,
+				x: 50,
+				y: 0,
+			})
+			vi.spyOn(localHand, "getBoundingClientRect").mockReturnValue({
+				bottom: 400,
+				height: 200,
+				left: 0,
+				right: 400,
+				toJSON: () => ({}),
+				top: 200,
+				width: 400,
+				x: 0,
+				y: 200,
+			})
+			fireEvent.pointerDown(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 42,
+			})
+			fireEvent.pointerMove(hoveredCardButton, {
+				clientX: 150,
+				clientY: 40,
+				pointerId: 42,
+			})
+			fireEvent.pointerUp(hoveredCardButton, {
+				clientX: 150,
+				clientY: 40,
+				pointerId: 42,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 1 of 3")
+			const passCardButton = within(passZone).getByRole("button", {
+				name: "A of clubs",
+			})
+			fireEvent.pointerDown(passCardButton, {
+				clientX: 150,
+				clientY: 40,
+				pointerId: 43,
+			})
+			fireEvent.pointerMove(passCardButton, {
+				clientX: 150,
+				clientY: 250,
+				pointerId: 43,
+			})
+			fireEvent.pointerUp(passCardButton, {
+				clientX: 150,
+				clientY: 250,
+				pointerId: 43,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(
+				within(localHand).getByRole("button", { name: "A of clubs" }),
+			).toBeTruthy()
+			await new Promise((resolve) => window.setTimeout(resolve, 0))
+
 			fireEvent.click(screen.getByRole("button", { name: "A of clubs" }))
 			fireEvent.click(screen.getByRole("button", { name: "A of diamonds" }))
 			fireEvent.click(screen.getByRole("button", { name: "K of hearts" }))
-			const raisedCards = localHand.querySelectorAll(
-				"playing-card[data-raised][data-selected]",
+			const updatedPassZone = screen.getByLabelText("Cards to pass: 3 of 3")
+			const passCards = updatedPassZone.querySelectorAll(
+				"pass-card playing-card[data-selected]",
 			)
-			expect(raisedCards).toHaveLength(3)
+			expect(passCards).toHaveLength(3)
+			expect(screen.getByLabelText("Your hand: 23 cards")).toBeTruthy()
 			expect(
-				new Set(
-					Array.from(raisedCards, (card) =>
-						(card as HTMLElement).style.getPropertyValue("--raised-delta-x"),
-					),
-				).size,
-			).toBe(3)
+				(
+					screen.getByRole("button", {
+						name: "Pass across",
+					}) as HTMLButtonElement
+				).disabled,
+			).toBe(false)
 			fireEvent.click(screen.getByRole("button", { name: "Pass across" }))
 			await screen.findByText("Your play")
 
@@ -621,6 +726,13 @@ describe("recorded player versus Terra table", () => {
 						pointerId: 2,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+					expect(
+						screen
+							.getByRole("button", { name: cardName })
+							.getAttribute("aria-pressed"),
+					).toBe("false")
+					await new Promise((resolve) => window.setTimeout(resolve, 0))
+					fireEvent.click(screen.getByRole("button", { name: cardName }))
 					expect(
 						screen
 							.getByRole("button", { name: cardName })
