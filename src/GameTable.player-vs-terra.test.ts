@@ -487,10 +487,230 @@ describe("recorded player versus Terra table", () => {
 				"textContent",
 				"26",
 			)
+			const hoveredCardButton = screen.getByRole("button", {
+				name: "A of clubs",
+			})
+			const hoveredCard = hoveredCardButton.closest("playing-card")
+			const hoveredCardWrapper = hoveredCardButton.closest("hand-card")
+			const restingLeft = (hoveredCardWrapper as HTMLElement | null)?.style.left
+			const restingTransform = (hoveredCardWrapper as HTMLElement | null)?.style
+				.transform
+			const centeredHoverRect = vi
+				.spyOn(hoveredCardWrapper as HTMLElement, "getBoundingClientRect")
+				.mockReturnValue({
+					bottom: 200,
+					height: 100,
+					left: 460,
+					right: 540,
+					toJSON: () => ({}),
+					top: 100,
+					width: 80,
+					x: 460,
+					y: 100,
+				})
+			fireEvent.pointerEnter(hoveredCardButton)
+			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
+			expect(localHand.hasAttribute("data-hover-active")).toBe(true)
+			expect(
+				(hoveredCard as HTMLElement | null)?.style.getPropertyValue(
+					"--hover-delta-x",
+				),
+			).toMatch(/^-?[\d.]+px$/)
+			expect(
+				(hoveredCard as HTMLElement | null)?.style.getPropertyValue(
+					"--hover-delta-y",
+				),
+			).toContain("var(--hand-card-width) * -0.82")
+			expect((hoveredCardWrapper as HTMLElement | null)?.style.left).toBe(
+				restingLeft,
+			)
+			expect((hoveredCardWrapper as HTMLElement | null)?.style.transform).toBe(
+				restingTransform,
+			)
+			fireEvent.pointerLeave(hoveredCardButton)
+			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
+			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
+			centeredHoverRect.mockRestore()
+
+			const passZone = screen.getByLabelText("Cards to pass: 0 of 3")
+			const gestureTable = document.querySelector("game-table")
+			expect(
+				(
+					screen.getByRole("button", {
+						name: "Pass across",
+					}) as HTMLButtonElement
+				).disabled,
+			).toBe(true)
+			fireEvent.pointerDown(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 40,
+			})
+			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
+			expect(localHand.hasAttribute("data-card-active")).toBe(true)
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			fireEvent.pointerUp(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 40,
+			})
+			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
+			expect(localHand.hasAttribute("data-card-active")).toBe(false)
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+
+			const scrubButtons = within(localHand).getAllByRole("button")
+			const scrubWrappers = Array.from(
+				localHand.querySelectorAll<HTMLElement>("hand-card"),
+			)
+			const scrubRectSpies = scrubWrappers.map((wrapper, index) =>
+				vi.spyOn(wrapper, "getBoundingClientRect").mockReturnValue({
+					bottom: 200,
+					height: 100,
+					left: index * 100,
+					right: index * 100 + 80,
+					toJSON: () => ({}),
+					top: 100,
+					width: 80,
+					x: index * 100,
+					y: 100,
+				}),
+			)
+			fireEvent.pointerDown(scrubButtons[0]!, {
+				clientX: 40,
+				clientY: 150,
+				pointerId: 44,
+			})
+			expect(
+				scrubButtons[0]?.closest("playing-card")?.hasAttribute("data-hovered"),
+			).toBe(true)
+			fireEvent.pointerMove(scrubButtons[0]!, {
+				clientX: 140,
+				clientY: 150,
+				pointerId: 44,
+			})
+			expect(gestureTable?.getAttribute("data-card-gesture")).toBe("picking")
+			expect(
+				scrubButtons[0]?.closest("playing-card")?.hasAttribute("data-hovered"),
+			).toBe(false)
+			expect(
+				scrubButtons[1]?.closest("playing-card")?.hasAttribute("data-hovered"),
+			).toBe(true)
+			fireEvent.pointerUp(scrubButtons[0]!, {
+				clientX: 140,
+				clientY: 150,
+				pointerId: 44,
+			})
+			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
+			for (const spy of scrubRectSpies) spy.mockRestore()
+			await new Promise((resolve) => window.setTimeout(resolve, 0))
+
+			fireEvent.pointerDown(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 41,
+			})
+			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
+			fireEvent.pointerMove(hoveredCardButton, {
+				clientX: 100,
+				clientY: 40,
+				pointerId: 41,
+			})
+			expect(gestureTable?.getAttribute("data-card-gesture")).toBe("dragging")
+			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
+			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
+			expect(localHand.hasAttribute("data-card-active")).toBe(true)
+			fireEvent.pointerUp(hoveredCardButton, {
+				clientX: 500,
+				clientY: 300,
+				pointerId: 41,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(gestureTable?.getAttribute("data-card-gesture")).toBeNull()
+			expect(localHand.hasAttribute("data-card-active")).toBe(false)
+
+			vi.spyOn(passZone, "getBoundingClientRect").mockReturnValue({
+				bottom: 120,
+				height: 120,
+				left: 50,
+				right: 350,
+				toJSON: () => ({}),
+				top: 0,
+				width: 300,
+				x: 50,
+				y: 0,
+			})
+			vi.spyOn(localHand, "getBoundingClientRect").mockReturnValue({
+				bottom: 400,
+				height: 200,
+				left: 0,
+				right: 400,
+				toJSON: () => ({}),
+				top: 200,
+				width: 400,
+				x: 0,
+				y: 200,
+			})
+			fireEvent.pointerDown(hoveredCardButton, {
+				clientX: 100,
+				clientY: 100,
+				pointerId: 42,
+			})
+			fireEvent.pointerMove(hoveredCardButton, {
+				clientX: 150,
+				clientY: 40,
+				pointerId: 42,
+			})
+			expect(localHand.hasAttribute("data-card-active")).toBe(true)
+			fireEvent.pointerUp(hoveredCardButton, {
+				clientX: 150,
+				clientY: 40,
+				pointerId: 42,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 1 of 3")
+			expect(localHand.hasAttribute("data-card-active")).toBe(false)
+			const passCardButton = within(passZone).getByRole("button", {
+				name: "A of clubs",
+			})
+			fireEvent.pointerDown(passCardButton, {
+				clientX: 150,
+				clientY: 40,
+				pointerId: 43,
+			})
+			expect(passZone.hasAttribute("data-card-active")).toBe(true)
+			fireEvent.pointerMove(passCardButton, {
+				clientX: 150,
+				clientY: 250,
+				pointerId: 43,
+			})
+			expect(passZone.hasAttribute("data-card-active")).toBe(true)
+			fireEvent.pointerUp(passCardButton, {
+				clientX: 150,
+				clientY: 250,
+				pointerId: 43,
+			})
+			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(passZone.hasAttribute("data-card-active")).toBe(false)
+			expect(
+				within(localHand).getByRole("button", { name: "A of clubs" }),
+			).toBeTruthy()
+			await new Promise((resolve) => window.setTimeout(resolve, 0))
 
 			fireEvent.click(screen.getByRole("button", { name: "A of clubs" }))
 			fireEvent.click(screen.getByRole("button", { name: "A of diamonds" }))
 			fireEvent.click(screen.getByRole("button", { name: "K of hearts" }))
+			const updatedPassZone = screen.getByLabelText("Cards to pass: 3 of 3")
+			const passCards = updatedPassZone.querySelectorAll(
+				"pass-card playing-card[data-selected]",
+			)
+			expect(passCards).toHaveLength(3)
+			expect(screen.getByLabelText("Your hand: 23 cards")).toBeTruthy()
+			expect(
+				(
+					screen.getByRole("button", {
+						name: "Pass across",
+					}) as HTMLButtonElement
+				).disabled,
+			).toBe(false)
 			fireEvent.click(screen.getByRole("button", { name: "Pass across" }))
 			await screen.findByText("Your play")
 
@@ -592,6 +812,13 @@ describe("recorded player versus Terra table", () => {
 						pointerId: 2,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+					expect(
+						screen
+							.getByRole("button", { name: cardName })
+							.getAttribute("aria-pressed"),
+					).toBe("false")
+					await new Promise((resolve) => window.setTimeout(resolve, 0))
+					fireEvent.click(screen.getByRole("button", { name: cardName }))
 					expect(
 						screen
 							.getByRole("button", { name: cardName })

@@ -10,6 +10,9 @@ import {
 	HAND_OUTWARD_CORRIDOR_BASE,
 	HAND_OUTWARD_CORRIDOR_SLOPE,
 	HAND_SCRUBBING_BAND_TOP,
+	HOVER_VIEWPORT_GUTTER,
+	passSelectionAfterDrop,
+	readableCardHorizontalCorrection,
 } from "./card-hand-layout.ts"
 
 describe("card hand layout", () => {
@@ -62,6 +65,58 @@ describe("card hand layout", () => {
 			left: 92,
 			rise: 1.7999999999999998,
 		})
+	})
+
+	it.each([
+		["middle", 500, 0],
+		["left", 20, 28],
+		["right", 980, -28],
+	] as const)(
+		"keeps a readable %s card at its resting center unless the viewport clamps it",
+		(_position, cardCenterX, expectedCorrection) => {
+			expect(readableCardHorizontalCorrection(cardCenterX, 80, 1000)).toBe(
+				expectedCorrection,
+			)
+		},
+	)
+
+	it("uses a safe viewport gutter and centers a card wider than the safe area", () => {
+		expect(
+			readableCardHorizontalCorrection(HOVER_VIEWPORT_GUTTER + 40, 80, 1000),
+		).toBe(0)
+		expect(readableCardHorizontalCorrection(30, 400, 320)).toBe(130)
+	})
+
+	it("does not change pass cards without a valid destination", () => {
+		const selection = ["card-a", "card-b"]
+		expect(passSelectionAfterDrop(selection, "card-c", "hand", null)).toEqual(
+			selection,
+		)
+		expect(passSelectionAfterDrop(selection, "card-a", "pass", null)).toEqual(
+			selection,
+		)
+	})
+
+	it("moves cards between the hand and the explicit pass destination", () => {
+		expect(passSelectionAfterDrop([], "card-a", "hand", "pass")).toEqual([
+			"card-a",
+		])
+		expect(
+			passSelectionAfterDrop(["card-a"], "card-b", "hand", "pass", 0),
+		).toEqual(["card-b", "card-a"])
+		expect(
+			passSelectionAfterDrop(["card-a", "card-b"], "card-a", "pass", "hand"),
+		).toEqual(["card-b"])
+	})
+
+	it("caps and reorders the pass destination without changing card identity", () => {
+		const full = ["card-a", "card-b", "card-c"]
+		expect(passSelectionAfterDrop(full, "card-d", "hand", "pass")).toEqual(full)
+		expect(passSelectionAfterDrop(full, "card-c", "pass", "pass", 0)).toEqual([
+			"card-c",
+			"card-a",
+			"card-b",
+		])
 	})
 
 	it("promotes an upward pick into a card drag", () => {
