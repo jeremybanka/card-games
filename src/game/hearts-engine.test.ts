@@ -13,7 +13,7 @@ import {
 	type HeartsState,
 } from "./hearts-engine.ts"
 import { createSeededRandom } from "./seeded-random.ts"
-import type { CardId, PlayerId } from "./hearts-types.ts"
+import type { CardId, CardValue, PlayerId } from "./hearts-types.ts"
 
 const playerIds = [
 	"user::00000000-0000-4000-8000-000000000001",
@@ -31,8 +31,8 @@ function physicalIds(): CardId[] {
 
 const seededRandom = (seed: number): (() => number) =>
 	createSeededRandom(seed).next
-const FIRST_TRICK_WINNER_SEEDS = [1, 2, 4] as const
 const POINT_LEFTOVER_SEED = 1178
+const KITTY_RULE_SEED = 49
 
 function lobby(playerCount: 2 | 3 | 4): HeartsState {
 	let state = createHeartsGame("WIND", playerIds[0], "Ada", physicalIds())
@@ -68,14 +68,44 @@ function playRound(state: HeartsState): HeartsState {
 	return next
 }
 
-function playFirstTrick(state: HeartsState): HeartsState {
-	let next = resolvePassing(state)
-	while (next.completedTricks.length === 0) {
-		const playerId = next.currentPlayerId as PlayerId
-		const cardId = playableCardIdsFor(next, playerId)[0] as CardId
-		next = playCard(next, playerId, cardId)
+function completeFixtureTrick(
+	state: HeartsState,
+	values: readonly [CardValue, CardValue, CardValue],
+	options: { final?: boolean } = {},
+): HeartsState {
+	const next = structuredClone(state)
+	const usedCardIds = new Set<CardId | null>([
+		...next.players.flatMap((player) => player.taken),
+		next.leftoverCardId,
+	])
+	const availableCardIds = next.physicalCardIds.filter(
+		(cardId) => !usedCardIds.has(cardId),
+	)
+	const trickCardIds = availableCardIds.slice(0, 3)
+	const reserveCardIds = availableCardIds.slice(3, 6)
+
+	for (const [index, player] of next.players.entries()) {
+		const trickCardId = trickCardIds[index] as CardId
+		next.cardValues[trickCardId] = values[index]
+		player.hand =
+			index < 2
+				? options.final
+					? []
+					: [reserveCardIds[index] as CardId]
+				: options.final
+					? [trickCardId]
+					: [trickCardId, reserveCardIds[index] as CardId]
+		player.passSelection = null
 	}
-	return next
+	next.currentTrick = trickCardIds.slice(0, 2).map((cardId, index) => ({
+		cardId,
+		playerId: playerIds[index] as PlayerId,
+	}))
+	next.currentPlayerId = playerIds[2]
+	next.trickLeaderId = playerIds[0]
+	next.phase = "playing"
+
+	return playCard(next, playerIds[2], trickCardIds[2] as CardId)
 }
 
 describe("Hearts dealing and visibility", () => {
@@ -152,26 +182,112 @@ describe("Hearts dealing and visibility", () => {
 		)
 	})
 
-	for (const [winnerIndex, seed] of FIRST_TRICK_WINNER_SEEDS.entries()) {
-		it(`awards the three-player leftover card to first-trick winner ${winnerIndex + 1}`, () => {
-			const dealt = startGame(lobby(3), playerIds[0], seededRandom(seed))
-			const leftoverCardId = dealt.leftoverCardId as CardId
-			const complete = playFirstTrick(dealt)
-			const trick = complete.completedTricks[0]
-			const winner = complete.players[winnerIndex]
+	it("keeps the three-player leftover pending through zero-point tricks", () => {
+		const dealt = startGame(
+			lobby(3),
+			playerIds[0],
+			seededRandom(KITTY_RULE_SEED),
+		)
+		const leftoverCardId = dealt.leftoverCardId as CardId
+		dealt.cardValues[leftoverCardId] = { rank: 9, suit: "diamonds" }
+		const afterZeroPointTrick = completeFixtureTrick(dealt, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 3, suit: "clubs" },
+			{ rank: 7, suit: "clubs" },
+		])
+		const publicView = toPublicGameView(afterZeroPointTrick)
 
-			expect(trick?.winnerId).toBe(playerIds[winnerIndex])
-			expect(trick?.leftoverAward).toEqual({
-				cardId: leftoverCardId,
-				recipientId: playerIds[winnerIndex],
-			})
-			expect(winner?.taken).toContain(leftoverCardId)
-			expect(complete.leftoverCardId).toBeNull()
-			expect(toPublicGameView(complete).deckCardIds).toEqual([])
+		expect(afterZeroPointTrick.completedTricks[0]?.leftoverAward).toBeNull()
+		expect(afterZeroPointTrick.leftoverCardId).toBe(leftoverCardId)
+		expect(afterZeroPointTrick.players[0]?.taken).not.toContain(leftoverCardId)
+		expect(publicView.deckCardIds).toEqual([leftoverCardId])
+		for (const playerId of playerIds.slice(0, 3)) {
+			expect(
+				toPrivatePlayerView(afterZeroPointTrick, playerId).awardedLeftoverCard,
+			).toBeNull()
+		}
+	})
+
+	it("awards the leftover once on the first heart-containing trick", () => {
+		const dealt = startGame(
+			lobby(3),
+			playerIds[0],
+			seededRandom(KITTY_RULE_SEED),
+		)
+		const leftoverCardId = dealt.leftoverCardId as CardId
+		const afterZeroPointTrick = completeFixtureTrick(dealt, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 3, suit: "clubs" },
+			{ rank: 7, suit: "clubs" },
+		])
+		const afterHeartTrick = completeFixtureTrick(afterZeroPointTrick, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 2, suit: "hearts" },
+			{ rank: 5, suit: "clubs" },
+		])
+		const afterLaterPointTrick = completeFixtureTrick(afterHeartTrick, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 8, suit: "hearts" },
+			{ rank: 12, suit: "spades" },
+		])
+
+		expect(afterHeartTrick.completedTricks[1]?.leftoverAward).toEqual({
+			cardId: leftoverCardId,
+			recipientId: playerIds[0],
 		})
-	}
+		expect(afterHeartTrick.players[0]?.taken).toContain(leftoverCardId)
+		expect(afterHeartTrick.leftoverCardId).toBeNull()
+		expect(toPublicGameView(afterHeartTrick).deckCardIds).toEqual([])
+		expect(afterLaterPointTrick.completedTricks[2]?.leftoverAward).toBeNull()
+		expect(
+			afterLaterPointTrick.players[0]?.taken.filter(
+				(cardId) => cardId === leftoverCardId,
+			),
+		).toHaveLength(1)
+	})
 
-	it("reveals the awarded leftover value only to its recipient", () => {
+	it("awards the leftover on a queen-of-spades trick without hearts", () => {
+		const dealt = startGame(
+			lobby(3),
+			playerIds[0],
+			seededRandom(KITTY_RULE_SEED),
+		)
+		const leftoverCardId = dealt.leftoverCardId as CardId
+		const complete = completeFixtureTrick(dealt, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 12, suit: "spades" },
+			{ rank: 7, suit: "clubs" },
+		])
+
+		expect(complete.completedTricks[0]?.leftoverAward).toEqual({
+			cardId: leftoverCardId,
+			recipientId: playerIds[0],
+		})
+	})
+
+	it("scores the leftover value independently of the triggering point card", () => {
+		const dealt = startGame(
+			lobby(3),
+			playerIds[0],
+			seededRandom(KITTY_RULE_SEED),
+		)
+		const leftoverCardId = dealt.leftoverCardId as CardId
+		dealt.cardValues[leftoverCardId] = { rank: 12, suit: "spades" }
+		const complete = completeFixtureTrick(
+			dealt,
+			[
+				{ rank: 14, suit: "clubs" },
+				{ rank: 2, suit: "hearts" },
+				{ rank: 7, suit: "clubs" },
+			],
+			{ final: true },
+		)
+
+		expect(complete.players[0]?.roundPoints).toBe(14)
+		expect(complete.players[0]?.score).toBe(14)
+	})
+
+	it("reveals a later awarded leftover value only to its recipient", () => {
 		const dealt = startGame(
 			lobby(3),
 			playerIds[0],
@@ -183,14 +299,23 @@ describe("Hearts dealing and visibility", () => {
 			suit: "spades",
 		})
 
-		const complete = playFirstTrick(dealt)
-		const award = complete.completedTricks[0]?.leftoverAward
+		const pending = completeFixtureTrick(dealt, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 3, suit: "clubs" },
+			{ rank: 7, suit: "clubs" },
+		])
+		const complete = completeFixtureTrick(pending, [
+			{ rank: 14, suit: "clubs" },
+			{ rank: 2, suit: "hearts" },
+			{ rank: 7, suit: "clubs" },
+		])
+		const award = complete.completedTricks[1]?.leftoverAward
 		const recipient = award?.recipientId as PlayerId
 		const nonRecipients = playerIds
 			.slice(0, 3)
 			.filter((playerId) => playerId !== recipient)
 		const publicAward =
-			toPublicGameView(complete).completedTricks[0]?.leftoverAward
+			toPublicGameView(complete).completedTricks[1]?.leftoverAward
 
 		expect(publicAward).toEqual({
 			cardId: leftoverCardId,

@@ -555,7 +555,8 @@ export function playCard(
 	const winnerId = trickWinner(next)
 	const winner = next.players[playerIndex(next, winnerId)] as HeartsPlayer
 	const leftoverAward =
-		next.trickNumber === 0 && next.leftoverCardId !== null
+		next.leftoverCardId !== null &&
+		next.currentTrick.some((play) => isPointCard(cardValue(next, play.cardId)))
 			? { cardId: next.leftoverCardId, recipientId: winnerId }
 			: null
 	next.completedTricks.push({
