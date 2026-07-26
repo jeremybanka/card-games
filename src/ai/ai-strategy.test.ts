@@ -297,15 +297,32 @@ describe("AI Hearts generators", () => {
 		)
 	})
 
-	it("runs structured generators through Varmint", async () => {
+	it("runs structured generators through Varmint without kitty details", async () => {
 		const two = card("two-clubs", "clubs", 2)
-		const context = gameContext({
-			cards: [two],
-			passSubmitted: false,
-			playableCardIds: [two.id],
-			playerId: aiPlayerId,
-		})
-		const base = vi.fn(async () => ({
+		const leftover = card("leftover", "spades", 12)
+		const context = gameContext(
+			{
+				awardedLeftoverCard: leftover,
+				cards: [two],
+				passSubmitted: false,
+				playableCardIds: [two.id],
+				playerId: aiPlayerId,
+			},
+			{
+				completedTricks: [
+					{
+						leftoverAward: {
+							cardId: leftover.id,
+							recipientId: aiPlayerId,
+						},
+						plays: [{ card: two, playerId: aiPlayerId }],
+						winnerId: aiPlayerId,
+					},
+				],
+				deckCardIds: [leftover.id],
+			},
+		)
+		const base = vi.fn(async (_context: AiGameContext) => ({
 			currentPlan: "Lead the required lowest club.",
 			nextAction: { action: "playCard" as const, cardId: two.id },
 			observation: "The opening lead is forced.",
@@ -320,5 +337,20 @@ describe("AI Hearts generators", () => {
 			nextAction: { cardId: two.id },
 		})
 		expect(base).toHaveBeenCalledOnce()
+		expect(base).toHaveBeenCalledWith(
+			expect.objectContaining({
+				privateView: expect.not.objectContaining({
+					awardedLeftoverCard: expect.anything(),
+				}),
+				publicView: expect.objectContaining({
+					completedTricks: [
+						expect.not.objectContaining({
+							leftoverAward: expect.anything(),
+						}),
+					],
+				}),
+			}),
+		)
+		expect(base.mock.calls[0]?.[0].publicView).not.toHaveProperty("deckCardIds")
 	})
 })

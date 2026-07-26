@@ -179,7 +179,11 @@ describe("GameTransitions", () => {
 		).toBeTruthy()
 		expect(screen.getByLabelText("Q of spades")).toBeTruthy()
 		expect(screen.getByText("You receive the leftover card")).toBeTruthy()
-		expect(screen.getByText(/The deck is now empty/)).toBeTruthy()
+		expect(
+			screen.getByText(
+				"The first point-containing trick winner collects the remaining card. The deck is now empty.",
+			),
+		).toBeTruthy()
 	})
 
 	it("hides the leftover card face from other players", () => {
