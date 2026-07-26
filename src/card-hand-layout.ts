@@ -6,10 +6,6 @@ export type HandCardLayout = {
 
 export type CompactHandCardLayout = HandCardLayout
 
-export type RaisedHandCardLayout = {
-	left: number
-}
-
 export type CardGesture<CardId extends string = string> = {
 	cardId: CardId
 	phase: "dragging" | "picking"
@@ -54,18 +50,6 @@ export function compactHandCardLayout(
 		angle: layout.angle * 0.5,
 		left: layout.left,
 		rise: layout.rise * 0.25,
-	}
-}
-
-export function raisedHandCardLayout(
-	cardCount: number,
-	cardIndex: number,
-): RaisedHandCardLayout {
-	if (cardCount <= 1) return { left: 50 }
-	const middle = (cardCount - 1) / 2
-	const spread = Math.min(84, (cardCount - 1) * 28)
-	return {
-		left: 50 + ((cardIndex - middle) / middle) * (spread / 2),
 	}
 }
 

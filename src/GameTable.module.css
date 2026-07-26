@@ -829,15 +829,15 @@ game-table.class {
 			);
 		}
 
-		&[data-raised] {
+		&[data-hovered] {
 			transform: translate(
 				calc(
-					var(--raised-delta-x) * cos(var(--hand-angle)) +
-						var(--raised-delta-y) * sin(var(--hand-angle))
+					var(--hover-delta-x) * cos(var(--hand-angle)) +
+						var(--hover-delta-y) * sin(var(--hand-angle))
 				),
 				calc(
-					var(--raised-delta-y) * cos(var(--hand-angle)) -
-						var(--raised-delta-x) * sin(var(--hand-angle))
+					var(--hover-delta-y) * cos(var(--hand-angle)) -
+						var(--hover-delta-x) * sin(var(--hand-angle))
 				)
 			) rotate(calc(var(--hand-angle) * -1));
 			filter: drop-shadow(0 0.8rem 0.75rem rgb(0 0 0 / 0.48)) drop-shadow(
@@ -845,7 +845,7 @@ game-table.class {
 			);
 		}
 
-		&[data-picking] {
+		&[data-picking]:not([data-hovered]) {
 			z-index: 300;
 			transform: translateY(-1.15rem) scale(1.04);
 			filter: drop-shadow(0 0.75rem 0.7rem rgb(0 0 0 / 0.46)) drop-shadow(
@@ -967,28 +967,6 @@ game-table.class {
 		}
 	}
 	/* @lasertag-enable [selector-crosses-ownership-boundary] */
-}
-
-@media (hover: hover) and (pointer: fine) {
-	game-table.class {
-		> player-zone {
-			> player-hand {
-				> hand-card:not([data-disabled]):hover:not(:has(playing-card[data-picking], playing-card[data-dragging])) {
-					z-index: 250;
-
-					> playing-card:not([data-raised]) {
-						transform: translateY(-1rem) scale(1.035);
-					}
-
-					> playing-card {
-						filter: drop-shadow(0 0.75rem 0.7rem rgb(0 0 0 / 0.46)) drop-shadow(
-							0 0 0.4rem rgb(225 190 105 / 0.72)
-						);
-					}
-				}
-			}
-		}
-	}
 }
 
 /* @lasertag-disable [dead-selector] keyframe steps are not DOM selectors */

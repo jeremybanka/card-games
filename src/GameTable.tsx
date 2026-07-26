@@ -18,7 +18,6 @@ import {
 	dragTranslationFromPointer,
 	handCardLayout,
 	passSelectionAfterDrop,
-	raisedHandCardLayout,
 } from "./card-hand-layout.ts"
 import { capturePendingCardMotion, useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
@@ -123,7 +122,7 @@ function PlayingCard({
 	onDragStart,
 	onHoverChange,
 	onSelect,
-	raisedOffset,
+	hoverOffset,
 	selected = false,
 }: {
 	card: VisibleCard
@@ -140,7 +139,7 @@ function PlayingCard({
 	onDragStart: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onHoverChange?: (hovered: boolean) => void
 	onSelect: (event: JSX.TargetedMouseEvent<HTMLButtonElement>) => void
-	raisedOffset?:
+	hoverOffset?:
 		| {
 				angle: number
 				left: number
@@ -166,19 +165,19 @@ function PlayingCard({
 			data-play-pending={gesturePhase === "pending" || undefined}
 			data-picking={gesturePhase === "picking" || undefined}
 			data-red={isRed || undefined}
-			data-raised={raisedOffset !== undefined || undefined}
+			data-hovered={hoverOffset !== undefined || undefined}
 			data-selected={selected || undefined}
 			style={
 				ownedDragState !== null && ownedDragState.phase !== "picking"
 					? {
 							transform: draggedCardTransform(handAngle, ownedDragState),
 						}
-					: raisedOffset === undefined
+					: hoverOffset === undefined
 						? undefined
 						: {
-								"--hand-angle": `${raisedOffset.angle}deg`,
-								"--raised-delta-x": `calc(${raisedOffset.left} * 1cqi)`,
-								"--raised-delta-y": `calc(var(--hand-card-width) * -0.82 - ${raisedOffset.rise}px)`,
+								"--hand-angle": `${hoverOffset.angle}deg`,
+								"--hover-delta-x": `calc(${hoverOffset.left} * 1cqi)`,
+								"--hover-delta-y": `calc(var(--hand-card-width) * -0.82 - ${hoverOffset.rise}px)`,
 							}
 			}
 		>
@@ -571,20 +570,12 @@ function PlayerZone({
 }): VNode {
 	const playable = new Set(privateView.playableCardIds)
 	const passing = game.phase === "passing"
-	const enabled = (cardId: CardId): boolean => passing || playable.has(cardId)
 	const passCards = passSelection
 		.map((cardId) => privateView.cards.find((card) => card.id === cardId))
 		.filter((card): card is VisibleCard => card !== undefined)
 	const handCards = passing
 		? privateView.cards.filter((card) => !passSelection.includes(card.id))
 		: privateView.cards
-	const raisedCardIds = handCards
-		.filter(
-			(card) =>
-				selectedCard === card.id ||
-				(hoveredCard === card.id && enabled(card.id)),
-		)
-		.map((card) => card.id)
 	return (
 		<player-zone
 			data-current={game.currentPlayerId === myPlayer.id || undefined}
@@ -665,11 +656,8 @@ function PlayerZone({
 				{handCards.map((card, index) => {
 					const selected = selectedCard === card.id
 					const layout = handCardLayout(handCards.length, index)
-					const raisedIndex = raisedCardIds.indexOf(card.id)
-					const raised =
-						raisedIndex < 0
-							? undefined
-							: raisedHandCardLayout(raisedCardIds.length, raisedIndex)
+					const hovered =
+						hoveredCard === card.id && (passing || playable.has(card.id))
 					return (
 						<hand-card
 							key={card.id}
@@ -680,7 +668,7 @@ function PlayerZone({
 							style={{
 								left: `${layout.left}%`,
 								transform: `translateX(-50%) translateY(${layout.rise}px) rotate(${layout.angle}deg)`,
-								zIndex: raised === undefined ? index : 100 + raisedIndex,
+								zIndex: hovered ? 250 : index,
 							}}
 						>
 							<PlayingCard
@@ -705,12 +693,12 @@ function PlayerZone({
 									onHoverCard(hovered ? card.id : null)
 								}
 								onSelect={(event) => onSelectCard(card.id, event.detail === 0)}
-								raisedOffset={
-									raised === undefined
+								hoverOffset={
+									!hovered
 										? undefined
 										: {
 												angle: layout.angle,
-												left: raised.left - layout.left,
+												left: 50 - layout.left,
 												rise: layout.rise,
 											}
 								}
@@ -1083,6 +1071,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					draggingCardId.current = card.id
 					dragOriginZone.current =
 						event.currentTarget.closest("pass-zone") === null ? "hand" : "pass"
+					setHoveredCard(dragOriginZone.current === "hand" ? card.id : null)
 					dragPhase.current = "picking"
 					dragCommit.current = null
 					dragMoved.current = false
@@ -1105,6 +1094,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					if (!moved) return
 					dragMoved.current = true
 					if (dragOriginZone.current === "pass") {
+						setHoveredCard(null)
 						draggingCardId.current = _card.id
 						dragPhase.current = "dragging"
 						setDragState({
@@ -1176,6 +1166,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 							: { x: 0, y: 0 }
 					draggingCardId.current = gesture.cardId
 					dragPhase.current = gesture.phase
+					setHoveredCard(gesture.phase === "picking" ? gesture.cardId : null)
 					setDragState({
 						cardId: gesture.cardId,
 						phase: gesture.phase,
