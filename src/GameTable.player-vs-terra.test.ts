@@ -487,10 +487,39 @@ describe("recorded player versus Terra table", () => {
 				"textContent",
 				"26",
 			)
+			const hoveredCardButton = screen.getByRole("button", {
+				name: "A of clubs",
+			})
+			const hoveredCard = hoveredCardButton.closest("playing-card")
+			const hoveredCardWrapper = hoveredCardButton.closest("hand-card")
+			const restingLeft = (hoveredCardWrapper as HTMLElement | null)?.style.left
+			const restingTransform = (hoveredCardWrapper as HTMLElement | null)?.style
+				.transform
+			fireEvent.pointerEnter(hoveredCardButton)
+			expect(hoveredCard?.hasAttribute("data-raised")).toBe(true)
+			expect((hoveredCardWrapper as HTMLElement | null)?.style.left).toBe(
+				restingLeft,
+			)
+			expect((hoveredCardWrapper as HTMLElement | null)?.style.transform).toBe(
+				restingTransform,
+			)
+			fireEvent.pointerLeave(hoveredCardButton)
+			expect(hoveredCard?.hasAttribute("data-raised")).toBe(false)
 
 			fireEvent.click(screen.getByRole("button", { name: "A of clubs" }))
 			fireEvent.click(screen.getByRole("button", { name: "A of diamonds" }))
 			fireEvent.click(screen.getByRole("button", { name: "K of hearts" }))
+			const raisedCards = localHand.querySelectorAll(
+				"playing-card[data-raised][data-selected]",
+			)
+			expect(raisedCards).toHaveLength(3)
+			expect(
+				new Set(
+					Array.from(raisedCards, (card) =>
+						(card as HTMLElement).style.getPropertyValue("--raised-delta-x"),
+					),
+				).size,
+			).toBe(3)
 			fireEvent.click(screen.getByRole("button", { name: "Pass across" }))
 			await screen.findByText("Your play")
 

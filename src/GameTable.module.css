@@ -108,6 +108,7 @@ game-table.class {
 
 		> opponent-zone {
 			position: relative;
+			isolation: isolate;
 			min-width: 0;
 			display: grid;
 			grid-template-columns: 1fr auto;
@@ -147,7 +148,8 @@ game-table.class {
 					position: absolute;
 					inset: 0;
 					display: block;
-					overflow: hidden;
+					contain: layout size;
+					overflow: visible;
 
 					> card-back {
 						position: absolute;
@@ -450,7 +452,7 @@ game-table.class {
 		position: absolute;
 		z-index: 80;
 		right: 0.75rem;
-		bottom: calc(min(9.5rem, 27vh) + 0.5rem);
+		bottom: calc(min(9.5rem, 27vh) + clamp(3.5rem, 15vw, 5rem) + 0.5rem);
 		left: 0.75rem;
 		display: grid;
 		grid-template-columns: 1fr auto;
@@ -537,6 +539,7 @@ game-table.class {
 			display: block;
 			grid-column: 1;
 			justify-self: center;
+			container-type: inline-size;
 			perspective: 40rem;
 			touch-action: none;
 
@@ -779,9 +782,24 @@ game-table.class {
 		}
 
 		&[data-selected] {
-			transform: translateY(-0.35rem) scale(1.015);
 			filter: drop-shadow(0 0.55rem 0.6rem rgb(0 0 0 / 0.42)) drop-shadow(
 				0 0 0.35rem rgb(225 190 105 / 0.7)
+			);
+		}
+
+		&[data-raised] {
+			transform: translate(
+				calc(
+					var(--raised-delta-x) * cos(var(--hand-angle)) +
+						var(--raised-delta-y) * sin(var(--hand-angle))
+				),
+				calc(
+					var(--raised-delta-y) * cos(var(--hand-angle)) -
+						var(--raised-delta-x) * sin(var(--hand-angle))
+				)
+			) rotate(calc(var(--hand-angle) * -1));
+			filter: drop-shadow(0 0.8rem 0.75rem rgb(0 0 0 / 0.48)) drop-shadow(
+				0 0 0.42rem rgb(225 190 105 / 0.78)
 			);
 		}
 
@@ -916,8 +934,11 @@ game-table.class {
 				> hand-card:not([data-disabled]):hover:not(:has(playing-card[data-picking], playing-card[data-dragging])) {
 					z-index: 250;
 
-					> playing-card {
+					> playing-card:not([data-raised]) {
 						transform: translateY(-1rem) scale(1.035);
+					}
+
+					> playing-card {
 						filter: drop-shadow(0 0.75rem 0.7rem rgb(0 0 0 / 0.46)) drop-shadow(
 							0 0 0.4rem rgb(225 190 105 / 0.72)
 						);

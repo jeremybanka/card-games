@@ -17,6 +17,7 @@ import {
 	draggedCardTransform,
 	dragTranslationFromPointer,
 	handCardLayout,
+	raisedHandCardLayout,
 } from "./card-hand-layout.ts"
 import { capturePendingCardMotion, useCardMotion } from "./card-motion.ts"
 import { actionErrorAtom } from "./client-state.ts"
@@ -119,7 +120,9 @@ function PlayingCard({
 	onDragMove,
 	onDragCancel,
 	onDragStart,
+	onHoverChange,
 	onSelect,
+	raisedOffset,
 	selected = false,
 }: {
 	card: VisibleCard
@@ -134,7 +137,15 @@ function PlayingCard({
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragCancel: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragStart: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
+	onHoverChange?: (hovered: boolean) => void
 	onSelect: () => void
+	raisedOffset?:
+		| {
+				angle: number
+				left: number
+				rise: number
+		  }
+		| undefined
 	selected?: boolean
 }): VNode {
 	const isRed = card.suit === "diamonds" || card.suit === "hearts"
@@ -154,13 +165,20 @@ function PlayingCard({
 			data-play-pending={gesturePhase === "pending" || undefined}
 			data-picking={gesturePhase === "picking" || undefined}
 			data-red={isRed || undefined}
+			data-raised={raisedOffset !== undefined || undefined}
 			data-selected={selected || undefined}
 			style={
 				ownedDragState !== null && ownedDragState.phase !== "picking"
 					? {
 							transform: draggedCardTransform(handAngle, ownedDragState),
 						}
-					: undefined
+					: raisedOffset === undefined
+						? undefined
+						: {
+								"--hand-angle": `${raisedOffset.angle}deg`,
+								"--raised-delta-x": `calc(${raisedOffset.left} * 1cqi)`,
+								"--raised-delta-y": `calc(var(--hand-card-width) * -0.82 - ${raisedOffset.rise}px)`,
+							}
 			}
 		>
 			<button
@@ -169,6 +187,8 @@ function PlayingCard({
 				aria-pressed={selected}
 				disabled={disabled}
 				onClick={onSelect}
+				onPointerEnter={() => onHoverChange?.(true)}
+				onPointerLeave={() => onHoverChange?.(false)}
 				onPointerCancel={onDragCancel}
 				onPointerDown={onDragStart}
 				onPointerMove={onDragMove}
@@ -507,9 +527,11 @@ function PlayerZone({
 	onDragEnd,
 	onDragMove,
 	onDragStart,
+	onHoverCard,
 	onSelectCard,
 	passSelection,
 	privateView,
+	hoveredCard,
 	selectedCard,
 	playerCount,
 	seatIndex,
@@ -535,15 +557,26 @@ function PlayerZone({
 		card: VisibleCard,
 		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
 	) => void
+	onHoverCard: (cardId: CardId | null) => void
 	onSelectCard: (cardId: CardId) => void
 	passSelection: CardId[]
 	privateView: PrivatePlayerView
+	hoveredCard: CardId | null
 	selectedCard: CardId | null
 	playerCount: number
 	seatIndex: number
 }): VNode {
 	const playable = new Set(privateView.playableCardIds)
 	const passing = game.phase === "passing"
+	const enabled = (cardId: CardId): boolean => passing || playable.has(cardId)
+	const raisedCardIds = privateView.cards
+		.filter(
+			(card) =>
+				selectedCard === card.id ||
+				passSelection.includes(card.id) ||
+				(hoveredCard === card.id && enabled(card.id)),
+		)
+		.map((card) => card.id)
 	return (
 		<player-zone
 			data-current={game.currentPlayerId === myPlayer.id || undefined}
@@ -573,6 +606,11 @@ function PlayerZone({
 					const selected =
 						selectedCard === card.id || passSelection.includes(card.id)
 					const layout = handCardLayout(privateView.cards.length, index)
+					const raisedIndex = raisedCardIds.indexOf(card.id)
+					const raised =
+						raisedIndex < 0
+							? undefined
+							: raisedHandCardLayout(raisedCardIds.length, raisedIndex)
 					return (
 						<hand-card
 							key={card.id}
@@ -582,8 +620,8 @@ function PlayerZone({
 							data-selected={selected || undefined}
 							style={{
 								left: `${layout.left}%`,
-								transform: `translateX(-50%) translateY(${selected ? layout.rise - 18 : layout.rise}px) rotate(${layout.angle}deg)`,
-								zIndex: selected ? 100 : index,
+								transform: `translateX(-50%) translateY(${layout.rise}px) rotate(${layout.angle}deg)`,
+								zIndex: raised === undefined ? index : 100 + raisedIndex,
 							}}
 						>
 							<PlayingCard
@@ -598,7 +636,19 @@ function PlayerZone({
 								onDragEnd={(event) => onDragEnd(card, event)}
 								onDragMove={(event) => onDragMove(card, event)}
 								onDragStart={(event) => onDragStart(card, event)}
+								onHoverChange={(hovered) =>
+									onHoverCard(hovered ? card.id : null)
+								}
 								onSelect={() => onSelectCard(card.id)}
+								raisedOffset={
+									raised === undefined
+										? undefined
+										: {
+												angle: layout.angle,
+												left: raised.left - layout.left,
+												rise: layout.rise,
+											}
+								}
 								selected={selected}
 							/>
 						</hand-card>
@@ -618,6 +668,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const myUserKey = usePullAtom(myUserKeyAtom) as PlayerId | null
 	const actionError = useO(actionErrorAtom)
 	const [selectedCard, setSelectedCard] = useState<CardId | null>(null)
+	const [hoveredCard, setHoveredCard] = useState<CardId | null>(null)
 	const [selectedAiModel, setSelectedAiModel] = useState(DEFAULT_AI_MODEL_ID)
 	const [passSelection, setPassSelection] = useState<CardId[]>([])
 	const [dragState, setDragState] = useState<DragState | null>(null)
@@ -950,6 +1001,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				dragState={dragState}
 				game={game}
 				hiddenCardIds={hiddenReviewCardIds}
+				hoveredCard={hoveredCard}
 				myPlayer={myPlayer}
 				onDragCancel={(_card, event) => {
 					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
@@ -985,6 +1037,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						y: 0,
 					})
 				}}
+				onHoverCard={setHoveredCard}
 				onDragMove={(_card, event) => {
 					if (pointerOrigin.current === null) {
 						return

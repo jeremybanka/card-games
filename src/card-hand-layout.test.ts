@@ -10,6 +10,7 @@ import {
 	HAND_OUTWARD_CORRIDOR_BASE,
 	HAND_OUTWARD_CORRIDOR_SLOPE,
 	HAND_SCRUBBING_BAND_TOP,
+	raisedHandCardLayout,
 } from "./card-hand-layout.ts"
 
 describe("card hand layout", () => {
@@ -62,6 +63,32 @@ describe("card hand layout", () => {
 			left: 92,
 			rise: 1.7999999999999998,
 		})
+	})
+
+	it.each([
+		[0, []],
+		[1, [50]],
+		[2, [36, 64]],
+		[3, [22, 50, 78]],
+		[4, [8, 36, 64, 92]],
+	])(
+		"lays out %i promoted cards in a distinct ordered row",
+		(cardCount, lefts) => {
+			expect(
+				Array.from({ length: cardCount }, (_, index) =>
+					raisedHandCardLayout(cardCount, index),
+				),
+			).toEqual(lefts.map((left) => ({ left })))
+		},
+	)
+
+	it("bounds a promoted row independently of future hand sizes", () => {
+		const layouts = Array.from({ length: 26 }, (_, index) =>
+			raisedHandCardLayout(26, index),
+		)
+		expect(layouts[0]?.left).toBe(8)
+		expect(layouts.at(-1)?.left).toBe(92)
+		expect(layouts.every(({ left }) => left >= 8 && left <= 92)).toBe(true)
 	})
 
 	it("promotes an upward pick into a card drag", () => {
