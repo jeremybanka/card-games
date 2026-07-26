@@ -188,6 +188,10 @@ function actionErrorMessage(thrown: unknown): string {
 		: "The table could not complete that action."
 }
 
+function strategyTextForReview(text: string): string {
+	return text.replace(/card::[^\s,)\]}]+/g, "[private card]")
+}
+
 function acknowledgeAction(
 	ack: ActionAck,
 	spanName: string,
@@ -602,6 +606,67 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 					})
 				}
 				return roomCode
+			},
+		)
+	})
+
+	socket.on("requestAiStrategyReview", (aiPlayerId, ack) => {
+		void serverLogger.withRootSpan(
+			"realtime.action.request_ai_strategy_review",
+			{ aiPlayerId, playerId },
+			(span) => {
+				try {
+					const [roomCode, room] = roomForPlayer(playerId)
+					const state = getRoomState(roomCode)
+					if (
+						state.phase !== "roundComplete" &&
+						state.phase !== "gameComplete"
+					) {
+						throw new HeartsRuleError(
+							"Strategy review is available after the round.",
+						)
+					}
+					const aiPlayer = state.players.find(
+						(candidate) =>
+							candidate.id === aiPlayerId && candidate.kind === "ai",
+					)
+					const runtime = room.aiPlayers.get(aiPlayerId)
+					if (aiPlayer === undefined || runtime === undefined) {
+						throw new HeartsRuleError("That AI seat is not at this table.")
+					}
+					const turns = runtime.silo
+						.getState(runtime.state.aiStrategyReviewTurnsAtom)
+						.map((turn) => ({
+							...turn,
+							observation: strategyTextForReview(turn.observation),
+							plan: strategyTextForReview(turn.plan),
+						}))
+					ack({
+						ok: true,
+						review: {
+							modelId: runtime.modelId,
+							playerId: aiPlayer.id,
+							playerName: aiPlayer.name,
+							roundNumber: state.roundNumber,
+							turns,
+						},
+					})
+					span.setAttributes({
+						roomCode,
+						roundNumber: state.roundNumber,
+						turnCount: turns.length,
+					})
+					span.event("ai.strategy_review.provided")
+				} catch (thrown) {
+					const message = actionErrorMessage(thrown)
+					span.setOutcome("error")
+					span.event(
+						"ai.strategy_review.rejected",
+						{ error: thrown, message },
+						"warn",
+					)
+					ack({ ok: false, error: message })
+				}
 			},
 		)
 	})

@@ -11,6 +11,8 @@ import {
 } from "../game/hearts-state.ts"
 import type {
 	ActionResult,
+	AiStrategyReviewAction,
+	AiStrategyReviewTurn,
 	CardId,
 	ClientToServerEvents,
 	PassDirection,
@@ -24,7 +26,7 @@ import { serverLogger } from "../observability/span-logger.node.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
-import type { AiMemoryLedgerEntry } from "./ai-types.ts"
+import type { AiMemoryLedgerEntry, AiNextAction } from "./ai-types.ts"
 import {
 	createAiPlayerSiloState,
 	type AiPlayerSiloState,
@@ -158,6 +160,7 @@ async function createAiPlayerRuntime(
 		pendingPass = undefined
 		lastAttemptedFingerprint = ""
 		silo.setState(state.aiMemoryLedgerAtom, [])
+		silo.setState(state.aiStrategyReviewTurnsAtom, [])
 		silo.setState(state.aiTurnObservationsAtom, [])
 		silo.setState(state.aiCurrentPlanAtom, "")
 		silo.setState(state.aiNextActionAtom, null)
@@ -202,6 +205,31 @@ async function createAiPlayerRuntime(
 	}
 	const fingerprintId = (fingerprint: string): string =>
 		createHash("sha256").update(fingerprint).digest("hex").slice(0, 12)
+
+	const strategyReviewAction = (
+		action: AiNextAction,
+		privateView: PrivatePlayerView,
+	): AiStrategyReviewAction => {
+		if (action.action === "passCards") {
+			const selectedIds = new Set(action.cardIds)
+			return {
+				cards: privateView.cards
+					.filter((card) => selectedIds.has(card.id))
+					.map(({ rank, suit }) => ({ rank, suit })),
+				kind: "passCards",
+			}
+		}
+		const playedCard = privateView.cards.find(
+			(card) => card.id === action.cardId,
+		)
+		if (playedCard === undefined) {
+			throw new Error("The AI review could not resolve its played card.")
+		}
+		return {
+			card: { rank: playedCard.rank, suit: playedCard.suit },
+			kind: "playCard",
+		}
+	}
 
 	const shouldAct = (): boolean => {
 		const game = silo.getState(publicGameViewAtom)
@@ -310,7 +338,24 @@ async function createAiPlayerRuntime(
 					if (!result.ok) {
 						lastAttemptedFingerprint = ""
 						span.setOutcome("error")
+						return
 					}
+					const reviewPhase: AiStrategyReviewTurn["phase"] =
+						gameAtStart.phase === "passing" ? "passing" : "playing"
+					silo.setState(state.aiStrategyReviewTurnsAtom, (turns) => [
+						...turns,
+						{
+							action: strategyReviewAction(
+								decision.nextAction,
+								privateViewAtStart,
+							),
+							observation: decision.observation,
+							phase: reviewPhase,
+							plan: decision.currentPlan,
+							trickNumber: gameAtStart.trickNumber,
+							turnKey,
+						},
+					])
 				},
 			)
 		} catch {
