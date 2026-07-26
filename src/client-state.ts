@@ -1,4 +1,5 @@
 import { atom, getState, setState } from "atom.io"
+import type { GameKind } from "./game/hearts-types.ts"
 
 export type RoomSession = {
 	generation: number
@@ -32,6 +33,11 @@ export const connectionStateAtom = atom<ConnectionState>({
 export const playerNameInputAtom = atom<string>({
 	key: "playerNameInput",
 	default: storedPlayerName(),
+})
+
+export const gameKindInputAtom = atom<GameKind>({
+	key: "gameKindInput",
+	default: "hearts",
 })
 
 export const roomCodeInputAtom = atom<string>({

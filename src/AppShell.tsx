@@ -6,6 +6,7 @@ import {
 	actionErrorAtom,
 	clearRoomSession,
 	connectionStateAtom,
+	gameKindInputAtom,
 	playerNameInputAtom,
 	roomCodeInputAtom,
 	roomSessionAtom,
@@ -22,6 +23,7 @@ import css from "./AppShell.module.css"
 export function AppShell(): VNode {
 	const connectionState = useO(connectionStateAtom)
 	const playerName = useO(playerNameInputAtom)
+	const gameKind = useO(gameKindInputAtom)
 	const roomCode = useO(roomCodeInputAtom)
 	const roomSession = useO(roomSessionAtom)
 	const actionError = useO(actionErrorAtom)
@@ -60,8 +62,8 @@ export function AppShell(): VNode {
 				<lobby-card>
 					<lobby-heading>
 						<small>WAYFARER</small>
-						<h1>Hearts</h1>
-						<p>A private table for two to four players.</p>
+						<h1>Card Games</h1>
+						<p>A private table for Hearts or Oh Hell.</p>
 					</lobby-heading>
 					<form
 						onSubmit={(event) => {
@@ -90,6 +92,24 @@ export function AppShell(): VNode {
 							/>
 						</label>
 						<label>
+							<span>Game</span>
+							<select
+								aria-label="Game"
+								value={gameKind}
+								onInput={(event) => {
+									setState(
+										gameKindInputAtom,
+										event.currentTarget.value === "ohHell"
+											? "ohHell"
+											: "hearts",
+									)
+								}}
+							>
+								<option value="hearts">Hearts</option>
+								<option value="ohHell">Oh Hell!</option>
+							</select>
+						</label>
+						<label>
 							<span>Room code</span>
 							<input
 								autocapitalize="characters"
@@ -114,13 +134,18 @@ export function AppShell(): VNode {
 								}
 								onClick={() => {
 									setState(actionErrorAtom, null)
-									gameSocket.emit("createRoom", playerName, (result) => {
-										if (result.ok) {
-											saveRoomSession(result.roomCode, playerName.trim())
-										} else {
-											setState(actionErrorAtom, result.error)
-										}
-									})
+									gameSocket.emit(
+										"createRoom",
+										playerName,
+										gameKind,
+										(result) => {
+											if (result.ok) {
+												saveRoomSession(result.roomCode, playerName.trim())
+											} else {
+												setState(actionErrorAtom, result.error)
+											}
+										},
+									)
 								}}
 							>
 								Create table

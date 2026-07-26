@@ -12,6 +12,7 @@ import type {
 export type AiNextAction =
 	| { action: "passCards"; cardIds: CardId[] }
 	| { action: "playCard"; cardId: CardId }
+	| { action: "submitBid"; bid: number }
 
 export type AiTurnDecision = {
 	currentPlan: string
@@ -43,10 +44,15 @@ export type AiMemoryLedgerEntry =
 export const aiNextActionType = type({
 	action: "'passCards'",
 	cardIds: passCardIdsType,
-}).or({
-	action: "'playCard'",
-	cardId: cardIdType,
 })
+	.or({
+		action: "'playCard'",
+		cardId: cardIdType,
+	})
+	.or({
+		action: "'submitBid'",
+		bid: "number.integer >= 0",
+	})
 
 export const aiTurnDecisionType = type({
 	currentPlan: "string",

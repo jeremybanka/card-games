@@ -147,7 +147,7 @@ export function renderAiGameFacts(context: AiGameContext): string {
 			: context.memoryLedger.map((entry) => renderMemoryLedger(context, entry))
 
 	return [
-		"# Hearts facts (cards: T/J/Q/K/A; suits: C/D/H/S)",
+		`# ${context.publicView.gameKind === "ohHell" ? "Oh Hell" : "Hearts"} facts (cards: T/J/Q/K/A; suits: C/D/H/S)`,
 		`Table ${context.publicView.roomCode} | you ${playerAlias(
 			context,
 			context.playerId,
@@ -157,7 +157,13 @@ export function renderAiGameFacts(context: AiGameContext): string {
 			context.publicView.trickNumber + 1
 		} | turn ${currentPlayer} | hearts ${
 			context.publicView.heartsBroken ? "broken" : "intact"
-		} | pass ${context.publicView.passDirection}`,
+		} | pass ${context.publicView.passDirection}${
+			context.publicView.gameKind === "ohHell"
+				? ` | trump ${context.publicView.trumpSuit ?? "none"} | bid ${
+						me?.bid ?? "pending"
+					} | tricks ${me?.tricksWon ?? 0}`
+				: ""
+		}`,
 		"",
 		"## Seats",
 		...renderPlayers(context),
@@ -168,7 +174,11 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		"## Completed tricks (public, Tn>winner: plays in order)",
 		...renderCompletedTricks(context),
 		"",
-		"## Hand (during passing choose any 3 IDs)",
+		`## Hand (${
+			context.publicView.phase === "bidding"
+				? `legal bids: ${(context.privateView.legalBids ?? []).join(", ")}`
+				: "during passing choose any 3 IDs"
+		})`,
 		...hand,
 		"",
 		"## Plan",

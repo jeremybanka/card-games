@@ -4,6 +4,7 @@ export type Suit = "clubs" | "diamonds" | "spades" | "hearts"
 export type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14
 export type CardId = `card::${string}`
 export type PlayerId = `user::${string}`
+export type GameKind = "hearts" | "ohHell"
 
 export type CardValue = {
 	rank: Rank
@@ -31,6 +32,7 @@ export type CompletedTrick = {
 export type GamePhase =
 	| "lobby"
 	| "passing"
+	| "bidding"
 	| "playing"
 	| "roundComplete"
 	| "gameComplete"
@@ -47,9 +49,12 @@ export type PublicPlayerView = {
 	name: string
 	roundPoints: number
 	score: number
+	bid?: number | null
+	tricksWon?: number
 }
 
 export type PublicGameView = {
+	gameKind?: GameKind
 	completedTricks: CompletedTrick[]
 	currentPlayerId: PlayerId | null
 	currentTrick: TrickPlay[]
@@ -67,6 +72,12 @@ export type PublicGameView = {
 	trickLeaderId: PlayerId | null
 	trickNumber: number
 	winnerIds: PlayerId[]
+	dealerId?: PlayerId | null
+	trumpSuit?: Suit | null
+	roundHandSize?: number
+	bidPlayerId?: PlayerId | null
+	bidsSubmitted?: number
+	maximumRounds?: number
 }
 
 export type PrivatePlayerView = {
@@ -75,16 +86,18 @@ export type PrivatePlayerView = {
 	passSubmitted: boolean
 	playableCardIds: CardId[]
 	playerId: PlayerId | null
+	legalBids?: number[]
 }
 
 export type AiStrategyReviewAction =
 	| { cards: CardValue[]; kind: "passCards" }
 	| { card: CardValue; kind: "playCard" }
+	| { bid: number; kind: "submitBid" }
 
 export type AiStrategyReviewTurn = {
 	action: AiStrategyReviewAction
 	observation: string
-	phase: "passing" | "playing"
+	phase: "passing" | "bidding" | "playing"
 	plan: string
 	trickNumber: number
 	turnKey: string
@@ -112,11 +125,12 @@ export type AiStrategyReviewAck = (result: AiStrategyReviewResult) => void
 
 export type ClientToServerEvents = {
 	assignAiSeat: (modelId: AiModelId, ack: ActionAck) => void
-	createRoom: (playerName: string, ack: ActionAck) => void
+	createRoom: (playerName: string, gameKind: GameKind, ack: ActionAck) => void
 	joinRoom: (roomCode: string, playerName: string, ack: ActionAck) => void
 	leaveRoom: (ack: ActionAck) => void
 	passCards: (cardIds: CardId[], ack: ActionAck) => void
 	playCard: (cardId: CardId, ack: ActionAck) => void
+	submitBid: (bid: number, ack: ActionAck) => void
 	removeAiSeat: (playerId: PlayerId, ack: ActionAck) => void
 	requestAiStrategyReview: (
 		playerId: PlayerId,
@@ -132,6 +146,7 @@ export type ServerToClientEvents = {
 }
 
 export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
+	gameKind: "hearts",
 	completedTricks: [],
 	currentPlayerId: null,
 	currentTrick: [],
@@ -149,6 +164,12 @@ export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
 	trickLeaderId: null,
 	trickNumber: 0,
 	winnerIds: [],
+	dealerId: null,
+	trumpSuit: null,
+	roundHandSize: 0,
+	bidPlayerId: null,
+	bidsSubmitted: 0,
+	maximumRounds: 0,
 }
 
 export const EMPTY_PRIVATE_PLAYER_VIEW: PrivatePlayerView = {
@@ -157,4 +178,5 @@ export const EMPTY_PRIVATE_PLAYER_VIEW: PrivatePlayerView = {
 	passSubmitted: false,
 	playableCardIds: [],
 	playerId: null,
+	legalBids: [],
 }

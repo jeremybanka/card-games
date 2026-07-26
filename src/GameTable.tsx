@@ -361,8 +361,12 @@ function TrickCenter({
 						: game.statusMessage}
 				</strong>
 				<span>
-					Trick {Math.min(game.trickNumber + 1, 26)}
-					{game.heartsBroken ? " · hearts broken" : ""}
+					Trick {Math.min(game.trickNumber + 1, game.roundHandSize ?? 26)}
+					{game.gameKind === "ohHell"
+						? ` · ${game.trumpSuit ?? "no"} trump`
+						: game.heartsBroken
+							? " · hearts broken"
+							: ""}
 				</span>
 			</trick-heading>
 			<trick-slots>
@@ -430,6 +434,58 @@ function TrickCenter({
 	)
 }
 
+function BidPanel({
+	game,
+	myPlayerId,
+	privateView,
+	socket,
+}: {
+	game: PublicGameView
+	myPlayerId: PlayerId
+	privateView: PrivatePlayerView
+	socket: GameSocket
+}): VNode {
+	const myTurn = game.bidPlayerId === myPlayerId
+	return (
+		<bid-panel aria-label="Oh Hell bidding">
+			<waiting-room>
+				<small>BIDDING · {game.trumpSuit?.toUpperCase()} TRUMP</small>
+				<h2>{myTurn ? "Your bid" : game.statusMessage}</h2>
+				<p>
+					{game.bidsSubmitted} of {game.players.length} bids ·{" "}
+					{game.roundHandSize} cards
+				</p>
+				<seated-list>
+					{game.players.map((player) => (
+						<seat-pill key={player.id}>
+							<strong>{player.name}</strong>
+							<span>
+								{player.bid === null ? "Waiting…" : `Bid ${player.bid}`}
+							</span>
+						</seat-pill>
+					))}
+				</seated-list>
+				{myTurn ? (
+					<action-row aria-label="Choose your bid">
+						{(privateView.legalBids ?? []).map((bid) => (
+							<button
+								type="button"
+								key={bid}
+								aria-label={`Bid ${bid}`}
+								onClick={() => socket.emit("submitBid", bid, handleResult)}
+							>
+								{bid}
+							</button>
+						))}
+					</action-row>
+				) : (
+					<p>Waiting for the next bidder.</p>
+				)}
+			</waiting-room>
+		</bid-panel>
+	)
+}
+
 function ScoreSheet({
 	game,
 	myPlayerId,
@@ -480,7 +536,11 @@ function ScoreSheet({
 			</score-heading>
 			<ol>
 				{[...game.players]
-					.sort((left, right) => left.score - right.score)
+					.sort((left, right) =>
+						game.gameKind === "ohHell"
+							? right.score - left.score
+							: left.score - right.score,
+					)
 					.map((player) => (
 						<li
 							data-reviewable={player.kind === "ai" || undefined}
@@ -519,7 +579,11 @@ function ScoreSheet({
 									/>
 								)}
 							</score-identity>
-							<small>+{player.roundPoints}</small>
+							<small>
+								{game.gameKind === "ohHell"
+									? `${player.tricksWon ?? 0}/${player.bid ?? "—"} · +${player.roundPoints}`
+									: `+${player.roundPoints}`}
+							</small>
 							<strong>{player.score}</strong>
 						</li>
 					))}
@@ -949,11 +1013,15 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						{game.phase === "lobby" ? "TABLE" : `ROUND ${game.roundNumber}`}
 					</small>
 					<strong>
-						{game.phase === "passing"
-							? passLabel(game.passDirection)
-							: game.heartsBroken
-								? "♥ broken"
-								: "♥ whole"}
+						{game.gameKind === "ohHell"
+							? game.phase === "lobby"
+								? "OH HELL!"
+								: `${game.trumpSuit ?? "no"} trump`
+							: game.phase === "passing"
+								? passLabel(game.passDirection)
+								: game.heartsBroken
+									? "♥ broken"
+									: "♥ whole"}
 					</strong>
 				</round-mark>
 			</table-header>
@@ -986,7 +1054,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					<waiting-room>
 						<small>PASS THE CODE</small>
 						<h2>{game.roomCode}</h2>
-						<p>{game.players.length} of 4 players seated</p>
+						<p>
+							{game.gameKind === "ohHell" ? "Oh Hell! · " : "Hearts · "}
+							{game.players.length} of 4 players seated
+						</p>
 						<seated-list>
 							{game.players.map((player) => (
 								<seat-pill
@@ -1059,7 +1130,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								) : null}
 								<button
 									type="button"
-									disabled={game.players.length < 2}
+									disabled={
+										game.players.length < (game.gameKind === "ohHell" ? 3 : 2)
+									}
 									onClick={() => {
 										socket.emit("startGame", handleResult)
 									}}
@@ -1071,6 +1144,13 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 							<p>Waiting for the host to deal.</p>
 						)}
 					</waiting-room>
+				) : game.phase === "bidding" ? (
+					<BidPanel
+						game={game}
+						myPlayerId={myUserKey}
+						privateView={privateView}
+						socket={socket}
+					/>
 				) : (
 					<TrickCenter
 						dragState={dragState}

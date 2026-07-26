@@ -9,14 +9,18 @@ import {
 } from "./hearts-types.ts"
 import {
 	createHeartsGame,
-	type HeartsState,
 	toPrivatePlayerView,
 	toPublicGameView,
 } from "./hearts-engine.ts"
+import { isOhHellState, type GameState } from "./game-state.ts"
+import {
+	toOhHellPrivatePlayerView,
+	toOhHellPublicGameView,
+} from "./oh-hell-engine.ts"
 
 const emptyPlayerId = "user::empty" satisfies PlayerId
 
-export const heartsStateAtoms = atomFamily<HeartsState, string>({
+export const heartsStateAtoms = atomFamily<GameState, string>({
 	key: "heartsState",
 	default: (roomCode) => createHeartsGame(roomCode, emptyPlayerId, ""),
 })
@@ -28,8 +32,12 @@ export const publicGameViewProjectionSelectors = selectorFamily<
 	key: "publicGameViewProjection",
 	get:
 		(roomCode) =>
-		({ get }) =>
-			toPublicGameView(get(heartsStateAtoms, roomCode)),
+		({ get }) => {
+			const state = get(heartsStateAtoms, roomCode)
+			return isOhHellState(state)
+				? toOhHellPublicGameView(state)
+				: toPublicGameView(state)
+		},
 })
 
 export const privatePlayerViewProjectionSelectors = selectorFamily<
@@ -39,8 +47,12 @@ export const privatePlayerViewProjectionSelectors = selectorFamily<
 	key: "privatePlayerViewProjection",
 	get:
 		([roomCode, playerId]) =>
-		({ get }) =>
-			toPrivatePlayerView(get(heartsStateAtoms, roomCode), playerId),
+		({ get }) => {
+			const state = get(heartsStateAtoms, roomCode)
+			return isOhHellState(state)
+				? toOhHellPrivatePlayerView(state, playerId)
+				: toPrivatePlayerView(state, playerId)
+		},
 })
 
 export const publicGameViewAtom = atom<PublicGameView>({
