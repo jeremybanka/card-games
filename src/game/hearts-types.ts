@@ -77,11 +77,38 @@ export type PrivatePlayerView = {
 	playerId: PlayerId | null
 }
 
+export type AiStrategyReviewAction =
+	| { cards: CardValue[]; kind: "passCards" }
+	| { card: CardValue; kind: "playCard" }
+
+export type AiStrategyReviewTurn = {
+	action: AiStrategyReviewAction
+	observation: string
+	phase: "passing" | "playing"
+	plan: string
+	trickNumber: number
+	turnKey: string
+}
+
+export type AiStrategyReview = {
+	modelId: AiModelId
+	playerId: PlayerId
+	playerName: string
+	roundNumber: number
+	turns: AiStrategyReviewTurn[]
+}
+
 export type ActionResult =
 	| { ok: true; roomCode: string }
 	| { ok: false; error: string }
 
 export type ActionAck = (result: ActionResult) => void
+
+export type AiStrategyReviewResult =
+	| { ok: true; review: AiStrategyReview }
+	| { ok: false; error: string }
+
+export type AiStrategyReviewAck = (result: AiStrategyReviewResult) => void
 
 export type ClientToServerEvents = {
 	assignAiSeat: (modelId: AiModelId, ack: ActionAck) => void
@@ -91,6 +118,10 @@ export type ClientToServerEvents = {
 	passCards: (cardIds: CardId[], ack: ActionAck) => void
 	playCard: (cardId: CardId, ack: ActionAck) => void
 	removeAiSeat: (playerId: PlayerId, ack: ActionAck) => void
+	requestAiStrategyReview: (
+		playerId: PlayerId,
+		ack: AiStrategyReviewAck,
+	) => void
 	restartGame: (ack: ActionAck) => void
 	startGame: (ack: ActionAck) => void
 	startNextRound: (ack: ActionAck) => void

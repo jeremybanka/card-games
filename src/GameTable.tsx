@@ -10,6 +10,7 @@ import {
 	isAiModelId,
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
+import { AiStrategyReview } from "./AiStrategyReview.tsx"
 import {
 	advanceCardGesture,
 	compactHandCardLayout,
@@ -32,6 +33,7 @@ import {
 } from "./game/hearts-state.ts"
 import type {
 	ActionResult,
+	AiStrategyReview as AiStrategyReviewData,
 	CardId,
 	PassDirection,
 	PlayerId,
@@ -384,6 +386,27 @@ function ScoreSheet({
 	myPlayerId: PlayerId
 	socket: GameSocket
 }): VNode {
+	const [strategyReview, setStrategyReview] =
+		useState<AiStrategyReviewData | null>(null)
+	const [reviewError, setReviewError] = useState<string | null>(null)
+	const [reviewingAiId, setReviewingAiId] = useState<PlayerId | null>(null)
+	const reviewRequestId = useRef(0)
+
+	const requestStrategyReview = (player: PublicPlayerView): void => {
+		const requestId = ++reviewRequestId.current
+		setReviewError(null)
+		setReviewingAiId(player.id)
+		socket.emit("requestAiStrategyReview", player.id, (result) => {
+			if (requestId !== reviewRequestId.current) return
+			setReviewingAiId(null)
+			if (result.ok) {
+				setStrategyReview(result.review)
+			} else {
+				setReviewError(result.error)
+			}
+		})
+	}
+
 	return (
 		<score-sheet>
 			<score-heading>
@@ -406,21 +429,49 @@ function ScoreSheet({
 				{[...game.players]
 					.sort((left, right) => left.score - right.score)
 					.map((player) => (
-						<li key={player.id}>
+						<li
+							data-reviewable={player.kind === "ai" || undefined}
+							key={player.id}
+						>
 							<score-identity>
-								<PlayerNameplate
-									player={player}
-									seatIndex={game.players.findIndex(
-										(candidate) => candidate.id === player.id,
-									)}
-									surface="score"
-								/>
+								{player.kind === "ai" ? (
+									<button
+										type="button"
+										aria-label={`Review ${player.name}'s strategy`}
+										aria-pressed={
+											strategyReview?.playerId === player.id || undefined
+										}
+										onClick={() => requestStrategyReview(player)}
+									>
+										<PlayerNameplate
+											player={player}
+											seatIndex={game.players.findIndex(
+												(candidate) => candidate.id === player.id,
+											)}
+											surface="score"
+										/>
+										<small>
+											{reviewingAiId === player.id
+												? "Loading…"
+												: "View strategy"}
+										</small>
+									</button>
+								) : (
+									<PlayerNameplate
+										player={player}
+										seatIndex={game.players.findIndex(
+											(candidate) => candidate.id === player.id,
+										)}
+										surface="score"
+									/>
+								)}
 							</score-identity>
 							<small>+{player.roundPoints}</small>
 							<strong>{player.score}</strong>
 						</li>
 					))}
 			</ol>
+			{reviewError === null ? null : <p role="alert">{reviewError}</p>}
 			{game.hostId === myPlayerId ? (
 				<button
 					type="button"
@@ -435,6 +486,12 @@ function ScoreSheet({
 				</button>
 			) : (
 				<p>Waiting for the host.</p>
+			)}
+			{strategyReview === null ? null : (
+				<AiStrategyReview
+					onClose={() => setStrategyReview(null)}
+					review={strategyReview}
+				/>
 			)}
 		</score-sheet>
 	)

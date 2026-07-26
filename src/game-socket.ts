@@ -13,13 +13,14 @@ import type {
 	ServerToClientEvents,
 } from "./game/hearts-types.ts"
 import { trackConnectionStatus } from "./connection-status.ts"
+import { createRandomUuid } from "./random-uuid.ts"
 
 const identityKey = "wayfarer.playerId"
 const secretKey = "wayfarer.playerSecret"
 const existingIdentity = localStorage.getItem(identityKey)
 const existingSecret = localStorage.getItem(secretKey)
-const playerId = existingIdentity ?? crypto.randomUUID()
-const playerSecret = existingSecret ?? crypto.randomUUID()
+const playerId = existingIdentity ?? createRandomUuid()
+const playerSecret = existingSecret ?? createRandomUuid()
 if (existingIdentity === null) localStorage.setItem(identityKey, playerId)
 if (existingSecret === null) localStorage.setItem(secretKey, playerSecret)
 

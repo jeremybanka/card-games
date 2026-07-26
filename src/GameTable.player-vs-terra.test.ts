@@ -329,6 +329,33 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 				}
 			})
 
+			socket.on("requestAiStrategyReview", (aiPlayerId, ack) => {
+				const state = getState(heartsStateAtoms, roomCode)
+				if (
+					playerId !== humanId ||
+					aiPlayerId !== terraId ||
+					(state.phase !== "roundComplete" && state.phase !== "gameComplete") ||
+					aiRuntime === null
+				) {
+					ack({ ok: false, error: "Strategy review is unavailable." })
+					return
+				}
+				ack({
+					ok: true,
+					review: {
+						modelId: aiRuntime.modelId,
+						playerId: terraId,
+						playerName: "Terra AI 1",
+						roundNumber: state.roundNumber,
+						turns: [
+							...aiRuntime.silo.getState(
+								aiRuntime.state.aiStrategyReviewTurnsAtom,
+							),
+						],
+					},
+				})
+			})
+
 			return () => {
 				disposeProjection()
 			}
@@ -640,6 +667,31 @@ describe("recorded player versus Terra table", () => {
 					score: "26",
 				},
 			])
+			fireEvent.click(
+				within(scoreSheet as HTMLElement).getByRole("button", {
+					name: "Review Terra AI 1's strategy",
+				}),
+			)
+			const strategyLog = await screen.findByRole("dialog", {
+				name: "Terra AI 1 strategy log",
+			})
+			expect(within(strategyLog).getAllByRole("article")).toHaveLength(27)
+			expect(within(strategyLog).getByText("PASS")).not.toBeNull()
+			expect(within(strategyLog).getByText("TRICK 26")).not.toBeNull()
+			expect(within(strategyLog).getAllByText("Saw")).toHaveLength(27)
+			expect(within(strategyLog).getAllByText("Thought")).toHaveLength(27)
+			expect(within(strategyLog).getAllByText("Did")).toHaveLength(27)
+			expect(strategyLog.textContent).not.toContain("card::")
+			fireEvent.click(
+				within(strategyLog).getByRole("button", {
+					name: "Close strategy log",
+				}),
+			)
+			expect(
+				screen.queryByRole("dialog", {
+					name: "Terra AI 1 strategy log",
+				}),
+			).toBeNull()
 			const finalState = getState(heartsStateAtoms, roomCode)
 			const terra = finalState.players.find((player) => player.id === terraId)
 			const terraRawPoints = terra?.taken.reduce((points, cardId) => {
