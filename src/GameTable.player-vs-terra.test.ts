@@ -495,8 +495,27 @@ describe("recorded player versus Terra table", () => {
 			const restingLeft = (hoveredCardWrapper as HTMLElement | null)?.style.left
 			const restingTransform = (hoveredCardWrapper as HTMLElement | null)?.style
 				.transform
+			const centeredHoverRect = vi
+				.spyOn(hoveredCardWrapper as HTMLElement, "getBoundingClientRect")
+				.mockReturnValue({
+					bottom: 200,
+					height: 100,
+					left: 460,
+					right: 540,
+					toJSON: () => ({}),
+					top: 100,
+					width: 80,
+					x: 460,
+					y: 100,
+				})
 			fireEvent.pointerEnter(hoveredCardButton)
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
+			expect(localHand.hasAttribute("data-hover-active")).toBe(true)
+			expect(
+				(hoveredCard as HTMLElement | null)?.style.getPropertyValue(
+					"--hover-delta-x",
+				),
+			).toMatch(/^-?[\d.]+px$/)
 			expect(
 				(hoveredCard as HTMLElement | null)?.style.getPropertyValue(
 					"--hover-delta-y",
@@ -510,6 +529,8 @@ describe("recorded player versus Terra table", () => {
 			)
 			fireEvent.pointerLeave(hoveredCardButton)
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
+			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
+			centeredHoverRect.mockRestore()
 
 			const passZone = screen.getByLabelText("Cards to pass: 0 of 3")
 			const gestureTable = document.querySelector("game-table")
@@ -594,6 +615,7 @@ describe("recorded player versus Terra table", () => {
 			})
 			expect(gestureTable?.getAttribute("data-card-gesture")).toBe("dragging")
 			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
+			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
 			fireEvent.pointerUp(hoveredCardButton, {
 				clientX: 500,
 				clientY: 300,

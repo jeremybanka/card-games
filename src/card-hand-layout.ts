@@ -23,6 +23,26 @@ export const HAND_OUTWARD_INTENT_TOP = -8
 export const HAND_OUTWARD_CORRIDOR_BASE = 18
 export const HAND_OUTWARD_CORRIDOR_SLOPE = 0.8
 export const DRAGGED_CARD_SCALE = 1.06
+export const HOVER_VIEWPORT_GUTTER = 8
+
+export function readableCardHorizontalCorrection(
+	cardCenterX: number,
+	cardWidth: number,
+	viewportWidth: number,
+	gutter = HOVER_VIEWPORT_GUTTER,
+): number {
+	const safeViewportWidth = Math.max(0, viewportWidth - gutter * 2)
+	if (cardWidth >= safeViewportWidth) {
+		return viewportWidth / 2 - cardCenterX
+	}
+	const minimumCenter = gutter + cardWidth / 2
+	const maximumCenter = viewportWidth - gutter - cardWidth / 2
+	const readableCenter = Math.max(
+		minimumCenter,
+		Math.min(cardCenterX, maximumCenter),
+	)
+	return readableCenter - cardCenterX
+}
 
 export function handCardLayout(
 	cardCount: number,

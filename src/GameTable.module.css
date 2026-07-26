@@ -585,6 +585,19 @@ game-table.class {
 			perspective: 40rem;
 			touch-action: none;
 
+			&[data-hover-active] {
+				z-index: 130;
+				pointer-events: none;
+
+				> hand-card {
+					pointer-events: none;
+				}
+
+				> hand-card:has(playing-card[data-hovered]) {
+					pointer-events: auto;
+				}
+			}
+
 			> hand-card {
 				position: absolute;
 				bottom: 1.25rem;
