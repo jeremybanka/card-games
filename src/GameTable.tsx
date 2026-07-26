@@ -636,6 +636,9 @@ function PlayerZone({
 			{passing ? (
 				<pass-zone
 					aria-label={`Cards to pass: ${passCards.length} of 3`}
+					data-card-active={
+						passCards.some((card) => dragState?.cardId === card.id) || undefined
+					}
 					data-dropzone="pass"
 					data-ready={passCards.length === 3 || undefined}
 				>
@@ -663,7 +666,7 @@ function PlayerZone({
 							<pass-card
 								data-card-id={card.id}
 								key={card.id}
-								style={{ zIndex: 100 + index }}
+								style={{ "--fan-index": index }}
 							>
 								<PlayingCard
 									card={card}
@@ -687,6 +690,9 @@ function PlayerZone({
 			) : null}
 			<player-hand
 				aria-label={`Your hand: ${handCards.length} cards`}
+				data-card-active={
+					handCards.some((card) => dragState?.cardId === card.id) || undefined
+				}
 				data-hover-active={
 					handCards.some((card) => hoveredCard?.cardId === card.id) || undefined
 				}
@@ -705,9 +711,9 @@ function PlayerZone({
 							data-hand-angle={layout.angle}
 							data-selected={selected || undefined}
 							style={{
+								"--fan-index": index,
 								left: `${layout.left}%`,
 								transform: `translateX(-50%) translateY(${layout.rise}px) rotate(${layout.angle}deg)`,
-								zIndex: hovered ? 250 : index,
 							}}
 						>
 							<PlayingCard

@@ -547,6 +547,7 @@ describe("recorded player versus Terra table", () => {
 				pointerId: 40,
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
+			expect(localHand.hasAttribute("data-card-active")).toBe(true)
 			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
 			fireEvent.pointerUp(hoveredCardButton, {
 				clientX: 100,
@@ -554,6 +555,7 @@ describe("recorded player versus Terra table", () => {
 				pointerId: 40,
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
+			expect(localHand.hasAttribute("data-card-active")).toBe(false)
 			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
 
 			const scrubButtons = within(localHand).getAllByRole("button")
@@ -616,6 +618,7 @@ describe("recorded player versus Terra table", () => {
 			expect(gestureTable?.getAttribute("data-card-gesture")).toBe("dragging")
 			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
 			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
+			expect(localHand.hasAttribute("data-card-active")).toBe(true)
 			fireEvent.pointerUp(hoveredCardButton, {
 				clientX: 500,
 				clientY: 300,
@@ -623,6 +626,7 @@ describe("recorded player versus Terra table", () => {
 			})
 			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
 			expect(gestureTable?.getAttribute("data-card-gesture")).toBeNull()
+			expect(localHand.hasAttribute("data-card-active")).toBe(false)
 
 			vi.spyOn(passZone, "getBoundingClientRect").mockReturnValue({
 				bottom: 120,
@@ -656,12 +660,14 @@ describe("recorded player versus Terra table", () => {
 				clientY: 40,
 				pointerId: 42,
 			})
+			expect(localHand.hasAttribute("data-card-active")).toBe(true)
 			fireEvent.pointerUp(hoveredCardButton, {
 				clientX: 150,
 				clientY: 40,
 				pointerId: 42,
 			})
 			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 1 of 3")
+			expect(localHand.hasAttribute("data-card-active")).toBe(false)
 			const passCardButton = within(passZone).getByRole("button", {
 				name: "A of clubs",
 			})
@@ -670,17 +676,20 @@ describe("recorded player versus Terra table", () => {
 				clientY: 40,
 				pointerId: 43,
 			})
+			expect(passZone.hasAttribute("data-card-active")).toBe(true)
 			fireEvent.pointerMove(passCardButton, {
 				clientX: 150,
 				clientY: 250,
 				pointerId: 43,
 			})
+			expect(passZone.hasAttribute("data-card-active")).toBe(true)
 			fireEvent.pointerUp(passCardButton, {
 				clientX: 150,
 				clientY: 250,
 				pointerId: 43,
 			})
 			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(passZone.hasAttribute("data-card-active")).toBe(false)
 			expect(
 				within(localHand).getByRole("button", { name: "A of clubs" }),
 			).toBeTruthy()

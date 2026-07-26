@@ -3,7 +3,7 @@ game-transitions.class {
 
 	> turn-banner {
 		position: absolute;
-		z-index: 170;
+		z-index: var(--z-overlay);
 		top: 37%;
 		right: 0;
 		left: 0;
@@ -82,7 +82,7 @@ game-transitions.class {
 
 	> trick-review {
 		position: absolute;
-		z-index: 230;
+		z-index: var(--z-overlay);
 		inset: 0;
 		display: grid;
 		grid-template-rows: auto minmax(10rem, 1fr) auto auto;
