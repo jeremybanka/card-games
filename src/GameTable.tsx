@@ -922,6 +922,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const [dismissedPassReceiptKey, setDismissedPassReceiptKey] = useState<
 		string | null
 	>(null)
+	const [movingPassReceiptKey, setMovingPassReceiptKey] = useState<
+		string | null
+	>(null)
 	const [tableRoot, setTableRoot] = useState<HTMLElement | null>(null)
 	const pointerOrigin = useRef<{
 		pointerId: number
@@ -994,7 +997,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		() => new Set(passReceipt?.cards.map((card) => card.id) ?? []),
 		[passReceipt],
 	)
-	const presentationLocked = passReceipt !== null || settlingTrick !== null
+	const presentationLocked =
+		passReceipt !== null ||
+		movingPassReceiptKey !== null ||
+		settlingTrick !== null
 	const presentationReady = trickReview === null && !presentationLocked
 	const manualPlayDisabled =
 		autoPlayEnabled || !presentationReady || pendingPlay.current !== null
@@ -1730,9 +1736,13 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					cards={passReceipt.cards}
 					onDismiss={() => {
 						if (receiptKey === null) return
-						rememberDismissedReceipt(receiptKey)
-						setDismissedPassReceiptKey(receiptKey)
-						window.requestAnimationFrame(() => {
+						const cardIds = passReceipt.cards.map((card) => card.id)
+						for (const cardId of cardIds) {
+							if (tableRoot !== null) {
+								capturePendingCardMotion(tableRoot, cardId)
+							}
+						}
+						const focusHand = (): void => {
 							const firstPlayable = tableRoot?.querySelector<HTMLButtonElement>(
 								"player-hand playing-card button:not(:disabled)",
 							)
@@ -1742,7 +1752,49 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 									"player-hand playing-card button",
 								)
 							)?.focus()
-						})
+						}
+						const finishTransfer = (): void => {
+							setMovingPassReceiptKey((current) =>
+								current === receiptKey ? null : current,
+							)
+							window.requestAnimationFrame(focusHand)
+						}
+						const reducedMotion = matchMedia(
+							"(prefers-reduced-motion: reduce)",
+						).matches
+						setMovingPassReceiptKey(receiptKey)
+						if (reducedMotion || tableRoot === null) {
+							window.requestAnimationFrame(finishTransfer)
+						} else {
+							const pendingCardIds = new Set(cardIds)
+							let fallbackTimeout = 0
+							const onMotionComplete = (event: Event): void => {
+								pendingCardIds.delete(
+									(event as CustomEvent<string>).detail as CardId,
+								)
+								if (pendingCardIds.size === 0) {
+									tableRoot.removeEventListener(
+										cardMotionCompleteEvent,
+										onMotionComplete,
+									)
+									window.clearTimeout(fallbackTimeout)
+									finishTransfer()
+								}
+							}
+							tableRoot.addEventListener(
+								cardMotionCompleteEvent,
+								onMotionComplete,
+							)
+							fallbackTimeout = window.setTimeout(() => {
+								tableRoot.removeEventListener(
+									cardMotionCompleteEvent,
+									onMotionComplete,
+								)
+								finishTransfer()
+							}, 650)
+						}
+						rememberDismissedReceipt(receiptKey)
+						setDismissedPassReceiptKey(receiptKey)
 					}}
 					senderName={
 						game.players.find((player) => player.id === passReceipt.senderId)

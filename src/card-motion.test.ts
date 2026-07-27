@@ -67,6 +67,28 @@ describe("planCardTransition", () => {
 		).toEqual({ kind: "opponent-play" })
 	})
 
+	it("prioritizes an explicit receipt transfer over current-round deal metadata", () => {
+		expect(
+			planCardTransition(
+				snapshot({
+					dealRound: null,
+					face: "up",
+					left: 120,
+					top: 100,
+					zone: "receipt",
+				}),
+				snapshot({
+					dealIndex: 8,
+					dealRound: "4",
+					face: "up",
+					left: 30,
+					top: 400,
+					zone: "hand",
+				}),
+			),
+		).toEqual({ kind: "receipt-transfer" })
+	})
+
 	it("does not replay a deal while cards settle within the same round", () => {
 		expect(
 			planCardTransition(
@@ -101,7 +123,7 @@ describe("planCardTransition", () => {
 })
 
 describe("observeCardMotion", () => {
-	it("moves received physical cards from the receipt into the sorted hand", async () => {
+	it("captures a receipt origin before removal and transfers into a rendered dealt hand card", async () => {
 		vi.stubGlobal("matchMedia", () => ({ matches: false }))
 		const animate = vi.fn(
 			() => ({ finished: Promise.resolve() }) as unknown as Animation,
@@ -111,21 +133,34 @@ describe("observeCardMotion", () => {
 			value: animate,
 		})
 		const root = document.createElement("game-table")
-		const receipt = document.createElement("receipt-card")
-		receipt.dataset.cardId = "card::received"
-		receipt.getBoundingClientRect = () =>
-			({ height: 140, left: 120, top: 100, width: 100 }) as DOMRect
-		root.append(receipt)
+		root.dataset.cardRound = "4"
+		root.dataset.motionReadyRound = "4"
 		document.body.append(root)
 		const stop = observeCardMotion(root)
 		const completed = vi.fn()
 		root.addEventListener(cardMotionCompleteEvent, completed)
 
+		const receipt = document.createElement("receipt-card")
+		receipt.dataset.cardId = "card::received"
+		const readReceiptRect = vi.fn(() => {
+			expect(receipt.isConnected).toBe(true)
+			return { height: 140, left: 120, top: 100, width: 100 } as DOMRect
+		})
+		receipt.getBoundingClientRect = readReceiptRect
+		root.append(receipt)
+		capturePendingCardMotion(root, "card::received")
+		expect(readReceiptRect).toHaveBeenCalledOnce()
+
 		const hand = document.createElement("player-hand")
 		const destination = document.createElement("playing-card")
 		destination.dataset.cardId = "card::received"
-		destination.getBoundingClientRect = () =>
-			({ height: 98, left: 30, top: 400, width: 70 }) as DOMRect
+		destination.dataset.dealIndex = "8"
+		destination.dataset.dealRound = "4"
+		const readDestinationRect = vi.fn(() => {
+			expect(destination.isConnected).toBe(true)
+			return { height: 98, left: 30, top: 400, width: 70 } as DOMRect
+		})
+		destination.getBoundingClientRect = readDestinationRect
 		hand.append(destination)
 		receipt.remove()
 		root.append(hand)
@@ -137,10 +172,12 @@ describe("observeCardMotion", () => {
 						transform: expect.stringContaining("translate3d(90px, -300px"),
 					}),
 				]),
-				expect.objectContaining({ duration: 320 }),
+				expect.objectContaining({ duration: 480 }),
 			)
 			expect(completed).toHaveBeenCalledOnce()
 		})
+		expect(readDestinationRect).toHaveBeenCalled()
+		expect(root.dataset.lastCardMotion).toBe("receipt-transfer")
 		expect((completed.mock.calls[0] as [CustomEvent])[0].detail).toBe(
 			"card::received",
 		)

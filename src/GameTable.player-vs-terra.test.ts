@@ -814,6 +814,9 @@ describe("recorded player versus Terra table", () => {
 				}
 			})
 			await screen.findByText("Your play")
+			await waitFor(() => {
+				expect(document.activeElement?.closest("player-hand")).not.toBeNull()
+			})
 
 			const tableCenter = document.querySelector("table-center")
 			const trickCenter = document.querySelector("trick-center")

@@ -9,7 +9,7 @@ export type CardSnapshot = {
 	rotation: number
 	top: number
 	width: number
-	zone: "hand" | "other" | "taken" | "trick"
+	zone: "hand" | "other" | "receipt" | "taken" | "trick"
 }
 
 export type CardTransition =
@@ -22,6 +22,9 @@ export type CardTransition =
 	  }
 	| {
 			kind: "opponent-play"
+	  }
+	| {
+			kind: "receipt-transfer"
 	  }
 	| {
 			kind: "none"
@@ -66,6 +69,7 @@ function rotationDegrees(element: HTMLElement): number {
 }
 
 function cardMotionZone(element: HTMLElement): CardSnapshot["zone"] {
+	if (element.matches("receipt-card")) return "receipt"
 	if (element.closest("trick-slot") !== null) return "trick"
 	if (element.closest("player-hand, opponent-hand") !== null) return "hand"
 	if (element.closest("taken-stack") !== null) return "taken"
@@ -103,6 +107,9 @@ export function planCardTransition(
 	before: CardSnapshot | undefined,
 	after: CardSnapshot,
 ): CardTransition {
+	if (before?.zone === "receipt" && after.zone === "hand") {
+		return { kind: "receipt-transfer" }
+	}
 	if (
 		after.dealRound !== null &&
 		(before === undefined || before.dealRound !== after.dealRound)
@@ -201,6 +208,38 @@ function animateMove(
 		{
 			duration: 320,
 			easing: "cubic-bezier(.2,.75,.25,1)",
+		},
+	)
+}
+
+function animateReceiptTransfer(
+	element: HTMLElement,
+	before: CardSnapshot,
+	after: CardSnapshot,
+): Animation {
+	const deltaX = before.left - after.left
+	const deltaY = before.top - after.top
+	const scaleX = before.width / Math.max(after.width, 1)
+	const scaleY = before.height / Math.max(after.height, 1)
+	return element.animate(
+		[
+			{
+				filter: "drop-shadow(0 0.9rem 1rem rgb(0 0 0 / 0.34))",
+				transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(${scaleX}, ${scaleY})`,
+			},
+			{
+				filter: "drop-shadow(0 0.55rem 0.7rem rgb(0 0 0 / 0.24))",
+				offset: 0.78,
+				transform: "translate3d(0, -8px, 0) scale(1.035)",
+			},
+			{
+				filter: "drop-shadow(0 0 0 transparent)",
+				transform: settledTransform(element),
+			},
+		],
+		{
+			duration: 480,
+			easing: "cubic-bezier(.18,.78,.22,1)",
 		},
 	)
 }
@@ -360,6 +399,24 @@ function animateCardChanges(
 					root.dataset.lastCardMotion = "opponent-play"
 					root.dataset.lastCardMotionId = cardId
 					const animation = animateOpponentPlay(root, element, before, after)
+					void animation.finished.then(
+						() => announceMotionComplete(root, cardId),
+						() => announceMotionComplete(root, cardId),
+					)
+				}
+				break
+			case "receipt-transfer":
+				if (before !== undefined) {
+					root.dataset.lastCardMotion = "receipt-transfer"
+					root.dataset.lastCardMotionId = cardId
+					root.dataset.lastCardMotionFrom = `${before.left},${before.top}`
+					root.dataset.lastCardMotionTo = `${after.left},${after.top}`
+					const animation = trackCommittedMotion(
+						cardId,
+						after,
+						animateReceiptTransfer(element, before, after),
+						committed,
+					)
 					void animation.finished.then(
 						() => announceMotionComplete(root, cardId),
 						() => announceMotionComplete(root, cardId),
