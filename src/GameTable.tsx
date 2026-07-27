@@ -1347,6 +1347,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 							: releasedOverHand
 								? "hand"
 								: null
+						if (destination !== null && tableRoot !== null) {
+							capturePendingCardMotion(tableRoot, cardId)
+						}
 						const destinationIndex =
 							destination === "pass"
 								? Array.from(
