@@ -56,7 +56,7 @@ describe("game table stacking contract", () => {
 		}
 	})
 
-	it("moves the card face without moving its pointer hitbox while picking", () => {
+	it("moves the card face without moving its pointer target while picking", () => {
 		expect(stylesheet).not.toMatch(/&\[data-hovered\] \{\s*transform:/)
 		expect(stylesheet).not.toMatch(
 			/&\[data-picking\]:not\(\[data-hovered\]\) \{\s*transform:/,

@@ -870,9 +870,7 @@ game-table.class {
 			);
 		}
 
-		&:not([data-hovered], [data-picking], [data-dragging], [data-play-pending]):has(
-			> button:focus-visible
-		) {
+		&:not([data-hovered], [data-picking], [data-dragging], [data-play-pending]):has(> button:focus-visible) {
 			z-index: var(--z-active-card);
 			filter: drop-shadow(0 0.8rem 0.75rem rgb(0 0 0 / 0.48)) drop-shadow(
 				0 0 0.42rem rgb(225 190 105 / 0.78)

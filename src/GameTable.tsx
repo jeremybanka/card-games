@@ -107,16 +107,18 @@ function closestHandCard(
 	candidates: readonly HTMLElement[],
 	clientX: number,
 ): HTMLElement | null {
-	return candidates.reduce<{
-		element: HTMLElement
-		distance: number
-	} | null>((nearest, candidate) => {
-		const rect = candidate.getBoundingClientRect()
-		const distance = Math.abs(rect.left + rect.width / 2 - clientX)
-		return nearest === null || distance < nearest.distance
-			? { element: candidate, distance }
-			: nearest
-	}, null)?.element ?? null
+	return (
+		candidates.reduce<{
+			element: HTMLElement
+			distance: number
+		} | null>((nearest, candidate) => {
+			const rect = candidate.getBoundingClientRect()
+			const distance = Math.abs(rect.left + rect.width / 2 - clientX)
+			return nearest === null || distance < nearest.distance
+				? { element: candidate, distance }
+				: nearest
+		}, null)?.element ?? null
+	)
 }
 
 function suitMark(suit: Suit): string {
@@ -1224,7 +1226,11 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						)
 						const cardId = closest?.dataset.cardId as CardId | undefined
 						const button = closest?.querySelector<HTMLElement>("button")
-						if (cardId !== undefined && button !== null && button !== undefined) {
+						if (
+							cardId !== undefined &&
+							button !== null &&
+							button !== undefined
+						) {
 							setHoveredCard(hoveredCardFromElement(cardId, button))
 						}
 						return
