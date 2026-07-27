@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
+	cardMotionCompleteEvent,
 	capturePendingCardMotion,
 	type CardSnapshot,
 	observeCardMotion,
@@ -100,6 +101,52 @@ describe("planCardTransition", () => {
 })
 
 describe("observeCardMotion", () => {
+	it("moves received physical cards from the receipt into the sorted hand", async () => {
+		vi.stubGlobal("matchMedia", () => ({ matches: false }))
+		const animate = vi.fn(
+			() => ({ finished: Promise.resolve() }) as unknown as Animation,
+		)
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			configurable: true,
+			value: animate,
+		})
+		const root = document.createElement("game-table")
+		const receipt = document.createElement("receipt-card")
+		receipt.dataset.cardId = "card::received"
+		receipt.getBoundingClientRect = () =>
+			({ height: 140, left: 120, top: 100, width: 100 }) as DOMRect
+		root.append(receipt)
+		document.body.append(root)
+		const stop = observeCardMotion(root)
+		const completed = vi.fn()
+		root.addEventListener(cardMotionCompleteEvent, completed)
+
+		const hand = document.createElement("player-hand")
+		const destination = document.createElement("playing-card")
+		destination.dataset.cardId = "card::received"
+		destination.getBoundingClientRect = () =>
+			({ height: 98, left: 30, top: 400, width: 70 }) as DOMRect
+		hand.append(destination)
+		receipt.remove()
+		root.append(hand)
+
+		await vi.waitFor(() => {
+			expect(animate).toHaveBeenCalledWith(
+				expect.arrayContaining([
+					expect.objectContaining({
+						transform: expect.stringContaining("translate3d(90px, -300px"),
+					}),
+				]),
+				expect.objectContaining({ duration: 320 }),
+			)
+			expect(completed).toHaveBeenCalledOnce()
+		})
+		expect((completed.mock.calls[0] as [CustomEvent])[0].detail).toBe(
+			"card::received",
+		)
+		stop()
+	})
+
 	it("hands a pending dragged card release position to authoritative motion", async () => {
 		vi.stubGlobal("matchMedia", () => ({ matches: false }))
 		const neverFinishes = new Promise<never>(() => {})

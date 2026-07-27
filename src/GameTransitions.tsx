@@ -1,4 +1,5 @@
 import type { VNode } from "preact"
+import { useEffect, useRef } from "preact/hooks"
 
 import type {
 	CompletedTrick,
@@ -84,10 +85,14 @@ function TrickReview({
 	onDismiss: () => void
 	trick: CompletedTrick
 }): VNode {
+	const continueButton = useRef<HTMLButtonElement>(null)
 	const winner = game.players.find((player) => player.id === trick.winnerId)
 	const orderedPlays = orderedTrickReviewPlays(trick)
 	const middle = (orderedPlays.length - 1) / 2
 	const title = `${winner?.name ?? "The high card"} takes the trick`
+	useEffect(() => {
+		continueButton.current?.focus()
+	}, [])
 	return (
 		<trick-review aria-label={title} aria-modal="true" role="dialog">
 			<review-scrim />
@@ -184,7 +189,7 @@ function TrickReview({
 					</award-copy>
 				</leftover-award>
 			)}
-			<button type="button" onClick={onDismiss}>
+			<button ref={continueButton} type="button" onClick={onDismiss}>
 				Continue to next trick
 			</button>
 		</trick-review>
@@ -197,12 +202,14 @@ export function GameTransitions({
 	myPlayerId,
 	onDismissTrick,
 	review,
+	suppressTurnBanner = false,
 }: {
 	awardedLeftoverCard: VisibleCard | null
 	game: PublicGameView
 	myPlayerId: PlayerId
 	onDismissTrick: () => void
 	review: CompletedTrick | null
+	suppressTurnBanner?: boolean
 }): VNode {
 	const turnKey = [
 		game.roundNumber,
@@ -213,7 +220,9 @@ export function GameTransitions({
 	return (
 		<game-transitions className={css.class}>
 			{review === null ? (
-				game.phase === "playing" && game.currentPlayerId !== null ? (
+				!suppressTurnBanner &&
+				game.phase === "playing" &&
+				game.currentPlayerId !== null ? (
 					<TurnBanner game={game} key={turnKey} myPlayerId={myPlayerId} />
 				) : null
 			) : (

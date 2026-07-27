@@ -145,6 +145,77 @@ describe("Hearts dealing and visibility", () => {
 		).toBe(false)
 	})
 
+	it.each([
+		[2, "across"],
+		[3, "left"],
+		[3, "right"],
+		[4, "left"],
+		[4, "right"],
+		[4, "across"],
+	] as const)(
+		"projects the %s-player %s pass receipt only to each recipient",
+		(playerCount, direction) => {
+			let state = startGame(
+				lobby(playerCount),
+				playerIds[0],
+				seededRandom(7_100 + playerCount),
+			)
+			state.passDirection = direction
+			state.phase = "passing"
+			const submitted = new Map(
+				state.players.map((player) => [player.id, player.hand.slice(0, 3)]),
+			)
+			for (const player of state.players) {
+				state = submitPass(
+					state,
+					player.id,
+					submitted.get(player.id) as CardId[],
+				)
+			}
+
+			const publicJson = JSON.stringify(toPublicGameView(state))
+			expect(publicJson).not.toContain("passReceipt")
+			expect(publicJson).not.toContain('"rank"')
+			for (const [recipientIndex, recipient] of state.players.entries()) {
+				const sender = state.players.find((_, senderIndex) => {
+					const offset =
+						direction === "left"
+							? 1
+							: direction === "right"
+								? playerCount - 1
+								: playerCount === 4
+									? 2
+									: 1
+					return (senderIndex + offset) % playerCount === recipientIndex
+				})
+				const receipt = toPrivatePlayerView(state, recipient.id).passReceipt
+				expect(receipt?.senderId).toBe(sender?.id)
+				expect(receipt?.roundNumber).toBe(state.roundNumber)
+				expect(receipt?.cards.map((card) => card.id)).toEqual(
+					submitted.get(sender?.id as PlayerId),
+				)
+				for (const other of state.players.filter(
+					(candidate) => candidate.id !== recipient.id,
+				)) {
+					expect(
+						toPrivatePlayerView(state, other.id).cards.some((card) =>
+							receipt?.cards.some(
+								(receivedCard) => receivedCard.id === card.id,
+							),
+						),
+					).toBe(false)
+				}
+			}
+		},
+	)
+
+	it("does not create a receipt for a hold round", () => {
+		const state = startGame(lobby(4), playerIds[0], seededRandom(74))
+		state.passDirection = "hold"
+		state.phase = "playing"
+		expect(toPrivatePlayerView(state, playerIds[0]).passReceipt).toBeNull()
+	})
+
 	it("scrambles card-value relationships on every deal", () => {
 		const first = dealRound(lobby(4), seededRandom(1))
 		const second = dealRound(first, seededRandom(2))

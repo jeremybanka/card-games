@@ -1,0 +1,126 @@
+pass-receipt.class {
+	position: absolute;
+	z-index: calc(var(--z-overlay) + 1);
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: max(4.5rem, env(safe-area-inset-top)) 1rem
+		max(1.2rem, env(safe-area-inset-bottom));
+
+	> receipt-scrim {
+		position: absolute;
+		inset: 0;
+		display: block;
+		background: rgb(4 19 15 / 0.88);
+		backdrop-filter: blur(0.72rem) saturate(0.8);
+	}
+
+	> receipt-panel {
+		position: relative;
+		width: min(100%, 28rem);
+		display: grid;
+		place-items: center;
+		gap: 1.4rem;
+		padding: clamp(1.4rem, 5vw, 2.2rem);
+		border: 1px solid rgb(225 190 105 / 0.42);
+		border-radius: 1rem;
+		background: rgb(8 31 25 / 0.96);
+		box-shadow: 0 1.4rem 3rem rgb(0 0 0 / 0.4);
+
+		> receipt-heading {
+			display: grid;
+			place-items: center;
+			text-align: center;
+
+			> small {
+				color: var(--gold);
+				font-size: 0.58rem;
+				font-weight: 850;
+				letter-spacing: 0.25em;
+			}
+
+			> h2 {
+				margin: 0.25rem 0;
+				font-family: Georgia, "Times New Roman", serif;
+				font-size: clamp(1.55rem, 7vw, 2.35rem);
+				font-weight: 500;
+			}
+
+			> p {
+				margin: 0;
+				color: var(--ink-muted);
+			}
+		}
+
+		> receipt-cards {
+			display: flex;
+			justify-content: center;
+			gap: clamp(0.45rem, 2vw, 0.8rem);
+
+			> receipt-card {
+				position: relative;
+				width: clamp(4.5rem, 20vw, 6.4rem);
+				aspect-ratio: 5 / 7;
+				display: block;
+				border: 1px solid rgb(30 34 31 / 0.16);
+				border-radius: 0.65rem;
+				background: var(--card);
+				box-shadow: 0 0.7rem 1rem rgb(0 0 0 / 0.3);
+				color: var(--card-ink);
+
+				&[data-red] {
+					color: #b72d43;
+				}
+
+				> card-corner {
+					position: absolute;
+					top: 0.4rem;
+					left: 0.44rem;
+					display: grid;
+					place-items: center;
+					line-height: 1;
+				}
+
+				> card-suit {
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					font-size: clamp(2rem, 9vw, 3.2rem);
+					transform: translate(-50%, -50%);
+				}
+			}
+		}
+
+		> button {
+			min-height: 2.75rem;
+			padding: 0.6rem 1.15rem;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	pass-receipt.class {
+		> receipt-scrim {
+			animation: receipt-fade-in 220ms ease-out both;
+		}
+
+		> receipt-panel {
+			animation: receipt-panel-in 300ms ease-out both;
+		}
+	}
+}
+
+/* @lasertag-disable [dead-selector] keyframe steps are not DOM selectors */
+@keyframes receipt-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes receipt-panel-in {
+	from {
+		opacity: 0;
+		transform: translateY(0.75rem) scale(0.98);
+	}
+}
+/* @lasertag-enable [dead-selector] */

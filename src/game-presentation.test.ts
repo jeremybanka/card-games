@@ -9,7 +9,9 @@ import {
 	capturedTrickCount,
 	completedTrickKey,
 	orderedTrickReviewPlays,
+	passReceiptKey,
 	shouldAutoDismissTrickReview,
+	trickSettleDwellMilliseconds,
 } from "./game-presentation.ts"
 
 const me = "user::me" as PlayerId
@@ -62,6 +64,15 @@ describe("game presentation", () => {
 	it("gives every completed trick a stable round-scoped key", () => {
 		expect(completedTrickKey(game())).toBe("TEST:round-2-trick-1")
 		expect(completedTrickKey(game({ completedTricks: [] }))).toBeNull()
+	})
+
+	it("gives pass acknowledgement a stable recipient-scoped key", () => {
+		expect(passReceiptKey("TEST", me, 2)).toBe("TEST:user::me:pass-receipt:2")
+	})
+
+	it("keeps a cognitive beat when spatial motion is reduced", () => {
+		expect(trickSettleDwellMilliseconds(false)).toBe(450)
+		expect(trickSettleDwellMilliseconds(true)).toBe(220)
 	})
 
 	it("lands the winning card last so it is visually on top", () => {

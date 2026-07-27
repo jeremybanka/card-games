@@ -118,6 +118,21 @@ describe("GameTransitions", () => {
 		expect(screen.getByRole("status", { name: "Your turn" })).toBeTruthy()
 	})
 
+	it("keeps the next-turn announcement hidden during the settle beat", () => {
+		render(
+			createElement(GameTransitions, {
+				awardedLeftoverCard: null,
+				game,
+				myPlayerId: me,
+				onDismissTrick: () => {},
+				review: null,
+				suppressTurnBanner: true,
+			}),
+			document.body,
+		)
+		expect(screen.queryByRole("status")).toBeNull()
+	})
+
 	it.each([
 		["Loopy Night Hag", "Loopy Night Hag's\u00a0turn"],
 		[

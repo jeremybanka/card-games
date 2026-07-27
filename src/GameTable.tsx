@@ -21,13 +21,19 @@ import {
 	passSelectionAfterDrop,
 	readableCardHorizontalCorrection,
 } from "./card-hand-layout.ts"
-import { capturePendingCardMotion, useCardMotion } from "./card-motion.ts"
+import {
+	cardMotionCompleteEvent,
+	capturePendingCardMotion,
+	useCardMotion,
+} from "./card-motion.ts"
 import { actionErrorAtom, autoPlayEnabledAtom } from "./client-state.ts"
 import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
 	capturedTrickCount,
 	completedTrickKey,
+	passReceiptKey,
 	shouldAutoDismissTrickReview,
+	trickSettleDwellMilliseconds,
 } from "./game-presentation.ts"
 import {
 	autoPlayTurnFingerprint,
@@ -49,6 +55,7 @@ import type {
 	ActionResult,
 	AiStrategyReview as AiStrategyReviewData,
 	CardId,
+	CompletedTrick,
 	PassDirection,
 	PlayerId,
 	PrivatePlayerView,
@@ -61,6 +68,7 @@ import css from "./GameTable.module.css"
 import { GameTransitions } from "./GameTransitions.tsx"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 import { PlayerNameplate } from "./PlayerNameplate.tsx"
+import { PassReceipt } from "./PassReceipt.tsx"
 import { ScorecardLockup } from "./ScorecardLockup.tsx"
 
 type GameTableProps = {
@@ -185,6 +193,22 @@ function passActionLabel(
 
 function handleResult(result: ActionResult): void {
 	setState(actionErrorAtom, result.ok ? null : result.error)
+}
+
+function receiptWasDismissed(key: string): boolean {
+	try {
+		return sessionStorage.getItem(key) === "dismissed"
+	} catch {
+		return false
+	}
+}
+
+function rememberDismissedReceipt(key: string): void {
+	try {
+		sessionStorage.setItem(key, "dismissed")
+	} catch {
+		// The in-memory dismissal still prevents realtime rerenders from reopening it.
+	}
 }
 
 function PlayingCard({
@@ -398,6 +422,7 @@ function TrickCenter({
 	manualPlayDisabled,
 	myPlayerId,
 	onPlay,
+	presentedTrick,
 	selectedCard,
 }: {
 	dragState: DragState | null
@@ -405,11 +430,21 @@ function TrickCenter({
 	manualPlayDisabled: boolean
 	myPlayerId: PlayerId
 	onPlay: (cardId: CardId) => void
+	presentedTrick: CompletedTrick | null
 	selectedCard: CardId | null
 }): VNode {
 	const myIndex = game.players.findIndex((player) => player.id === myPlayerId)
+	const visiblePlays = presentedTrick?.plays ?? game.currentTrick
 	return (
-		<trick-center>
+		<trick-center
+			aria-atomic={presentedTrick === null ? undefined : "true"}
+			aria-label={
+				presentedTrick === null
+					? undefined
+					: "Trick complete. All played cards have landed."
+			}
+			aria-live={presentedTrick === null ? undefined : "polite"}
+		>
 			<DeckRemainder cardIds={game.deckCardIds} />
 			<trick-heading>
 				<strong>
@@ -437,7 +472,7 @@ function TrickCenter({
 						relativeIndex,
 						game.players.length,
 					)
-					const play = game.currentTrick.find(
+					const play = visiblePlays.find(
 						(candidate) => candidate.playerId === player.id,
 					)
 					const isCurrent = game.currentPlayerId === player.id
@@ -631,6 +666,7 @@ function PlayerZone({
 	dragState,
 	game,
 	hiddenCardIds,
+	hiddenHandCardIds,
 	myPlayer,
 	manualPlayDisabled,
 	onDragCancel,
@@ -644,6 +680,7 @@ function PlayerZone({
 	passRecipientName,
 	privateView,
 	hoveredCard,
+	interactionLocked,
 	selectedCard,
 	playerCount,
 	seatIndex,
@@ -652,6 +689,7 @@ function PlayerZone({
 	dragState: DragState | null
 	game: PublicGameView
 	hiddenCardIds: ReadonlySet<CardId>
+	hiddenHandCardIds: ReadonlySet<CardId>
 	myPlayer: PublicPlayerView
 	manualPlayDisabled: boolean
 	onDragCancel: (
@@ -677,6 +715,7 @@ function PlayerZone({
 	passRecipientName: string | null
 	privateView: PrivatePlayerView
 	hoveredCard: HoveredCard | null
+	interactionLocked: boolean
 	selectedCard: CardId | null
 	playerCount: number
 	seatIndex: number
@@ -686,9 +725,12 @@ function PlayerZone({
 	const passCards = passSelection
 		.map((cardId) => privateView.cards.find((card) => card.id === cardId))
 		.filter((card): card is VisibleCard => card !== undefined)
+	const visibleCards = privateView.cards.filter(
+		(card) => !hiddenHandCardIds.has(card.id),
+	)
 	const handCards = passing
-		? privateView.cards.filter((card) => !passSelection.includes(card.id))
-		: privateView.cards
+		? visibleCards.filter((card) => !passSelection.includes(card.id))
+		: visibleCards
 	const passAction = passActionLabel(game.passDirection, passRecipientName)
 	return (
 		<player-zone
@@ -738,7 +780,11 @@ function PlayerZone({
 						</span>
 						<button
 							type="button"
-							disabled={passCards.length !== 3 || privateView.passSubmitted}
+							disabled={
+								interactionLocked ||
+								passCards.length !== 3 ||
+								privateView.passSubmitted
+							}
 							onClick={onSubmitPass}
 						>
 							{passAction}
@@ -756,7 +802,7 @@ function PlayerZone({
 								<PlayingCard
 									card={card}
 									dealRound={dealRound}
-									disabled={privateView.passSubmitted}
+									disabled={privateView.passSubmitted || interactionLocked}
 									dragState={dragState}
 									gestureOwner
 									onDragCancel={(event) => onDragCancel(card, event)}
@@ -795,6 +841,7 @@ function PlayerZone({
 					const selected = selectedCard === card.id
 					const layout = handCardLayout(handCards.length, index)
 					const cardDisabled =
+						interactionLocked ||
 						!(passing || playable.has(card.id)) ||
 						(!passing && manualPlayDisabled)
 					const hovered =
@@ -871,6 +918,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const [dismissedTrickKey, setDismissedTrickKey] = useState<string | null>(
 		null,
 	)
+	const [readyTrickKey, setReadyTrickKey] = useState<string | null>(null)
+	const [dismissedPassReceiptKey, setDismissedPassReceiptKey] = useState<
+		string | null
+	>(null)
 	const [tableRoot, setTableRoot] = useState<HTMLElement | null>(null)
 	const pointerOrigin = useRef<{
 		pointerId: number
@@ -904,23 +955,85 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 
 	const latestCompletedTrick = game.completedTricks.at(-1) ?? null
 	const latestTrickKey = completedTrickKey(game)
+	const latestCompletedCardId =
+		latestCompletedTrick?.plays.at(-1)?.card.id ?? null
+	const settlingTrick =
+		latestTrickKey !== null && latestTrickKey !== readyTrickKey
+			? latestCompletedTrick
+			: null
 	const shouldAutoDismissReview =
 		myUserKey !== null &&
 		latestCompletedTrick !== null &&
 		shouldAutoDismissTrickReview(game, myUserKey, latestCompletedTrick)
 	const trickReview =
 		latestTrickKey !== null &&
+		latestTrickKey === readyTrickKey &&
 		latestTrickKey !== dismissedTrickKey &&
 		!shouldAutoDismissReview
 			? latestCompletedTrick
 			: null
-	const presentationReady = trickReview === null
+	const hiddenReviewCardIds = useMemo(
+		() =>
+			new Set<CardId>(
+				(trickReview ?? settlingTrick)?.plays.map((play) => play.card.id) ?? [],
+			),
+		[settlingTrick, trickReview],
+	)
+	const receipt = privateView.passReceipt ?? null
+	const receiptKey =
+		receipt === null || myUserKey === null
+			? null
+			: passReceiptKey(game.roomCode, myUserKey, receipt.roundNumber)
+	const passReceipt =
+		receiptKey !== null &&
+		receiptKey !== dismissedPassReceiptKey &&
+		!receiptWasDismissed(receiptKey)
+			? receipt
+			: null
+	const hiddenReceiptCardIds = useMemo(
+		() => new Set(passReceipt?.cards.map((card) => card.id) ?? []),
+		[passReceipt],
+	)
+	const presentationLocked = passReceipt !== null || settlingTrick !== null
+	const presentationReady = trickReview === null && !presentationLocked
 	const manualPlayDisabled =
 		autoPlayEnabled || !presentationReady || pendingPlay.current !== null
-	const hiddenReviewCardIds = useMemo(
-		() => new Set<CardId>(trickReview?.plays.map((play) => play.card.id) ?? []),
-		[trickReview],
-	)
+
+	useEffect(() => {
+		if (
+			latestTrickKey === null ||
+			latestCompletedTrick === null ||
+			tableRoot === null
+		) {
+			return
+		}
+		if (latestCompletedCardId === null) return
+		let dwellTimeout: number | null = null
+		let ready = false
+		const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches
+		const finishAfterDwell = (): void => {
+			if (ready || dwellTimeout !== null) return
+			dwellTimeout = window.setTimeout(() => {
+				ready = true
+				setReadyTrickKey(latestTrickKey)
+			}, trickSettleDwellMilliseconds(reducedMotion))
+		}
+		const onMotionComplete = (event: Event): void => {
+			if ((event as CustomEvent<string>).detail === latestCompletedCardId) {
+				finishAfterDwell()
+			}
+		}
+		tableRoot.addEventListener(cardMotionCompleteEvent, onMotionComplete)
+		const fallbackTimeout = window.setTimeout(
+			finishAfterDwell,
+			reducedMotion ? 0 : 650,
+		)
+		return () => {
+			tableRoot.removeEventListener(cardMotionCompleteEvent, onMotionComplete)
+			window.clearTimeout(fallbackTimeout)
+			if (dwellTimeout !== null) window.clearTimeout(dwellTimeout)
+		}
+	}, [latestCompletedCardId, latestTrickKey, tableRoot])
 
 	useEffect(() => {
 		if (shouldAutoDismissReview && latestTrickKey !== null) {
@@ -1014,6 +1127,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		cardId: CardId,
 		source: "automatic" | "manual" = "manual",
 	): void => {
+		if (!presentationReady) return
 		if (!privateView.playableCardIds.includes(cardId)) return
 		if (pendingPlay.current !== null) return
 		if (source === "manual" && manualPlayDisabled) return
@@ -1104,6 +1218,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	])
 
 	const selectCard = (cardId: CardId, keyboard: boolean): void => {
+		if (presentationLocked) return
 		if (game.phase === "passing") {
 			if (privateView.passSubmitted || !keyboard) return
 			pendingCardFocus.current = cardId
@@ -1324,6 +1439,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						manualPlayDisabled={manualPlayDisabled}
 						myPlayerId={myUserKey}
 						onPlay={playCard}
+						presentedTrick={settlingTrick}
 						selectedCard={selectedCard}
 					/>
 				)}
@@ -1334,8 +1450,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				dragState={dragState}
 				game={game}
 				hiddenCardIds={hiddenReviewCardIds}
+				hiddenHandCardIds={hiddenReceiptCardIds}
 				hoveredCard={hoveredCard}
 				manualPlayDisabled={manualPlayDisabled}
+				interactionLocked={presentationLocked}
 				myPlayer={myPlayer}
 				onDragCancel={(_card, event) => {
 					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
@@ -1352,10 +1470,11 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				}}
 				onDragStart={(card, event) => {
 					const canPick =
-						game.phase === "passing"
+						!presentationLocked &&
+						(game.phase === "passing"
 							? !privateView.passSubmitted
 							: !manualPlayDisabled &&
-								privateView.playableCardIds.includes(card.id)
+								privateView.playableCardIds.includes(card.id))
 					if (!canPick) return
 					pointerOrigin.current = {
 						pointerId: event.pointerId,
@@ -1606,6 +1725,32 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				)}
 			/>
 
+			{passReceipt === null ? null : (
+				<PassReceipt
+					cards={passReceipt.cards}
+					onDismiss={() => {
+						if (receiptKey === null) return
+						rememberDismissedReceipt(receiptKey)
+						setDismissedPassReceiptKey(receiptKey)
+						window.requestAnimationFrame(() => {
+							const firstPlayable = tableRoot?.querySelector<HTMLButtonElement>(
+								"player-hand playing-card button:not(:disabled)",
+							)
+							;(
+								firstPlayable ??
+								tableRoot?.querySelector<HTMLButtonElement>(
+									"player-hand playing-card button",
+								)
+							)?.focus()
+						})
+					}}
+					senderName={
+						game.players.find((player) => player.id === passReceipt.senderId)
+							?.name ?? "Another player"
+					}
+				/>
+			)}
+
 			<GameTransitions
 				awardedLeftoverCard={privateView.awardedLeftoverCard ?? null}
 				game={game}
@@ -1616,6 +1761,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					}
 				}}
 				review={trickReview}
+				suppressTurnBanner={presentationLocked}
 			/>
 
 			{actionError === null ? null : (
@@ -1631,7 +1777,8 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				</action-toast>
 			)}
 
-			{game.phase === "roundComplete" || game.phase === "gameComplete" ? (
+			{(game.phase === "roundComplete" || game.phase === "gameComplete") &&
+			settlingTrick === null ? (
 				<ScoreSheet game={game} myPlayerId={myUserKey} socket={socket} />
 			) : null}
 		</game-table>

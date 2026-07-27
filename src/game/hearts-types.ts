@@ -83,6 +83,11 @@ export type PublicGameView = {
 export type PrivatePlayerView = {
 	awardedLeftoverCard?: VisibleCard | null
 	cards: VisibleCard[]
+	passReceipt?: {
+		cards: VisibleCard[]
+		roundNumber: number
+		senderId: PlayerId
+	} | null
 	passSubmitted: boolean
 	playableCardIds: CardId[]
 	playerId: PlayerId | null
@@ -175,6 +180,7 @@ export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
 export const EMPTY_PRIVATE_PLAYER_VIEW: PrivatePlayerView = {
 	awardedLeftoverCard: null,
 	cards: [],
+	passReceipt: null,
 	passSubmitted: false,
 	playableCardIds: [],
 	playerId: null,

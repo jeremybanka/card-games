@@ -17,6 +17,18 @@ export function completedTrickKey(game: PublicGameView): string | null {
 	return `${game.roomCode}:round-${game.roundNumber}-trick-${game.completedTricks.length}`
 }
 
+export function passReceiptKey(
+	roomCode: string,
+	playerId: PlayerId,
+	roundNumber: number,
+): string {
+	return `${roomCode}:${playerId}:pass-receipt:${roundNumber}`
+}
+
+export function trickSettleDwellMilliseconds(reducedMotion: boolean): number {
+	return reducedMotion ? 220 : 450
+}
+
 export function orderedTrickReviewPlays(
 	trick: CompletedTrick,
 ): readonly TrickPlay[] {

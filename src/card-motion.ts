@@ -27,10 +27,18 @@ export type CardTransition =
 			kind: "none"
 	  }
 
-const cardSelector = "playing-card[data-card-id], card-back[data-card-id]"
+const cardSelector =
+	"playing-card[data-card-id], card-back[data-card-id], receipt-card[data-card-id]"
 const dealStepMilliseconds = 24
 const opponentPlayDurationMilliseconds = 520
 const capturePendingCardEvent = "wayfarer:capture-pending-card"
+export const cardMotionCompleteEvent = "wayfarer:card-motion-complete"
+
+function announceMotionComplete(root: HTMLElement, cardId: string): void {
+	root.dispatchEvent(
+		new CustomEvent<string>(cardMotionCompleteEvent, { detail: cardId }),
+	)
+}
 
 export function capturePendingCardMotion(
 	root: HTMLElement,
@@ -42,7 +50,7 @@ export function capturePendingCardMotion(
 }
 
 function cardFace(element: HTMLElement): CardSnapshot["face"] {
-	return element.matches("playing-card") ? "up" : "down"
+	return element.matches("playing-card, receipt-card") ? "up" : "down"
 }
 
 function dataNumber(value: string | undefined): number | null {
@@ -335,11 +343,15 @@ function animateCardChanges(
 						root.dataset.lastLocalPlayMotionFrom = `${before.left},${before.top}`
 						root.dataset.lastLocalPlayMotionTo = `${after.left},${after.top}`
 					}
-					trackCommittedMotion(
+					const animation = trackCommittedMotion(
 						cardId,
 						after,
 						animateMove(element, before, after),
 						committed,
+					)
+					void animation.finished.then(
+						() => announceMotionComplete(root, cardId),
+						() => announceMotionComplete(root, cardId),
 					)
 				}
 				break
@@ -347,7 +359,11 @@ function animateCardChanges(
 				if (before !== undefined) {
 					root.dataset.lastCardMotion = "opponent-play"
 					root.dataset.lastCardMotionId = cardId
-					animateOpponentPlay(root, element, before, after)
+					const animation = animateOpponentPlay(root, element, before, after)
+					void animation.finished.then(
+						() => announceMotionComplete(root, cardId),
+						() => announceMotionComplete(root, cardId),
+					)
 				}
 				break
 			case "none":
