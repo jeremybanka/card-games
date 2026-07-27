@@ -64,6 +64,33 @@ function cardMotionZone(element: HTMLElement): CardSnapshot["zone"] {
 	return "other"
 }
 
+function snapshotCard(
+	element: HTMLElement,
+	useRenderedFace = false,
+): CardSnapshot {
+	const renderedElement = useRenderedFace
+		? (element.querySelector<HTMLElement>("card-face") ?? element)
+		: element
+	const rect = renderedElement.getBoundingClientRect()
+	const width = useRenderedFace
+		? rect.width
+		: renderedElement.offsetWidth || rect.width
+	const height = useRenderedFace
+		? rect.height
+		: renderedElement.offsetHeight || rect.height
+	return {
+		dealIndex: dataNumber(element.dataset.dealIndex),
+		dealRound: element.dataset.dealRound ?? null,
+		face: cardFace(element),
+		height,
+		left: useRenderedFace ? rect.left : rect.left + (rect.width - width) / 2,
+		rotation: rotationDegrees(element),
+		top: useRenderedFace ? rect.top : rect.top + (rect.height - height) / 2,
+		width,
+		zone: cardMotionZone(element),
+	}
+}
+
 export function planCardTransition(
 	before: CardSnapshot | undefined,
 	after: CardSnapshot,
@@ -109,20 +136,7 @@ function takeSnapshots(
 			snapshots.set(cardId, committedSnapshot)
 			continue
 		}
-		const rect = element.getBoundingClientRect()
-		const width = element.offsetWidth || rect.width
-		const height = element.offsetHeight || rect.height
-		snapshots.set(cardId, {
-			dealIndex: dataNumber(element.dataset.dealIndex),
-			dealRound: element.dataset.dealRound ?? null,
-			face: cardFace(element),
-			height,
-			left: rect.left + (rect.width - width) / 2,
-			rotation: rotationDegrees(element),
-			top: rect.top + (rect.height - height) / 2,
-			width,
-			zone: cardMotionZone(element),
-		})
+		snapshots.set(cardId, snapshotCard(element))
 	}
 	return snapshots
 }
@@ -403,8 +417,12 @@ export function observeCardMotion(root: HTMLElement): () => void {
 	const observer = new MutationObserver(animateMutation)
 	const capturePendingCard = (event: Event): void => {
 		const cardId = (event as CustomEvent<string>).detail
-		const pending = takeSnapshots(root).get(cardId)
-		if (pending !== undefined) snapshots.set(cardId, pending)
+		const pendingElement = Array.from(
+			root.querySelectorAll<HTMLElement>(cardSelector),
+		).find((element) => element.dataset.cardId === cardId)
+		if (pendingElement !== undefined) {
+			snapshots.set(cardId, snapshotCard(pendingElement, true))
+		}
 	}
 	root.addEventListener(capturePendingCardEvent, capturePendingCard)
 	observer.observe(root, {

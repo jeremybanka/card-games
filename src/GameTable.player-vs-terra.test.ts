@@ -575,6 +575,38 @@ describe("recorded player versus Terra table", () => {
 					y: 100,
 				}),
 			)
+			fireEvent.pointerEnter(scrubButtons[0]!, {
+				clientX: 40,
+				clientY: 150,
+				pointerId: 45,
+				pointerType: "mouse",
+			})
+			fireEvent.pointerMove(scrubButtons[0]!, {
+				clientX: 140,
+				clientY: 150,
+				pointerId: 45,
+				pointerType: "mouse",
+			})
+			expect(
+				scrubButtons[0]?.closest("playing-card")?.hasAttribute("data-hovered"),
+			).toBe(false)
+			expect(
+				scrubButtons[1]?.closest("playing-card")?.hasAttribute("data-hovered"),
+			).toBe(true)
+			fireEvent.pointerLeave(scrubButtons[0]!, {
+				pointerId: 45,
+				pointerType: "mouse",
+				relatedTarget: scrubButtons[1],
+			})
+			expect(
+				scrubButtons[1]?.closest("playing-card")?.hasAttribute("data-hovered"),
+			).toBe(true)
+			fireEvent.pointerLeave(localHand, {
+				pointerId: 45,
+				pointerType: "mouse",
+			})
+			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
+
 			fireEvent.pointerDown(scrubButtons[0]!, {
 				clientX: 40,
 				clientY: 150,

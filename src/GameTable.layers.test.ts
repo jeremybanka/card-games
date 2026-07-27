@@ -55,4 +55,24 @@ describe("game table stacking contract", () => {
 			)
 		}
 	})
+
+	it("moves the card face without moving its pointer target while picking", () => {
+		expect(stylesheet).not.toMatch(/&\[data-hovered\] \{\s*transform:/)
+		expect(stylesheet).not.toMatch(
+			/&\[data-picking\]:not\(\[data-hovered\]\) \{\s*transform:/,
+		)
+		expect(stylesheet).toMatch(
+			/&\[data-hovered\] \{[\s\S]*?> button > card-face \{[\s\S]*?transform: translate\(/,
+		)
+		expect(stylesheet).toMatch(
+			/&\[data-picking\]:not\(\[data-hovered\]\) \{[\s\S]*?> button > card-face \{\s*transform: translateY\(-1\.15rem\) scale\(1\.3\);/,
+		)
+		expect(stylesheet).toMatch(/> card-face \{[\s\S]*?pointer-events: none;/)
+	})
+
+	it("enlarges focused cards without compounding the dragged scale", () => {
+		expect(stylesheet).toMatch(
+			/&:not\(\[data-hovered\], \[data-picking\], \[data-dragging\], \[data-play-pending\]\):has\(\s*> button:focus-visible\s*\) \{[\s\S]*?transform: scale\(1\.2\);/,
+		)
+	})
 })

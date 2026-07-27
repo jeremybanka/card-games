@@ -22,7 +22,7 @@ export const HAND_SCRUBBING_BAND_TOP = -28
 export const HAND_OUTWARD_INTENT_TOP = -8
 export const HAND_OUTWARD_CORRIDOR_BASE = 18
 export const HAND_OUTWARD_CORRIDOR_SLOPE = 0.8
-export const DRAGGED_CARD_SCALE = 1.06
+export const DRAGGED_CARD_SCALE = 1.1
 export const HOVER_VIEWPORT_GUTTER = 8
 
 export function readableCardHorizontalCorrection(

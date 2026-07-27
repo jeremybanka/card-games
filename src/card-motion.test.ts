@@ -117,6 +117,8 @@ describe("observeCardMotion", () => {
 		const source = document.createElement("playing-card")
 		source.dataset.cardId = "card::dragged"
 		source.dataset.dealRound = "1"
+		const sourceFace = document.createElement("card-face")
+		source.append(sourceFace)
 		let sourceLeft = 20
 		let sourceTop = 420
 		source.getBoundingClientRect = () =>
@@ -125,6 +127,13 @@ describe("observeCardMotion", () => {
 				left: sourceLeft,
 				top: sourceTop,
 				width: 72,
+			}) as DOMRect
+		sourceFace.getBoundingClientRect = () =>
+			({
+				height: 130,
+				left: 105,
+				top: 225,
+				width: 94,
 			}) as DOMRect
 		hand.append(source)
 		root.append(hand)
@@ -148,7 +157,7 @@ describe("observeCardMotion", () => {
 			expect(animate).toHaveBeenCalledWith(
 				[
 					expect.objectContaining({
-						transform: expect.stringContaining("translate3d(-60px, 100px"),
+						transform: expect.stringContaining("translate3d(-75px, 65px"),
 					}),
 					{ transform: expect.not.stringContaining("translate3d") },
 				],
@@ -157,10 +166,10 @@ describe("observeCardMotion", () => {
 		})
 		expect(root.dataset.lastCardMotion).toBe("move")
 		expect(root.dataset.lastCardMotionId).toBe("card::dragged")
-		expect(root.dataset.lastCardMotionFrom).toBe("120,260")
+		expect(root.dataset.lastCardMotionFrom).toBe("105,225")
 		expect(root.dataset.lastCardMotionTo).toBe("180,160")
 		expect(root.dataset.lastLocalPlayMotionId).toBe("card::dragged")
-		expect(root.dataset.lastLocalPlayMotionFrom).toBe("120,260")
+		expect(root.dataset.lastLocalPlayMotionFrom).toBe("105,225")
 		expect(root.dataset.lastLocalPlayMotionTo).toBe("180,160")
 		stop()
 	})
