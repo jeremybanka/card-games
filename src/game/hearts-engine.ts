@@ -12,6 +12,7 @@ import type {
 	TrickPlay,
 	VisibleCard,
 } from "./hearts-types.ts"
+import { passRecipientSeatIndex } from "./seat-order.ts"
 
 export const PLAYER_MINIMUM = 2
 export const PLAYER_MAXIMUM = 4
@@ -350,23 +351,6 @@ export function dealRound(
 	return next
 }
 
-function passTargetIndex(
-	index: number,
-	playerCount: number,
-	direction: PassDirection,
-): number {
-	switch (direction) {
-		case "left":
-			return (index + 1) % playerCount
-		case "right":
-			return (index - 1 + playerCount) % playerCount
-		case "across":
-			return (index + (playerCount === 4 ? 2 : 1)) % playerCount
-		case "hold":
-			return index
-	}
-}
-
 export function submitPass(
 	state: HeartsState,
 	playerId: PlayerId,
@@ -402,7 +386,7 @@ export function submitPass(
 		)
 	}
 	for (const [index, candidate] of next.players.entries()) {
-		const targetIndex = passTargetIndex(
+		const targetIndex = passRecipientSeatIndex(
 			index,
 			next.players.length,
 			next.passDirection,
