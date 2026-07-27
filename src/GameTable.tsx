@@ -22,13 +22,18 @@ import {
 	readableCardHorizontalCorrection,
 } from "./card-hand-layout.ts"
 import { capturePendingCardMotion, useCardMotion } from "./card-motion.ts"
-import { actionErrorAtom } from "./client-state.ts"
+import { actionErrorAtom, autoPlayEnabledAtom } from "./client-state.ts"
 import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
 	capturedTrickCount,
 	completedTrickKey,
 	shouldAutoDismissTrickReview,
 } from "./game-presentation.ts"
+import {
+	autoPlayTurnFingerprint,
+	chooseHeartsAutoPlayCard,
+	isAutoPlayTurnActionable,
+} from "./game/hearts-auto-play.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
@@ -374,12 +379,14 @@ function OpponentZone({
 function TrickCenter({
 	dragState,
 	game,
+	manualPlayDisabled,
 	myPlayerId,
 	onPlay,
 	selectedCard,
 }: {
 	dragState: DragState | null
 	game: PublicGameView
+	manualPlayDisabled: boolean
 	myPlayerId: PlayerId
 	onPlay: (cardId: CardId) => void
 	selectedCard: CardId | null
@@ -457,7 +464,11 @@ function TrickCenter({
 			</trick-slots>
 			<button
 				type="button"
-				disabled={selectedCard === null || game.currentPlayerId !== myPlayerId}
+				disabled={
+					manualPlayDisabled ||
+					selectedCard === null ||
+					game.currentPlayerId !== myPlayerId
+				}
 				onClick={() => {
 					if (selectedCard !== null) onPlay(selectedCard)
 				}}
@@ -602,6 +613,7 @@ function PlayerZone({
 	game,
 	hiddenCardIds,
 	myPlayer,
+	manualPlayDisabled,
 	onDragCancel,
 	onDragEnd,
 	onDragMove,
@@ -621,6 +633,7 @@ function PlayerZone({
 	game: PublicGameView
 	hiddenCardIds: ReadonlySet<CardId>
 	myPlayer: PublicPlayerView
+	manualPlayDisabled: boolean
 	onDragCancel: (
 		card: VisibleCard,
 		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
@@ -757,14 +770,17 @@ function PlayerZone({
 				{handCards.map((card, index) => {
 					const selected = selectedCard === card.id
 					const layout = handCardLayout(handCards.length, index)
+					const cardDisabled =
+						!(passing || playable.has(card.id)) ||
+						(!passing && manualPlayDisabled)
 					const hovered =
 						hoveredCard?.cardId === card.id &&
-						(passing || playable.has(card.id))
+						(passing || (playable.has(card.id) && !manualPlayDisabled))
 					return (
 						<hand-card
 							key={card.id}
 							data-card-id={card.id}
-							data-disabled={!(passing || playable.has(card.id)) || undefined}
+							data-disabled={cardDisabled || undefined}
 							data-hand-angle={layout.angle}
 							data-selected={selected || undefined}
 							style={{
@@ -783,7 +799,7 @@ function PlayerZone({
 									seatIndex
 								}
 								dealRound={dealRound}
-								disabled={!(passing || playable.has(card.id))}
+								disabled={cardDisabled}
 								dragState={dragState}
 								gestureOwner
 								handAngle={layout.angle}
@@ -822,6 +838,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	const privateView = usePullAtom(privatePlayerViewAtom)
 	const myUserKey = usePullAtom(myUserKeyAtom) as PlayerId | null
 	const actionError = useO(actionErrorAtom)
+	const autoPlayEnabled = useO(autoPlayEnabledAtom)
 	const [selectedCard, setSelectedCard] = useState<CardId | null>(null)
 	const [hoveredCard, setHoveredCard] = useState<HoveredCard | null>(null)
 	const [selectedAiModel, setSelectedAiModel] = useState(DEFAULT_AI_MODEL_ID)
@@ -853,8 +870,11 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		cardId: CardId
 		requestId: number
 		timeout: number
+		turnFingerprint: string | null
 	} | null>(null)
 	const nextPlayRequestId = useRef(0)
+	const attemptedAutoTurns = useRef(new Set<string>())
+	const [pendingPlayVersion, setPendingPlayVersion] = useState(0)
 
 	useCardMotion(tableRoot)
 
@@ -870,6 +890,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		!shouldAutoDismissReview
 			? latestCompletedTrick
 			: null
+	const presentationReady = trickReview === null
+	const manualPlayDisabled =
+		autoPlayEnabled || !presentationReady || pendingPlay.current !== null
 	const hiddenReviewCardIds = useMemo(
 		() => new Set<CardId>(trickReview?.plays.map((play) => play.card.id) ?? []),
 		[trickReview],
@@ -885,6 +908,16 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		setPassSelection([])
 		setSelectedCard(null)
 	}, [game.phase, game.roundNumber])
+
+	useEffect(() => {
+		if (!autoPlayEnabled) return
+		setSelectedCard(null)
+		setHoveredCard(null)
+		setDragState(null)
+		pointerOrigin.current = null
+		draggingCardId.current = null
+		dragCommit.current = null
+	}, [autoPlayEnabled])
 
 	useEffect(() => {
 		const cardId = pendingCardFocus.current
@@ -910,12 +943,16 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		window.clearTimeout(pendingPlay.current.timeout)
 		pendingPlay.current = null
 		setDragState(null)
+		setPendingPlayVersion((current) => current + 1)
 	}
 
 	useEffect(() => {
 		const clearDisconnectedPlay = (): void => {
 			const pending = pendingPlay.current
 			if (pending === null) return
+			if (pending.turnFingerprint !== null) {
+				attemptedAutoTurns.current.add(pending.turnFingerprint)
+			}
 			clearPendingPlay(pending.requestId)
 		}
 		socket.on("disconnect", clearDisconnectedPlay)
@@ -936,25 +973,98 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		}
 	}, [privateView.cards])
 
-	const playCard = (cardId: CardId, fromDrag = false): void => {
+	const playCard = (
+		cardId: CardId,
+		source: "automatic" | "manual" = "manual",
+	): void => {
 		if (!privateView.playableCardIds.includes(cardId)) return
 		if (pendingPlay.current !== null) return
+		if (source === "manual" && manualPlayDisabled) return
 		const requestId = ++nextPlayRequestId.current
-		if (fromDrag) {
-			const timeout = window.setTimeout(() => {
-				if (pendingPlay.current?.requestId !== requestId) return
-				setState(actionErrorAtom, "The play timed out. Please try again.")
-				clearPendingPlay(requestId)
-			}, 10_000)
-			pendingPlay.current = { cardId, requestId, timeout }
+		const timeout = window.setTimeout(() => {
+			if (pendingPlay.current?.requestId !== requestId) return
+			setState(actionErrorAtom, "The play timed out. Please try again.")
+			if (source === "automatic") setState(autoPlayEnabledAtom, false)
+			clearPendingPlay(requestId)
+		}, 10_000)
+		pendingPlay.current = {
+			cardId,
+			requestId,
+			timeout,
+			turnFingerprint:
+				myUserKey === null
+					? null
+					: autoPlayTurnFingerprint(game, privateView, myUserKey),
 		}
+		setPendingPlayVersion((current) => current + 1)
 		socket.emit("playCard", cardId, (result) => {
-			if (fromDrag && pendingPlay.current?.requestId !== requestId) return
+			if (pendingPlay.current?.requestId !== requestId) return
 			handleResult(result)
 			if (result.ok) setSelectedCard(null)
-			if (fromDrag && !result.ok) clearPendingPlay(requestId)
+			if (!result.ok) {
+				if (source === "automatic") setState(autoPlayEnabledAtom, false)
+				clearPendingPlay(requestId)
+			}
 		})
 	}
+
+	useEffect(() => {
+		if (
+			!autoPlayEnabled ||
+			myUserKey === null ||
+			pendingPlay.current !== null ||
+			!isAutoPlayTurnActionable(game, privateView, myUserKey, presentationReady)
+		) {
+			return
+		}
+		const fingerprint = autoPlayTurnFingerprint(game, privateView, myUserKey)
+		if (attemptedAutoTurns.current.has(fingerprint)) return
+		const timeout = window.setTimeout(() => {
+			if (
+				!autoPlayEnabled ||
+				pendingPlay.current !== null ||
+				attemptedAutoTurns.current.has(fingerprint) ||
+				!isAutoPlayTurnActionable(
+					game,
+					privateView,
+					myUserKey,
+					presentationReady,
+				)
+			) {
+				return
+			}
+			let cardId: CardId
+			try {
+				cardId = chooseHeartsAutoPlayCard(
+					privateView.cards,
+					privateView.playableCardIds,
+					game.currentTrick,
+				)
+			} catch (error) {
+				setState(
+					actionErrorAtom,
+					error instanceof Error
+						? error.message
+						: "Auto-play could not choose a legal card.",
+				)
+				setState(autoPlayEnabledAtom, false)
+				return
+			}
+			attemptedAutoTurns.current.add(fingerprint)
+			if (tableRoot !== null) capturePendingCardMotion(tableRoot, cardId)
+			setDragState({ cardId, phase: "pending", x: 0, y: 0 })
+			playCard(cardId, "automatic")
+		}, 0)
+		return () => window.clearTimeout(timeout)
+	}, [
+		autoPlayEnabled,
+		game,
+		myUserKey,
+		pendingPlayVersion,
+		presentationReady,
+		privateView,
+		tableRoot,
+	])
 
 	const selectCard = (cardId: CardId, keyboard: boolean): void => {
 		if (game.phase === "passing") {
@@ -971,6 +1081,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			})
 			return
 		}
+		if (manualPlayDisabled) return
 		if (!privateView.playableCardIds.includes(cardId)) return
 		setSelectedCard(selectedCard === cardId ? null : cardId)
 	}
@@ -1017,6 +1128,28 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 									: "♥ whole"}
 					</strong>
 				</round-mark>
+				{game.gameKind !== "ohHell" && game.phase !== "lobby" ? (
+					<auto-play-control>
+						<label>
+							<input
+								aria-label={`Auto-play ${autoPlayEnabled ? "on" : "off"}`}
+								checked={autoPlayEnabled}
+								onChange={(event) => {
+									if (event.currentTarget.checked && myUserKey !== null) {
+										attemptedAutoTurns.current.delete(
+											autoPlayTurnFingerprint(game, privateView, myUserKey),
+										)
+									}
+									setState(autoPlayEnabledAtom, event.currentTarget.checked)
+								}}
+								role="switch"
+								type="checkbox"
+							/>
+							<span>Auto-play</span>
+							<strong>{autoPlayEnabled ? "On" : "Off"}</strong>
+						</label>
+					</auto-play-control>
+				) : null}
 			</table-header>
 
 			<opponents-row data-count={opponents.length}>
@@ -1148,6 +1281,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					<TrickCenter
 						dragState={dragState}
 						game={game}
+						manualPlayDisabled={manualPlayDisabled}
 						myPlayerId={myUserKey}
 						onPlay={playCard}
 						selectedCard={selectedCard}
@@ -1161,6 +1295,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 				game={game}
 				hiddenCardIds={hiddenReviewCardIds}
 				hoveredCard={hoveredCard}
+				manualPlayDisabled={manualPlayDisabled}
 				myPlayer={myPlayer}
 				onDragCancel={(_card, event) => {
 					if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
@@ -1179,7 +1314,8 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					const canPick =
 						game.phase === "passing"
 							? !privateView.passSubmitted
-							: privateView.playableCardIds.includes(card.id)
+							: !manualPlayDisabled &&
+								privateView.playableCardIds.includes(card.id)
 					if (!canPick) return
 					pointerOrigin.current = {
 						pointerId: event.pointerId,
@@ -1377,7 +1513,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								? { ...current, phase: "pending" }
 								: current,
 						)
-						playCard(cardId, true)
+						playCard(cardId)
 					} else if (game.phase === "passing" && committedDrag) {
 						const destination = releasedOverPass
 							? "pass"

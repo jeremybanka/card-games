@@ -28,6 +28,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { createAiPlayer, type AiPlayerRuntime } from "./ai/ai-player.node.ts"
 import { wrapAiGeneratorWithVarmint } from "./ai/ai-generator.node.ts"
 import type { AiTurnGenerator } from "./ai/ai-strategy.ts"
+import { autoPlayEnabledAtom } from "./client-state.ts"
 import { GameTable } from "./GameTable.tsx"
 import type { GameSocket } from "./game-socket.ts"
 import {
@@ -82,6 +83,10 @@ vi.mock("./client-state.ts", async () => {
 		actionErrorAtom: atom<string | null>({
 			key: "playerVsTerraActionError",
 			default: null,
+		}),
+		autoPlayEnabledAtom: atom<boolean>({
+			key: "playerVsTerraAutoPlayEnabled",
+			default: false,
 		}),
 	}
 })
@@ -472,6 +477,27 @@ describe("recorded player versus Terra table", () => {
 
 			fireEvent.click(screen.getByRole("button", { name: "Deal the cards" }))
 			await screen.findByRole("button", { name: "A of clubs" })
+			const autoPlaySwitch = screen.getByRole("switch", {
+				name: "Auto-play off",
+			}) as HTMLInputElement
+			expect(autoPlaySwitch.checked).toBe(false)
+			fireEvent.change(autoPlaySwitch, { target: { checked: true } })
+			table.clientSilo.setState(autoPlayEnabledAtom, true)
+			await screen.findByRole("switch", { name: "Auto-play on" })
+			expect(
+				(
+					screen.getByRole("button", {
+						name: "A of clubs",
+					}) as HTMLButtonElement
+				).disabled,
+			).toBe(false)
+			fireEvent.change(
+				screen.getByRole("switch", {
+					name: "Auto-play on",
+				}),
+				{ target: { checked: false } },
+			)
+			table.clientSilo.setState(autoPlayEnabledAtom, false)
 			await waitFor(() => {
 				const terraPlayer = getState(heartsStateAtoms, roomCode).players.find(
 					(player) => player.id === terraId,
@@ -786,10 +812,34 @@ describe("recorded player versus Terra table", () => {
 					const button = screen.getByRole("button", {
 						name: cardName,
 					}) as HTMLButtonElement
+					const delayedContinueButton = screen.queryByRole("button", {
+						name: "Continue to next trick",
+					})
+					if (button.disabled && delayedContinueButton !== null) {
+						fireEvent.click(delayedContinueButton)
+					}
 					expect(button.disabled).toBe(false)
 					return button
 				})
-				if (cardName === "2 of clubs") {
+				if (playIndex === recordedHumanPlays.length - 1) {
+					fireEvent.change(
+						screen.getByRole("switch", {
+							name: "Auto-play off",
+						}),
+						{ target: { checked: true } },
+					)
+					table.clientSilo.setState(autoPlayEnabledAtom, true)
+					await waitFor(() => {
+						expect(cardButton.disabled).toBe(true)
+						expect(
+							(
+								screen.getByRole("button", {
+									name: "Drag a card here",
+								}) as HTMLButtonElement
+							).disabled,
+						).toBe(true)
+					})
+				} else if (cardName === "2 of clubs") {
 					fireEvent.pointerDown(cardButton, {
 						clientX: 0,
 						clientY: 100,
