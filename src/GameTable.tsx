@@ -96,6 +96,29 @@ function hoveredCardFromElement(
 	}
 }
 
+function handCardCandidates(element: HTMLElement): HTMLElement[] {
+	const hand = element.closest("player-hand")
+	return Array.from(
+		hand?.querySelectorAll<HTMLElement>("hand-card:not([data-disabled])") ?? [],
+	)
+}
+
+function closestHandCard(
+	candidates: readonly HTMLElement[],
+	clientX: number,
+): HTMLElement | null {
+	return candidates.reduce<{
+		element: HTMLElement
+		distance: number
+	} | null>((nearest, candidate) => {
+		const rect = candidate.getBoundingClientRect()
+		const distance = Math.abs(rect.left + rect.width / 2 - clientX)
+		return nearest === null || distance < nearest.distance
+			? { element: candidate, distance }
+			: nearest
+	}, null)?.element ?? null
+}
+
 function suitMark(suit: Suit): string {
 	switch (suit) {
 		case "clubs":
@@ -719,6 +742,15 @@ function PlayerZone({
 				data-hover-active={
 					handCards.some((card) => hoveredCard?.cardId === card.id) || undefined
 				}
+				onPointerLeave={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
+					if (
+						event.relatedTarget instanceof Node &&
+						event.currentTarget.contains(event.relatedTarget)
+					) {
+						return
+					}
+					onHoverCard(null)
+				}}
 			>
 				{handCards.map((card, index) => {
 					const selected = selectedCard === card.id
@@ -758,7 +790,7 @@ function PlayerZone({
 								onDragMove={(event) => onDragMove(card, event)}
 								onDragStart={(event) => onDragStart(card, event)}
 								onHoverChange={(hovered, element) =>
-									onHoverCard(hovered ? card.id : null, element)
+									onHoverCard(card.id, hovered ? element : undefined)
 								}
 								onSelect={(event) => onSelectCard(card.id, event.detail === 0)}
 								hoverOffset={
@@ -1172,14 +1204,29 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					})
 				}}
 				onHoverCard={(cardId, element) => {
-					setHoveredCard(
-						cardId === null || element === undefined
-							? null
-							: hoveredCardFromElement(cardId, element),
-					)
+					if (cardId === null) {
+						setHoveredCard(null)
+						return
+					}
+					if (element === undefined) {
+						setHoveredCard((current) =>
+							current?.cardId === cardId ? null : current,
+						)
+						return
+					}
+					setHoveredCard(hoveredCardFromElement(cardId, element))
 				}}
 				onDragMove={(_card, event) => {
 					if (pointerOrigin.current === null) {
+						const closest = closestHandCard(
+							handCardCandidates(event.currentTarget),
+							event.clientX,
+						)
+						const cardId = closest?.dataset.cardId as CardId | undefined
+						const button = closest?.querySelector<HTMLElement>("button")
+						if (cardId !== undefined && button !== null && button !== undefined) {
+							setHoveredCard(hoveredCardFromElement(cardId, button))
+						}
 						return
 					}
 					const x = event.clientX - pointerOrigin.current.x
@@ -1199,31 +1246,15 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						})
 						return
 					}
-					const hand = event.currentTarget.closest("player-hand")
-					const candidates = Array.from(
-						hand?.querySelectorAll<HTMLElement>(
-							"hand-card:not([data-disabled])",
-						) ?? [],
-					)
+					const candidates = handCardCandidates(event.currentTarget)
 					const activeCardId = draggingCardId.current
 					if (activeCardId === null) return
-					const closest = candidates.reduce<{
-						cardId: CardId
-						distance: number
-					} | null>((nearest, candidate) => {
-						const cardId = candidate.dataset.cardId as CardId | undefined
-						if (cardId === undefined) return nearest
-						const rect = candidate.getBoundingClientRect()
-						const centerX = rect.left + rect.width / 2
-						const distance = Math.abs(centerX - event.clientX)
-						return nearest === null || distance < nearest.distance
-							? { cardId, distance }
-							: nearest
-					}, null)
-					if (closest === null) return
+					const closest = closestHandCard(candidates, event.clientX)
+					const closestCardId = closest?.dataset.cardId as CardId | undefined
+					if (closestCardId === undefined) return
 					const gesture = advanceCardGesture(
 						{ cardId: activeCardId, phase: dragPhase.current },
-						closest.cardId,
+						closestCardId,
 						{ x, y },
 					)
 					const activeCandidate = candidates.find(
