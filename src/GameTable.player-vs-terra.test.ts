@@ -438,6 +438,9 @@ describe("recorded player versus Terra table", () => {
 	})
 
 	it("replays every browser action and hits every Terra cache entry", async () => {
+		// Exercise the reduced-motion presentation path so the full 26-trick replay
+		// keeps every cognitive settle beat without depending on 26 animation dwells.
+		vi.stubGlobal("matchMedia", () => ({ matches: true }))
 		const cacheFiles = await readdir(cacheDirectory, { recursive: true })
 		const cacheInputCount = cacheFiles.filter((file) =>
 			file.endsWith(".input.json"),
@@ -1076,6 +1079,7 @@ describe("recorded player versus Terra table", () => {
 		} finally {
 			view.unmount()
 			await stopRealtimeTable(table)
+			vi.unstubAllGlobals()
 		}
 	}, 30_000)
 })
