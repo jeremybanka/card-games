@@ -1,6 +1,7 @@
 import { ArkErrors } from "arktype"
 
-import type { CardId, VisibleCard } from "../game/hearts-types.ts"
+import { chooseHeartsAutoPlayCard } from "../game/hearts-auto-play.ts"
+import type { VisibleCard } from "../game/hearts-types.ts"
 import type { AiGameContext } from "./ai-game-facts.ts"
 import {
 	aiTurnDecisionType,
@@ -33,14 +34,6 @@ function pointRisk(card: VisibleCard): number {
 	return card.rank
 }
 
-function cardsByIds(
-	context: AiGameContext,
-	cardIds: readonly CardId[],
-): VisibleCard[] {
-	const ids = new Set(cardIds)
-	return context.privateView.cards.filter((card) => ids.has(card.id))
-}
-
 function choosePass(context: AiGameContext): AiNextAction {
 	const cards = [...context.privateView.cards]
 		.sort((left, right) => pointRisk(right) - pointRisk(left))
@@ -52,41 +45,14 @@ function choosePass(context: AiGameContext): AiNextAction {
 }
 
 function choosePlay(context: AiGameContext): AiNextAction {
-	const legalCards = cardsByIds(context, context.privateView.playableCardIds)
-	if (legalCards.length === 0) {
-		throw new Error("The AI has no legal card to play.")
+	return {
+		action: "playCard",
+		cardId: chooseHeartsAutoPlayCard(
+			context.privateView.cards,
+			context.privateView.playableCardIds,
+			context.publicView.currentTrick,
+		),
 	}
-
-	const leadPlay = context.publicView.currentTrick[0]
-	let selected: VisibleCard
-	if (leadPlay === undefined) {
-		selected = [...legalCards].sort(
-			(left, right) => pointRisk(left) - pointRisk(right),
-		)[0] as VisibleCard
-	} else {
-		const leadSuit = leadPlay.card.suit
-		const currentWinningRank = Math.max(
-			...context.publicView.currentTrick
-				.filter((play) => play.card.suit === leadSuit)
-				.map((play) => play.card.rank),
-		)
-		const followingSuit = legalCards.every((card) => card.suit === leadSuit)
-		if (followingSuit) {
-			const safeCards = legalCards
-				.filter((card) => card.rank < currentWinningRank)
-				.sort((left, right) => right.rank - left.rank)
-			selected =
-				safeCards[0] ??
-				([...legalCards].sort(
-					(left, right) => left.rank - right.rank,
-				)[0] as VisibleCard)
-		} else {
-			selected = [...legalCards].sort(
-				(left, right) => pointRisk(right) - pointRisk(left),
-			)[0] as VisibleCard
-		}
-	}
-	return { action: "playCard", cardId: selected.id }
 }
 
 export function chooseFallbackAiAction(context: AiGameContext): AiNextAction {

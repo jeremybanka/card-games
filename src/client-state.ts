@@ -56,12 +56,18 @@ export const actionErrorAtom = atom<string | null>({
 	default: null,
 })
 
+export const autoPlayEnabledAtom = atom<boolean>({
+	key: "autoPlayEnabled",
+	default: false,
+})
+
 export function saveRoomSession(roomCode: string, playerName: string): void {
 	window.localStorage.setItem("wayfarer.playerName", playerName)
 	window.localStorage.setItem("wayfarer.roomCode", roomCode)
 	const url = new URL(window.location.href)
 	url.searchParams.set("room", roomCode)
 	history.replaceState(null, "", url)
+	setState(autoPlayEnabledAtom, false)
 	setState(roomSessionAtom, {
 		generation: (getState(roomSessionAtom)?.generation ?? 0) + 1,
 		playerName,
@@ -74,5 +80,6 @@ export function clearRoomSession(): void {
 	const url = new URL(window.location.href)
 	url.searchParams.delete("room")
 	history.replaceState(null, "", url)
+	setState(autoPlayEnabledAtom, false)
 	setState(roomSessionAtom, null)
 }
