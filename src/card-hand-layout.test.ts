@@ -191,13 +191,13 @@ describe("card hand layout", () => {
 
 	it("counter-rotates and enlarges a committed card from either fan edge", () => {
 		expect(draggedCardTransform(-12, { x: 3, y: -18 })).toBe(
-			"translate3d(3px, -18px, 0) rotate(12deg) scale(1.06)",
+			"translate3d(3px, -18px, 0) rotate(12deg) scale(1.1)",
 		)
 		expect(draggedCardTransform(12, { x: -3, y: -18 })).toBe(
-			"translate3d(-3px, -18px, 0) rotate(-12deg) scale(1.06)",
+			"translate3d(-3px, -18px, 0) rotate(-12deg) scale(1.1)",
 		)
 		expect(draggedCardTransform(0, { x: 0, y: -18 })).toBe(
-			"translate3d(0px, -18px, 0) rotate(0deg) scale(1.06)",
+			"translate3d(0px, -18px, 0) rotate(0deg) scale(1.1)",
 		)
 	})
 

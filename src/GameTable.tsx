@@ -228,11 +228,13 @@ function PlayingCard({
 				onPointerMove={onDragMove}
 				onPointerUp={onDragEnd}
 			>
-				<card-corner>
-					<strong>{rankMark(card.rank)}</strong>
-					<span>{suitMark(card.suit)}</span>
-				</card-corner>
-				<card-suit aria-hidden="true">{suitMark(card.suit)}</card-suit>
+				<card-face>
+					<card-corner>
+						<strong>{rankMark(card.rank)}</strong>
+						<span>{suitMark(card.suit)}</span>
+					</card-corner>
+					<card-suit aria-hidden="true">{suitMark(card.suit)}</card-suit>
+				</card-face>
 			</button>
 		</playing-card>
 	)
