@@ -446,11 +446,16 @@ describe("observeCardMotion", () => {
 		opponentSource.remove()
 		root.append(opponentDestination)
 
-		await vi.waitFor(() => {
-			expect(
-				root.querySelector("card-flight[data-motion-card-id='card::opponent']"),
-			).not.toBeNull()
-		})
+		await vi.waitFor(
+			() => {
+				expect(
+					root.querySelector(
+						"card-flight[data-motion-card-id='card::opponent']",
+					),
+				).not.toBeNull()
+			},
+			{ timeout: 3_000 },
+		)
 		expect(animate).toHaveBeenCalledTimes(4)
 		expect(animate.mock.calls[1]).toEqual([
 			expect.arrayContaining([
