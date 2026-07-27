@@ -11,6 +11,7 @@ import {
 	OPENAI_HEARTS_MODELS,
 } from "./ai/ai-models.ts"
 import { AiStrategyReview } from "./AiStrategyReview.tsx"
+import { BiddingConsole } from "./BiddingConsole.tsx"
 import {
 	advanceCardGesture,
 	compactHandCardLayout,
@@ -238,20 +239,24 @@ function PlayingCard({
 }
 
 function TakenStack({
+	bid,
 	cardIds,
 	hiddenCardIds,
 	label,
 	playerCount,
 	points,
+	tricks,
 }: {
+	bid?: number | null | undefined
 	cardIds: CardId[]
 	hiddenCardIds: ReadonlySet<CardId>
 	label: string
 	playerCount: number
 	points: number
+	tricks?: number | undefined
 }): VNode {
 	const visibleCardIds = cardIds.filter((cardId) => !hiddenCardIds.has(cardId))
-	const trickCount = capturedTrickCount(cardIds.length, playerCount)
+	const trickCount = tricks ?? capturedTrickCount(cardIds.length, playerCount)
 	return (
 		<taken-stack aria-label={`${label}: ${cardIds.length} cards`}>
 			<stack-cards>
@@ -266,7 +271,7 @@ function TakenStack({
 					/>
 				))}
 			</stack-cards>
-			<ScorecardLockup points={points} tricks={trickCount} />
+			<ScorecardLockup bid={bid} points={points} tricks={trickCount} />
 		</taken-stack>
 	)
 }
@@ -327,11 +332,13 @@ function OpponentZone({
 				</output>
 			</opponent-hand>
 			<TakenStack
+				bid={player.bid}
 				cardIds={player.capturedCardIds}
 				hiddenCardIds={hiddenCardIds}
 				label={`${player.name}'s captured cards`}
 				playerCount={playerCount}
 				points={player.score}
+				tricks={player.tricksWon}
 			/>
 		</opponent-zone>
 	)
@@ -361,8 +368,12 @@ function TrickCenter({
 						: game.statusMessage}
 				</strong>
 				<span>
-					Trick {Math.min(game.trickNumber + 1, 26)}
-					{game.heartsBroken ? " · hearts broken" : ""}
+					Trick {Math.min(game.trickNumber + 1, game.roundHandSize ?? 26)}
+					{game.gameKind === "ohHell"
+						? ` · ${game.trumpSuit ?? "no"} trump`
+						: game.heartsBroken
+							? " · hearts broken"
+							: ""}
 				</span>
 			</trick-heading>
 			<trick-slots>
@@ -480,7 +491,11 @@ function ScoreSheet({
 			</score-heading>
 			<ol>
 				{[...game.players]
-					.sort((left, right) => left.score - right.score)
+					.sort((left, right) =>
+						game.gameKind === "ohHell"
+							? right.score - left.score
+							: left.score - right.score,
+					)
 					.map((player) => (
 						<li
 							data-reviewable={player.kind === "ai" || undefined}
@@ -519,7 +534,11 @@ function ScoreSheet({
 									/>
 								)}
 							</score-identity>
-							<small>+{player.roundPoints}</small>
+							<small>
+								{game.gameKind === "ohHell"
+									? `${player.tricksWon ?? 0}/${player.bid ?? "—"} · +${player.roundPoints}`
+									: `+${player.roundPoints}`}
+							</small>
 							<strong>{player.score}</strong>
 						</li>
 					))}
@@ -627,11 +646,13 @@ function PlayerZone({
 				/>
 			</player-heading>
 			<TakenStack
+				bid={myPlayer.bid}
 				cardIds={myPlayer.capturedCardIds}
 				hiddenCardIds={hiddenCardIds}
 				label="Your captured cards"
 				playerCount={playerCount}
 				points={myPlayer.score}
+				tricks={myPlayer.tricksWon}
 			/>
 			{passing ? (
 				<pass-zone
@@ -949,11 +970,15 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						{game.phase === "lobby" ? "TABLE" : `ROUND ${game.roundNumber}`}
 					</small>
 					<strong>
-						{game.phase === "passing"
-							? passLabel(game.passDirection)
-							: game.heartsBroken
-								? "♥ broken"
-								: "♥ whole"}
+						{game.gameKind === "ohHell"
+							? game.phase === "lobby"
+								? "OH HELL!"
+								: `${game.trumpSuit ?? "no"} trump`
+							: game.phase === "passing"
+								? passLabel(game.passDirection)
+								: game.heartsBroken
+									? "♥ broken"
+									: "♥ whole"}
 					</strong>
 				</round-mark>
 			</table-header>
@@ -986,7 +1011,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					<waiting-room>
 						<small>PASS THE CODE</small>
 						<h2>{game.roomCode}</h2>
-						<p>{game.players.length} of 4 players seated</p>
+						<p>
+							{game.gameKind === "ohHell" ? "Oh Hell! · " : "Hearts · "}
+							{game.players.length} of 4 players seated
+						</p>
 						<seated-list>
 							{game.players.map((player) => (
 								<seat-pill
@@ -1059,7 +1087,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								) : null}
 								<button
 									type="button"
-									disabled={game.players.length < 2}
+									disabled={
+										game.players.length < (game.gameKind === "ohHell" ? 3 : 2)
+									}
 									onClick={() => {
 										socket.emit("startGame", handleResult)
 									}}
@@ -1071,6 +1101,13 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 							<p>Waiting for the host to deal.</p>
 						)}
 					</waiting-room>
+				) : game.phase === "bidding" ? (
+					<BiddingConsole
+						game={game}
+						legalBids={privateView.legalBids ?? []}
+						myPlayerId={myUserKey}
+						onSubmitBid={(bid) => socket.emit("submitBid", bid, handleResult)}
+					/>
 				) : (
 					<TrickCenter
 						dragState={dragState}

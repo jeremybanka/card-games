@@ -84,12 +84,16 @@ function passPartnerId(
 
 function actionResult(
 	socket: AiSocket,
-	event: "passCards" | "playCard",
-	payload: CardId | CardId[],
+	event: "passCards" | "playCard" | "submitBid",
+	payload: CardId | CardId[] | number,
 ): Promise<ActionResult> {
 	return new Promise((resolve) => {
 		if (event === "passCards") {
 			socket.emit("passCards", payload as CardId[], resolve)
+			return
+		}
+		if (event === "submitBid") {
+			socket.emit("submitBid", payload as number, resolve)
 			return
 		}
 		socket.emit("playCard", payload as CardId, resolve)
@@ -104,6 +108,12 @@ export function isAiTurnReady(
 	if (privateView.playerId !== playerId) return false
 	if (game.phase === "passing") {
 		return !privateView.passSubmitted && privateView.cards.length >= 3
+	}
+	if (game.phase === "bidding") {
+		return (
+			game.currentPlayerId === playerId &&
+			(privateView.legalBids?.length ?? 0) > 0
+		)
 	}
 	return (
 		game.phase === "playing" &&
@@ -219,6 +229,9 @@ async function createAiPlayerRuntime(
 				kind: "passCards",
 			}
 		}
+		if (action.action === "submitBid") {
+			return { bid: action.bid, kind: "submitBid" }
+		}
 		const playedCard = privateView.cards.find(
 			(card) => card.id === action.cardId,
 		)
@@ -297,11 +310,17 @@ async function createAiPlayerRuntime(
 									"passCards",
 									decision.nextAction.cardIds,
 								)
-							: await actionResult(
-									socket,
-									"playCard",
-									decision.nextAction.cardId,
-								)
+							: decision.nextAction.action === "submitBid"
+								? await actionResult(
+										socket,
+										"submitBid",
+										decision.nextAction.bid,
+									)
+								: await actionResult(
+										socket,
+										"playCard",
+										decision.nextAction.cardId,
+									)
 					if (result.ok && decision.nextAction.action === "passCards") {
 						const selectedIds = new Set(decision.nextAction.cardIds)
 						const passedCards = privateViewAtStart.cards.filter((card) =>
@@ -341,7 +360,11 @@ async function createAiPlayerRuntime(
 						return
 					}
 					const reviewPhase: AiStrategyReviewTurn["phase"] =
-						gameAtStart.phase === "passing" ? "passing" : "playing"
+						gameAtStart.phase === "passing"
+							? "passing"
+							: gameAtStart.phase === "bidding"
+								? "bidding"
+								: "playing"
 					silo.setState(state.aiStrategyReviewTurnsAtom, (turns) => [
 						...turns,
 						{

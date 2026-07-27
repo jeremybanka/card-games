@@ -11,7 +11,7 @@ import {
 } from "../game/hearts-state.ts"
 import type { AiStrategyReviewTurn, PlayerId } from "../game/hearts-types.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
-import type { AiTurnGenerator } from "./ai-strategy.ts"
+import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
 import type {
 	AiMemoryLedgerEntry,
 	AiNextAction,
@@ -81,7 +81,10 @@ export function createAiPlayerSiloState(
 		key: "aiStrategicTurn",
 		get: ({ get }) => {
 			get(aiRenderedGameFactsSelector)
-			return generateTurn(contextFromState(get))
+			const context = contextFromState(get)
+			return context.publicView.phase === "bidding"
+				? fallbackAiDecision(context)
+				: generateTurn(context)
 		},
 	})
 	const aiTurnObservationSelector = silo.selector<Loadable<string>>({

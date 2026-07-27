@@ -91,6 +91,13 @@ function choosePlay(context: AiGameContext): AiNextAction {
 
 export function chooseFallbackAiAction(context: AiGameContext): AiNextAction {
 	if (context.publicView.phase === "passing") return choosePass(context)
+	if (context.publicView.phase === "bidding") {
+		const bid =
+			context.privateView.legalBids?.find((candidate) => candidate === 1) ??
+			context.privateView.legalBids?.[0]
+		if (bid === undefined) throw new Error("The AI has no legal bid.")
+		return { action: "submitBid", bid }
+	}
 	return choosePlay(context)
 }
 
@@ -105,6 +112,12 @@ function isLegalGeneratedAction(
 		const handIds = new Set(context.privateView.cards.map((card) => card.id))
 		return action.cardIds.every((cardId) => handIds.has(cardId))
 	}
+	if (action.action === "submitBid") {
+		return (
+			context.publicView.phase === "bidding" &&
+			(context.privateView.legalBids ?? []).includes(action.bid)
+		)
+	}
 	return (
 		context.publicView.phase === "playing" &&
 		context.privateView.playableCardIds.includes(action.cardId)
@@ -117,7 +130,9 @@ export function fallbackAiDecision(context: AiGameContext): AiTurnDecision {
 		currentPlan:
 			nextAction.action === "passCards"
 				? "Reduce immediate point-card risk while preserving flexible low cards."
-				: "Avoid taking point-heavy tricks when possible and discard dangerous cards when void.",
+				: nextAction.action === "submitBid"
+					? "Make a conservative legal bid from the strength visible in this hand."
+					: "Avoid taking point-heavy tricks when possible and discard dangerous cards when void.",
 		nextAction,
 		observation:
 			context.publicView.currentTrick.length === 0

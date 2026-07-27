@@ -31,8 +31,18 @@ import {
 	startGame,
 	startNextRound,
 	submitPass,
-	type HeartsState,
 } from "../src/game/hearts-engine.ts"
+import { isOhHellState, type GameState } from "../src/game/game-state.ts"
+import {
+	createOhHellGame,
+	disconnectOhHellPlayer,
+	joinOhHellGame,
+	playOhHellCard,
+	restartOhHellGame,
+	startNextOhHellRound,
+	startOhHellGame,
+	submitOhHellBid,
+} from "../src/game/oh-hell-engine.ts"
 import {
 	createSeededRandom,
 	type SeededRandom,
@@ -48,6 +58,7 @@ import type {
 	ActionAck,
 	CardId,
 	ClientToServerEvents,
+	GameKind,
 	PlayerId,
 	ServerToClientEvents,
 } from "../src/game/hearts-types.ts"
@@ -113,28 +124,30 @@ function createRoomCode(): string {
 	throw new Error("Could not allocate a room code.")
 }
 
-function getRoomState(roomCode: string): HeartsState {
+function getRoomState(roomCode: string): GameState {
 	return getState(heartsStateAtoms, roomCode)
 }
 
-function setRoomState(roomCode: string, state: HeartsState): void {
+function setRoomState(roomCode: string, state: GameState): void {
 	setState(heartsStateAtoms, roomCode, state)
 }
 
-function cardForLog(state: HeartsState, cardId: CardId): unknown {
+function cardForLog(state: GameState, cardId: CardId): unknown {
 	return {
 		id: cardId,
 		value: state.cardValues[cardId] ?? null,
 	}
 }
 
-function stateSummaryForLog(state: HeartsState): unknown {
+function stateSummaryForLog(state: GameState): unknown {
 	return {
 		currentPlayerId: state.currentPlayerId,
-		heartsBroken: state.heartsBroken,
+		gameKind: isOhHellState(state) ? "ohHell" : "hearts",
+		heartsBroken: isOhHellState(state) ? undefined : state.heartsBroken,
+		trumpSuit: isOhHellState(state) ? state.trumpSuit : undefined,
 		hostId: state.hostId,
 		lastTrickWinnerId: state.lastTrickWinnerId,
-		passDirection: state.passDirection,
+		passDirection: isOhHellState(state) ? undefined : state.passDirection,
 		phase: state.phase,
 		players: state.players.map((player) => ({
 			aiModel: player.aiModel,
@@ -143,10 +156,13 @@ function stateSummaryForLog(state: HeartsState): unknown {
 			id: player.id,
 			kind: player.kind,
 			name: player.name,
-			passSubmitted: player.passSelection !== null,
+			passSubmitted:
+				"passSelection" in player ? player.passSelection !== null : undefined,
+			bid: "bid" in player ? player.bid : undefined,
 			roundPoints: player.roundPoints,
 			score: player.score,
-			takenSize: player.taken.length,
+			takenSize: "taken" in player ? player.taken.length : undefined,
+			tricksWon: "tricksWon" in player ? player.tricksWon : undefined,
 		})),
 		roomCode: state.roomCode,
 		roundNumber: state.roundNumber,
@@ -157,7 +173,7 @@ function stateSummaryForLog(state: HeartsState): unknown {
 	}
 }
 
-function stateSnapshotForLog(state: HeartsState): unknown {
+function stateSnapshotForLog(state: GameState): unknown {
 	const {
 		cardValues: _cardValues,
 		currentTrick,
@@ -171,14 +187,21 @@ function stateSnapshotForLog(state: HeartsState): unknown {
 			card: cardForLog(state, play.cardId),
 			playerId: play.playerId,
 		})),
-		players: players.map((player) => ({
-			...player,
-			hand: player.hand.map((cardId) => cardForLog(state, cardId)),
-			passSelection: player.passSelection?.map((cardId) =>
-				cardForLog(state, cardId),
-			),
-			taken: player.taken.map((cardId) => cardForLog(state, cardId)),
-		})),
+		players: players.map((player) => {
+			const base = {
+				...player,
+				hand: player.hand.map((cardId) => cardForLog(state, cardId)),
+			}
+			return "passSelection" in player
+				? {
+						...base,
+						passSelection: player.passSelection?.map((cardId) =>
+							cardForLog(state, cardId),
+						),
+						taken: player.taken.map((cardId) => cardForLog(state, cardId)),
+					}
+				: base
+		}),
 	}
 }
 
@@ -262,7 +285,13 @@ function leaveCurrentRoom(
 	const connection = room.connections.get(playerId)
 	connection?.dispose()
 	room.connections.delete(playerId)
-	setRoomState(roomCode, disconnectPlayer(getRoomState(roomCode), playerId))
+	const currentState = getRoomState(roomCode)
+	setRoomState(
+		roomCode,
+		isOhHellState(currentState)
+			? disconnectOhHellPlayer(currentState, playerId)
+			: disconnectPlayer(currentState, playerId),
+	)
 
 	const state = getRoomState(roomCode)
 	if (state.players.length === 0) {
@@ -292,17 +321,18 @@ function connectPlayerToRoom(
 	leaveCurrentRoom(playerId)
 	setRoomState(
 		roomCode,
-		joinHeartsGame(
-			getRoomState(roomCode),
-			playerId,
-			playerName,
-			aiModelsByPlayer.has(playerId)
+		(() => {
+			const state = getRoomState(roomCode)
+			const controller = aiModelsByPlayer.has(playerId)
 				? {
 						aiModel: aiModelsByPlayer.get(playerId) as AiModelId,
-						kind: "ai",
+						kind: "ai" as const,
 					}
-				: { aiModel: null, kind: "human" },
-		),
+				: { aiModel: null, kind: "human" as const }
+			return isOhHellState(state)
+				? joinOhHellGame(state, playerId, playerName, controller)
+				: joinHeartsGame(state, playerId, playerName, controller)
+		})(),
 	)
 
 	const provideState = realtimeStateProvider({
@@ -349,13 +379,15 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 	const socket = socketInput.socket as unknown as GameServerSocket
 	socket.data.playerId = playerId
 
-	socket.on("createRoom", (playerNameInput, ack) => {
+	socket.on("createRoom", (playerNameInput, gameKindInput, ack) => {
 		acknowledgeAction(
 			ack,
 			"realtime.action.create_room",
-			{ playerId, playerNameInput },
+			{ gameKindInput, playerId, playerNameInput },
 			(span) => {
 				const playerName = normalizePlayerName(playerNameInput)
+				const gameKind: GameKind =
+					gameKindInput === "ohHell" ? "ohHell" : "hearts"
 				const roomCode = createRoomCode()
 				const room: Room = {
 					aiNameRandom: createSeededRandom(`ai-name:${roomCode}:${GAME_SEED}`),
@@ -368,12 +400,19 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 				}
 				setRoomState(
 					roomCode,
-					createHeartsGame(
-						roomCode,
-						playerId,
-						playerName,
-						createPhysicalCardIds(room.identityRandom.uuid),
-					),
+					gameKind === "ohHell"
+						? createOhHellGame(
+								roomCode,
+								playerId,
+								playerName,
+								createPhysicalCardIds(room.identityRandom.uuid),
+							)
+						: createHeartsGame(
+								roomCode,
+								playerId,
+								playerName,
+								createPhysicalCardIds(room.identityRandom.uuid),
+							),
 				)
 				rooms.set(roomCode, room)
 				connectPlayerToRoom(room, roomCode, socket, playerId, playerName)
@@ -522,11 +561,10 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			{ playerId },
 			(span) => {
 				const [roomCode, room] = roomForPlayer(playerId)
-				const nextState = startGame(
-					getRoomState(roomCode),
-					playerId,
-					room.dealRandom.next,
-				)
+				const state = getRoomState(roomCode)
+				const nextState = isOhHellState(state)
+					? startOhHellGame(state, playerId, room.dealRandom.next)
+					: startGame(state, playerId, room.dealRandom.next)
 				setRoomState(roomCode, nextState)
 				span.event("game.dealt", {
 					room: stateSnapshotForLog(nextState),
@@ -544,6 +582,9 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			(span) => {
 				const [roomCode] = roomForPlayer(playerId)
 				const state = getRoomState(roomCode)
+				if (isOhHellState(state)) {
+					throw new HeartsRuleError("Oh Hell does not pass cards.")
+				}
 				const payload = parsePassCardsPayload({ cardIds })
 				const nextState = submitPass(state, playerId, payload.cardIds)
 				setRoomState(roomCode, nextState)
@@ -577,7 +618,9 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 				const player = state.players.find(
 					(candidate) => candidate.id === playerId,
 				)
-				const nextState = playCard(state, playerId, payload.cardId)
+				const nextState = isOhHellState(state)
+					? playOhHellCard(state, playerId, payload.cardId)
+					: playCard(state, playerId, payload.cardId)
 				setRoomState(roomCode, nextState)
 				span.event("game.card_played", {
 					card: cardForLog(state, payload.cardId),
@@ -600,11 +643,37 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 					span.event("game.trick_resolved", {
 						lastTrickWinnerId: nextState.lastTrickWinnerId,
 						state: stateSummaryForLog(nextState),
-						winnerTakenCards: winner?.taken.map((takenCardId) =>
-							cardForLog(nextState, takenCardId),
-						),
+						winnerTakenCards:
+							winner !== undefined && "taken" in winner
+								? winner.taken.map((takenCardId) =>
+										cardForLog(nextState, takenCardId),
+									)
+								: undefined,
 					})
 				}
+				return roomCode
+			},
+		)
+	})
+
+	socket.on("submitBid", (bid, ack) => {
+		acknowledgeAction(
+			ack,
+			"realtime.action.submit_bid",
+			{ bid, playerId },
+			(span) => {
+				const [roomCode] = roomForPlayer(playerId)
+				const state = getRoomState(roomCode)
+				if (!isOhHellState(state)) {
+					throw new HeartsRuleError("Hearts does not use bidding.")
+				}
+				const nextState = submitOhHellBid(state, playerId, bid)
+				setRoomState(roomCode, nextState)
+				span.event("game.bid_submitted", {
+					bid,
+					playerId,
+					state: stateSummaryForLog(nextState),
+				})
 				return roomCode
 			},
 		)
@@ -678,11 +747,10 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			{ playerId },
 			(span) => {
 				const [roomCode, room] = roomForPlayer(playerId)
-				const nextState = startNextRound(
-					getRoomState(roomCode),
-					playerId,
-					room.dealRandom.next,
-				)
+				const state = getRoomState(roomCode)
+				const nextState = isOhHellState(state)
+					? startNextOhHellRound(state, playerId, room.dealRandom.next)
+					: startNextRound(state, playerId, room.dealRandom.next)
 				setRoomState(roomCode, nextState)
 				span.event("game.dealt", {
 					room: stateSnapshotForLog(nextState),
@@ -699,7 +767,10 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			{ playerId },
 			(span) => {
 				const [roomCode] = roomForPlayer(playerId)
-				const nextState = restartGame(getRoomState(roomCode), playerId)
+				const state = getRoomState(roomCode)
+				const nextState = isOhHellState(state)
+					? restartOhHellGame(state, playerId)
+					: restartGame(state, playerId)
 				setRoomState(roomCode, nextState)
 				span.event("game.restarted", {
 					room: stateSnapshotForLog(nextState),

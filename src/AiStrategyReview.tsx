@@ -80,14 +80,18 @@ export function AiStrategyReview({
 									<small>
 										{turn.phase === "passing"
 											? "PASS"
-											: `TRICK ${turn.trickNumber + 1}`}
+											: turn.phase === "bidding"
+												? "BID"
+												: `TRICK ${turn.trickNumber + 1}`}
 									</small>
 									<strong>
 										{turn.action.kind === "playCard"
 											? `Played ${cardLabel(turn.action.card)}`
-											: `Passed ${turn.action.cards
-													.map(cardLabel)
-													.join(" · ")}`}
+											: turn.action.kind === "submitBid"
+												? `Bid ${turn.action.bid}`
+												: `Passed ${turn.action.cards
+														.map(cardLabel)
+														.join(" · ")}`}
 									</strong>
 								</turn-heading>
 							</turn-header>
@@ -100,9 +104,11 @@ export function AiStrategyReview({
 								<dd>
 									{turn.action.kind === "playCard"
 										? `Committed ${cardLabel(turn.action.card)} to the trick.`
-										: `Sent ${turn.action.cards
-												.map(cardLabel)
-												.join(", ")} across the table.`}
+										: turn.action.kind === "submitBid"
+											? `Committed to taking ${turn.action.bid} trick${turn.action.bid === 1 ? "" : "s"}.`
+											: `Sent ${turn.action.cards
+													.map(cardLabel)
+													.join(", ")} across the table.`}
 								</dd>
 							</dl>
 						</article>

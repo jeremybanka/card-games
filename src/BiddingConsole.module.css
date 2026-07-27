@@ -1,0 +1,371 @@
+bidding-console.class {
+	width: min(96%, 34rem);
+	display: grid;
+	gap: 0.85rem;
+	padding: clamp(0.8rem, 2.5vw, 1.25rem);
+	border: 1px solid rgb(225 190 105 / 0.42);
+	border-radius: 1.1rem;
+	background:
+		radial-gradient(circle at 50% -20%, rgb(52 125 96 / 0.7), transparent 58%),
+		rgb(7 42 32 / 0.9);
+	box-shadow:
+		0 1.2rem 2.4rem rgb(0 0 0 / 0.34),
+		inset 0 1px rgb(255 255 255 / 0.08);
+
+	> bid-header {
+		display: grid;
+		gap: 0.35rem;
+
+		> small {
+			color: var(--gold);
+			font-size: 0.56rem;
+			font-weight: 850;
+			letter-spacing: 0.2em;
+			text-align: center;
+		}
+
+		> bid-title {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.7rem;
+
+			> trump-chip {
+				width: 2.85rem;
+				aspect-ratio: 1;
+				display: grid;
+				flex: none;
+				place-items: center;
+				border: 0.3rem dashed #c99d3e;
+				border-radius: 50%;
+				background: #f7ecd1;
+				box-shadow: 0 0.3rem 0 #705521, 0 0.55rem 1rem rgb(0 0 0 / 0.34);
+				color: #16261f;
+				font-family: Georgia, "Times New Roman", serif;
+				font-size: 1.45rem;
+				font-weight: 900;
+
+				&[data-red] {
+					color: #a82e43;
+				}
+			}
+
+			> heading-group {
+				min-width: 0;
+				display: grid;
+				gap: 0.12rem;
+
+				> h2 {
+					margin: 0;
+					font-family: Georgia, "Times New Roman", serif;
+					font-size: clamp(1.5rem, 5vw, 2.25rem);
+					font-weight: 500;
+					line-height: 1;
+				}
+
+				> p {
+					margin: 0;
+					color: var(--ink-muted);
+					font-size: 0.68rem;
+				}
+			}
+		}
+	}
+
+	> bid-table {
+		display: flex;
+		justify-content: center;
+		gap: clamp(0.35rem, 2vw, 0.7rem);
+
+		> player-bid {
+			min-width: 0;
+			display: grid;
+			grid-template-rows: auto auto auto;
+			place-items: center;
+			gap: 0.12rem;
+			padding: 0.35rem 0.45rem;
+			border: 1px solid transparent;
+			border-radius: 0.7rem;
+
+			&[data-current] {
+				border-color: rgb(225 190 105 / 0.48);
+				background: rgb(225 190 105 / 0.08);
+			}
+
+			> span {
+				max-width: 6rem;
+				overflow: hidden;
+				font-size: 0.66rem;
+				font-weight: 750;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+
+			> bid-stack {
+				width: 2rem;
+				aspect-ratio: 1.45;
+				display: grid;
+				place-items: center;
+				border: 0.18rem dashed rgb(255 255 255 / 0.76);
+				border-radius: 50%;
+				background: #8c2940;
+				box-shadow: 0 0.18rem 0 #46141f, 0 0.35rem 0.5rem rgb(0 0 0 / 0.24);
+				color: white;
+				font-family: Georgia, "Times New Roman", serif;
+				font-weight: 900;
+
+				&[data-empty] {
+					border-style: dotted;
+					background: transparent;
+					box-shadow: none;
+					color: var(--ink-muted);
+				}
+			}
+
+			> small {
+				color: var(--ink-muted);
+				font-size: 0.48rem;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+			}
+		}
+	}
+
+	> form {
+		display: grid;
+		place-items: center;
+		gap: 0.55rem;
+
+		> fieldset {
+			min-width: 0;
+			margin: 0;
+			padding: 0;
+			border: 0;
+
+			> legend {
+				width: 100%;
+				margin-bottom: 0.45rem;
+				color: var(--ink-muted);
+				font-size: 0.66rem;
+				text-align: center;
+			}
+
+			> chip-rail {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: clamp(0.38rem, 1.6vw, 0.65rem);
+
+				> label {
+					position: relative;
+					display: block;
+					cursor: pointer;
+
+					> input {
+						position: absolute;
+						width: 1px;
+						height: 1px;
+						overflow: hidden;
+						clip: rect(0 0 0 0);
+						clip-path: inset(50%);
+					}
+
+					> bid-chip {
+						width: clamp(3rem, 11vw, 3.65rem);
+						aspect-ratio: 1;
+						display: grid;
+						grid-template-rows: 1fr auto;
+						place-items: center;
+						padding: 0.52rem 0.2rem;
+						border: 0.32rem dashed rgb(255 255 255 / 0.82);
+						border-radius: 50%;
+						background: #8c2940;
+						box-shadow: 0 0.26rem 0 #43121d, 0 0.55rem 0.9rem rgb(0 0 0 / 0.3);
+						color: white;
+						transition:
+							transform 120ms ease,
+							filter 120ms ease,
+							box-shadow 120ms ease;
+
+						> strong {
+							font-family: Georgia, "Times New Roman", serif;
+							font-size: 1.2rem;
+							line-height: 1;
+						}
+
+						> span {
+							font-size: 0.45rem;
+							font-weight: 800;
+							letter-spacing: 0.04em;
+							text-transform: uppercase;
+						}
+					}
+
+					&:hover > bid-chip,
+					&:focus-within > bid-chip {
+						filter: brightness(1.1);
+						transform: translateY(-0.16rem);
+					}
+
+					&:focus-within > bid-chip {
+						outline: 2px solid var(--focus);
+						outline-offset: 3px;
+					}
+
+					&[data-selected] > bid-chip {
+						background: #d2a63f;
+						box-shadow: 0 0.35rem 0 #73551a, 0 0.8rem 1.1rem rgb(0 0 0 / 0.4);
+						color: #16261f;
+						transform: translateY(-0.32rem) rotate(-3deg);
+					}
+
+					&[data-disabled] {
+						cursor: not-allowed;
+
+						> bid-chip {
+							border-style: dotted;
+							background: #27362f;
+							box-shadow: 0 0.18rem 0 #111a16;
+							color: #728078;
+							filter: saturate(0.3);
+						}
+					}
+				}
+			}
+		}
+
+		> p {
+			min-height: 1.1rem;
+			margin: 0;
+			color: var(--ink-muted);
+			font-size: 0.62rem;
+			text-align: center;
+
+			&[data-hook] {
+				color: #f0d994;
+			}
+		}
+
+		> button {
+			min-width: 10rem;
+			padding: 0.62rem 1rem;
+			border: 1px solid rgb(255 255 255 / 0.2);
+			border-radius: 999px;
+			background: var(--gold);
+			box-shadow: 0 0.28rem 0 #786022, 0 0.65rem 1rem rgb(0 0 0 / 0.28);
+			color: #173126;
+			font-size: 0.75rem;
+			font-weight: 850;
+			transition: transform 100ms ease, box-shadow 100ms ease;
+
+			&:active:not(:disabled) {
+				box-shadow: 0 0.08rem 0 #786022;
+				transform: translateY(0.2rem);
+			}
+
+			&:disabled {
+				box-shadow: none;
+				opacity: 0.45;
+			}
+		}
+	}
+
+	> waiting-rail {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.55rem;
+		color: var(--ink-muted);
+
+		> bid-chip {
+			width: 2.7rem;
+			aspect-ratio: 1;
+			display: grid;
+			place-items: center;
+			border: 0.25rem dotted var(--gold);
+			border-radius: 50%;
+			font-size: 0.5rem;
+			font-weight: 900;
+			animation: chip-pulse 1.4s ease-in-out infinite;
+		}
+
+		> p {
+			margin: 0;
+			font-size: 0.66rem;
+		}
+	}
+}
+
+@keyframes chip-pulse {
+	50% {
+		opacity: 0.55;
+		transform: scale(0.93);
+	}
+}
+
+@media (max-width: 28rem) {
+	bidding-console.class {
+		width: 100%;
+		gap: 0.62rem;
+		padding: 0.65rem;
+
+		> bid-table > player-bid {
+			padding-inline: 0.2rem;
+
+			> span {
+				max-width: 4.5rem;
+			}
+		}
+	}
+}
+
+@media (max-height: 43rem) {
+	bidding-console.class {
+		gap: 0.45rem;
+		padding-block: 0.5rem;
+
+		> bid-header {
+			gap: 0.18rem;
+
+			> bid-title {
+				> trump-chip {
+					width: 2.25rem;
+					font-size: 1.1rem;
+				}
+
+				> heading-group > h2 {
+					font-size: 1.35rem;
+				}
+			}
+		}
+
+		> bid-table > player-bid {
+			padding-block: 0.18rem;
+		}
+
+		> form {
+			gap: 0.35rem;
+
+			> fieldset {
+				> legend {
+					margin-bottom: 0.25rem;
+				}
+
+				> chip-rail > label > bid-chip {
+					width: 2.7rem;
+					padding-block: 0.35rem;
+				}
+			}
+
+			> button {
+				padding-block: 0.45rem;
+			}
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	bidding-console.class > waiting-rail > bid-chip {
+		animation: none;
+	}
+}
