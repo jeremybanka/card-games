@@ -532,12 +532,14 @@ describe("recorded player versus Terra table", () => {
 			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
 			centeredHoverRect.mockRestore()
 
-			const passZone = screen.getByLabelText("Cards to pass: 0 of 3")
+			const passZone = screen.getByLabelText(
+				"0 of 3 cards to pass to Terra AI 1",
+			)
 			const gestureTable = document.querySelector("game-table")
 			expect(
 				(
 					screen.getByRole("button", {
-						name: "Pass across",
+						name: "Pass across to Terra AI 1",
 					}) as HTMLButtonElement
 				).disabled,
 			).toBe(true)
@@ -548,7 +550,9 @@ describe("recorded player versus Terra table", () => {
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
 			expect(localHand.hasAttribute("data-card-active")).toBe(true)
-			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(passZone.getAttribute("aria-label")).toBe(
+				"0 of 3 cards to pass to Terra AI 1",
+			)
 			fireEvent.pointerUp(hoveredCardButton, {
 				clientX: 100,
 				clientY: 100,
@@ -556,7 +560,9 @@ describe("recorded player versus Terra table", () => {
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
 			expect(localHand.hasAttribute("data-card-active")).toBe(false)
-			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(passZone.getAttribute("aria-label")).toBe(
+				"0 of 3 cards to pass to Terra AI 1",
+			)
 
 			const scrubButtons = within(localHand).getAllByRole("button")
 			const scrubWrappers = Array.from(
@@ -656,7 +662,9 @@ describe("recorded player versus Terra table", () => {
 				clientY: 300,
 				pointerId: 41,
 			})
-			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(passZone.getAttribute("aria-label")).toBe(
+				"0 of 3 cards to pass to Terra AI 1",
+			)
 			expect(gestureTable?.getAttribute("data-card-gesture")).toBeNull()
 			expect(localHand.hasAttribute("data-card-active")).toBe(false)
 
@@ -698,7 +706,9 @@ describe("recorded player versus Terra table", () => {
 				clientY: 40,
 				pointerId: 42,
 			})
-			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 1 of 3")
+			expect(passZone.getAttribute("aria-label")).toBe(
+				"1 of 3 cards to pass to Terra AI 1",
+			)
 			expect(localHand.hasAttribute("data-card-active")).toBe(false)
 			const passCardButton = within(passZone).getByRole("button", {
 				name: "A of clubs",
@@ -720,7 +730,9 @@ describe("recorded player versus Terra table", () => {
 				clientY: 250,
 				pointerId: 43,
 			})
-			expect(passZone.getAttribute("aria-label")).toBe("Cards to pass: 0 of 3")
+			expect(passZone.getAttribute("aria-label")).toBe(
+				"0 of 3 cards to pass to Terra AI 1",
+			)
 			expect(passZone.hasAttribute("data-card-active")).toBe(false)
 			expect(
 				within(localHand).getByRole("button", { name: "A of clubs" }),
@@ -730,7 +742,9 @@ describe("recorded player versus Terra table", () => {
 			fireEvent.click(screen.getByRole("button", { name: "A of clubs" }))
 			fireEvent.click(screen.getByRole("button", { name: "A of diamonds" }))
 			fireEvent.click(screen.getByRole("button", { name: "K of hearts" }))
-			const updatedPassZone = screen.getByLabelText("Cards to pass: 3 of 3")
+			const updatedPassZone = screen.getByLabelText(
+				"3 of 3 cards to pass to Terra AI 1",
+			)
 			const passCards = updatedPassZone.querySelectorAll(
 				"pass-card playing-card[data-selected]",
 			)
@@ -739,11 +753,13 @@ describe("recorded player versus Terra table", () => {
 			expect(
 				(
 					screen.getByRole("button", {
-						name: "Pass across",
+						name: "Pass across to Terra AI 1",
 					}) as HTMLButtonElement
 				).disabled,
 			).toBe(false)
-			fireEvent.click(screen.getByRole("button", { name: "Pass across" }))
+			fireEvent.click(
+				screen.getByRole("button", { name: "Pass across to Terra AI 1" }),
+			)
 			await screen.findByText("Your play")
 
 			const tableCenter = document.querySelector("table-center")

@@ -514,6 +514,7 @@ game-table.class {
 				padding: 0.45rem 0.6rem;
 
 				> strong {
+					overflow-wrap: anywhere;
 					font-size: 0.72rem;
 				}
 
@@ -526,6 +527,7 @@ game-table.class {
 				}
 
 				> button {
+					max-width: min(13rem, 44vw);
 					grid-row: 1 / 3;
 					grid-column: 2;
 					padding: 0.48rem 0.72rem;
@@ -535,6 +537,7 @@ game-table.class {
 					color: #17261f;
 					font-size: 0.64rem;
 					font-weight: 850;
+					overflow-wrap: anywhere;
 
 					&:disabled {
 						opacity: 0.35;

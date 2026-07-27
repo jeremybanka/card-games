@@ -34,6 +34,12 @@ import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
 } from "./game/hearts-state.ts"
+import {
+	clockwiseOpponentSeatIndices,
+	clockwiseSeatOffset,
+	clockwiseSeatPosition,
+	passRecipientSeatIndex,
+} from "./game/seat-order.ts"
 import type {
 	ActionResult,
 	AiStrategyReview as AiStrategyReviewData,
@@ -160,6 +166,16 @@ function passLabel(direction: PassDirection): string {
 		case "hold":
 			return "Hold"
 	}
+}
+
+function passActionLabel(
+	direction: PassDirection,
+	recipientName: string | null,
+): string {
+	const directionLabel = passLabel(direction)
+	return recipientName === null
+		? directionLabel
+		: `${directionLabel} to ${recipientName}`
 }
 
 function handleResult(result: ActionResult): void {
@@ -405,12 +421,15 @@ function TrickCenter({
 			</trick-heading>
 			<trick-slots>
 				{game.players.map((player, index) => {
-					const relativeIndex =
-						(index - myIndex + game.players.length) % game.players.length
-					const angle =
-						Math.PI / 2 + (relativeIndex / game.players.length) * Math.PI * 2
-					const left = 50 - Math.cos(angle) * 33
-					const top = 50 + Math.sin(angle) * 34
+					const relativeIndex = clockwiseSeatOffset(
+						myIndex,
+						index,
+						game.players.length,
+					)
+					const { left, top } = clockwiseSeatPosition(
+						relativeIndex,
+						game.players.length,
+					)
 					const play = game.currentTrick.find(
 						(candidate) => candidate.playerId === player.id,
 					)
@@ -610,6 +629,7 @@ function PlayerZone({
 	onSelectCard,
 	onSubmitPass,
 	passSelection,
+	passRecipientName,
 	privateView,
 	hoveredCard,
 	selectedCard,
@@ -641,6 +661,7 @@ function PlayerZone({
 	onSelectCard: (cardId: CardId, keyboard: boolean) => void
 	onSubmitPass: () => void
 	passSelection: CardId[]
+	passRecipientName: string | null
 	privateView: PrivatePlayerView
 	hoveredCard: HoveredCard | null
 	selectedCard: CardId | null
@@ -655,6 +676,7 @@ function PlayerZone({
 	const handCards = passing
 		? privateView.cards.filter((card) => !passSelection.includes(card.id))
 		: privateView.cards
+	const passAction = passActionLabel(game.passDirection, passRecipientName)
 	return (
 		<player-zone
 			data-current={game.currentPlayerId === myPlayer.id || undefined}
@@ -683,7 +705,7 @@ function PlayerZone({
 			/>
 			{passing ? (
 				<pass-zone
-					aria-label={`Cards to pass: ${passCards.length} of 3`}
+					aria-label={`${passCards.length} of 3 cards to pass to ${passRecipientName ?? "another player"}`}
 					data-card-active={
 						passCards.some((card) => dragState?.cardId === card.id) || undefined
 					}
@@ -693,8 +715,8 @@ function PlayerZone({
 					<pass-heading>
 						<strong>
 							{privateView.passSubmitted
-								? "Cards ready"
-								: `${passCards.length} of 3 to pass`}
+								? `Cards sent to ${passRecipientName ?? "the other player"}`
+								: `${passCards.length} of 3 to pass to ${passRecipientName ?? "another player"}`}
 						</strong>
 						<span>
 							{privateView.passSubmitted
@@ -706,10 +728,12 @@ function PlayerZone({
 							disabled={passCards.length !== 3 || privateView.passSubmitted}
 							onClick={onSubmitPass}
 						>
-							{passLabel(game.passDirection)}
+							{passAction}
 						</button>
 					</pass-heading>
-					<pass-cards aria-label={`${passCards.length} cards to pass`}>
+					<pass-cards
+						aria-label={`${passCards.length} cards to pass to ${passRecipientName ?? "another player"}`}
+					>
 						{passCards.map((card, index) => (
 							<pass-card
 								data-card-id={card.id}
@@ -897,13 +921,26 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 	}, [passSelection, tableRoot])
 
 	const myPlayer = game.players.find((player) => player.id === myUserKey)
+	const mySeatIndex =
+		myUserKey === null
+			? -1
+			: game.players.findIndex((player) => player.id === myUserKey)
 	const opponents = useMemo(() => {
-		if (myUserKey === null) return game.players
-		const index = game.players.findIndex((player) => player.id === myUserKey)
-		return index === -1
-			? game.players
-			: [...game.players.slice(index + 1), ...game.players.slice(0, index)]
-	}, [game.players, myUserKey])
+		if (mySeatIndex === -1) return game.players
+		return clockwiseOpponentSeatIndices(mySeatIndex, game.players.length).map(
+			(index) => game.players[index] as PublicPlayerView,
+		)
+	}, [game.players, mySeatIndex])
+	const passRecipient =
+		mySeatIndex === -1 || game.passDirection === "hold"
+			? null
+			: (game.players[
+					passRecipientSeatIndex(
+						mySeatIndex,
+						game.players.length,
+						game.passDirection,
+					)
+				] ?? null)
 
 	const clearPendingPlay = (requestId: number): void => {
 		if (pendingPlay.current?.requestId !== requestId) return
@@ -1011,7 +1048,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								? "OH HELL!"
 								: `${game.trumpSuit ?? "no"} trump`
 							: game.phase === "passing"
-								? passLabel(game.passDirection)
+								? passActionLabel(
+										game.passDirection,
+										passRecipient?.name ?? null,
+									)
 								: game.heartsBroken
 									? "♥ broken"
 									: "♥ whole"}
@@ -1421,6 +1461,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					})
 				}}
 				passSelection={passSelection}
+				passRecipientName={passRecipient?.name ?? null}
 				privateView={privateView}
 				selectedCard={selectedCard}
 				playerCount={game.players.length}
