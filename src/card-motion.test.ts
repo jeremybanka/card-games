@@ -67,6 +67,15 @@ describe("planCardTransition", () => {
 		).toEqual({ kind: "opponent-play" })
 	})
 
+	it("classifies a face-up hand card entering the trick as a local play", () => {
+		expect(
+			planCardTransition(
+				snapshot({ face: "up", zone: "hand" }),
+				snapshot({ face: "up", left: 180, top: 220, zone: "trick" }),
+			),
+		).toEqual({ kind: "local-play" })
+	})
+
 	it("prioritizes an explicit receipt transfer over current-round deal metadata", () => {
 		expect(
 			planCardTransition(
@@ -198,10 +207,16 @@ describe("observeCardMotion", () => {
 		root.dataset.cardRound = "1"
 		root.dataset.cardGesture = "dragging"
 		const hand = document.createElement("player-hand")
+		hand.style.transform = "rotate(12deg)"
 		const source = document.createElement("playing-card")
 		source.dataset.cardId = "card::dragged"
 		source.dataset.dealRound = "1"
+		source.style.transform =
+			"translate3d(100px, -160px, 0) rotate(-8deg) scale(1.1)"
 		const sourceFace = document.createElement("card-face")
+		sourceFace.style.transform = "translateY(-18px) scale(1.3)"
+		Object.defineProperty(sourceFace, "offsetWidth", { value: 72 })
+		Object.defineProperty(sourceFace, "offsetHeight", { value: 100 })
 		source.append(sourceFace)
 		let sourceLeft = 20
 		let sourceTop = 420
@@ -214,10 +229,10 @@ describe("observeCardMotion", () => {
 			}) as DOMRect
 		sourceFace.getBoundingClientRect = () =>
 			({
-				height: 130,
-				left: 105,
+				height: 149.833,
+				left: 95.024,
 				top: 225,
-				width: 94,
+				width: 112.685,
 			}) as DOMRect
 		hand.append(source)
 		root.append(hand)
@@ -228,6 +243,13 @@ describe("observeCardMotion", () => {
 		sourceTop = 260
 		capturePendingCardMotion(root, "card::dragged")
 		root.dataset.cardGesture = "pending"
+		const unrelatedUpdate = document.createElement("turn-banner")
+		root.append(unrelatedUpdate)
+		await vi.waitFor(() => {
+			expect(root.dataset.lastPendingCardMotionId).toBe("card::dragged")
+		})
+		expect(animate).not.toHaveBeenCalled()
+
 		const destination = document.createElement("playing-card")
 		destination.dataset.cardId = "card::dragged"
 		destination.getBoundingClientRect = () =>
@@ -238,23 +260,47 @@ describe("observeCardMotion", () => {
 		root.append(trickSlot)
 
 		await vi.waitFor(() => {
-			expect(animate).toHaveBeenCalledWith(
-				[
-					expect.objectContaining({
-						transform: expect.stringContaining("translate3d(-75px, 65px"),
-					}),
-					{ transform: expect.not.stringContaining("translate3d") },
-				],
-				expect.objectContaining({ duration: 320 }),
-			)
+			expect(animate).toHaveBeenCalledOnce()
 		})
-		expect(root.dataset.lastCardMotion).toBe("move")
+		const [keyframes, options] = animate.mock.calls[0] as unknown as [
+			Keyframe[],
+			KeyframeAnimationOptions,
+		]
+		const initialTransform = String(keyframes[0]?.transform)
+		const transformParts =
+			/translate3d\(([^p]+)px, ([^p]+)px, 0\) rotate\(([^d]+)deg\) scale\(([^,]+), ([^)]+)\)/.exec(
+				initialTransform,
+			)
+		expect(transformParts).not.toBeNull()
+		expect(Number(transformParts?.[1])).toBeCloseTo(-75)
+		expect(Number(transformParts?.[2])).toBeCloseTo(65)
+		expect(Number(transformParts?.[3])).toBeCloseTo(4)
+		expect(Number(transformParts?.[4])).toBeCloseTo(1.56)
+		expect(Number(transformParts?.[5])).toBeCloseTo(1.55435)
+		expect(keyframes[0]?.transformOrigin).toBe("top left")
+		expect(keyframes[1]?.transformOrigin).toBe("top left")
+		expect(options).toMatchObject({ duration: 360, fill: "backwards" })
+		expect(root.dataset.lastCardMotion).toBe("local-play")
 		expect(root.dataset.lastCardMotionId).toBe("card::dragged")
-		expect(root.dataset.lastCardMotionFrom).toBe("105,225")
+		const [fromX, fromY] = root.dataset.lastCardMotionFrom
+			?.split(",")
+			.map(Number) ?? [NaN, NaN]
+		expect(fromX).toBeCloseTo(105)
+		expect(fromY).toBeCloseTo(225)
 		expect(root.dataset.lastCardMotionTo).toBe("180,160")
 		expect(root.dataset.lastLocalPlayMotionId).toBe("card::dragged")
-		expect(root.dataset.lastLocalPlayMotionFrom).toBe("105,225")
+		expect(root.dataset.lastLocalPlayMotionFrom).toBe(
+			root.dataset.lastCardMotionFrom,
+		)
 		expect(root.dataset.lastLocalPlayMotionTo).toBe("180,160")
+		const motionSizes =
+			/([^x]+)x([^-]+)->([^x]+)x(.+)/.exec(
+				root.dataset.lastLocalPlayMotionSize ?? "",
+			) ?? []
+		expect(Number(motionSizes[1])).toBeCloseTo(102.96)
+		expect(Number(motionSizes[2])).toBeCloseTo(143)
+		expect(Number(motionSizes[3])).toBeCloseTo(66)
+		expect(Number(motionSizes[4])).toBeCloseTo(92)
 		stop()
 	})
 

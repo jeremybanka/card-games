@@ -1113,11 +1113,11 @@ game-table.class {
 
 @keyframes pending-card-pulse {
 	from {
-		transform: scale(1);
+		filter: brightness(0.97);
 	}
 
 	to {
-		transform: scale(1.018);
+		filter: brightness(1.06);
 	}
 }
 /* @lasertag-enable [dead-selector] */
