@@ -33,6 +33,8 @@ const seededRandom = (seed: number): (() => number) =>
 	createSeededRandom(seed).next
 const POINT_LEFTOVER_SEED = 1178
 const KITTY_RULE_SEED = 49
+const PASSING_LEADER_PRIVACY_SEED = 65
+const HOLD_ROUND_LEADER_SEED = 6504
 
 function lobby(playerCount: 2 | 3 | 4): HeartsState {
 	let state = createHeartsGame("WIND", playerIds[0], "Ada", physicalIds())
@@ -143,6 +145,77 @@ describe("Hearts dealing and visibility", () => {
 				secondPrivateView.cards.some((other) => other.id === card.id),
 			),
 		).toBe(false)
+	})
+
+	it("withholds the opening leader until every pass is complete", () => {
+		let state = startGame(
+			lobby(4),
+			playerIds[0],
+			seededRandom(PASSING_LEADER_PRIVACY_SEED),
+		)
+		const lowestClubHolder = state.players.find((player) =>
+			player.hand.some((cardId) => {
+				const value = state.cardValues[cardId]
+				return value?.suit === "clubs" && value.rank === 2
+			}),
+		)
+		expect(lowestClubHolder).toBeDefined()
+
+		const passingView = toPublicGameView(state)
+		expect(state.phase).toBe("passing")
+		expect(state.currentPlayerId).toBeNull()
+		expect(state.trickLeaderId).toBeNull()
+		expect(passingView.currentPlayerId).toBeNull()
+		expect(passingView.trickLeaderId).toBeNull()
+		expect(passingView.statusMessage).toBe("Choose three cards to pass left.")
+		expect(passingView.statusMessage).not.toContain(
+			lowestClubHolder?.name as string,
+		)
+
+		const lowestClubId = lowestClubHolder?.hand.find((cardId) => {
+			const value = state.cardValues[cardId]
+			return value?.suit === "clubs" && value.rank === 2
+		}) as CardId
+		const lowestClubHolderIndex = state.players.findIndex(
+			(player) => player.id === lowestClubHolder?.id,
+		)
+		const expectedLeader = state.players[
+			(lowestClubHolderIndex + 1) % state.players.length
+		] as HeartsState["players"][number]
+
+		for (const player of state.players) {
+			const selected =
+				player.id === lowestClubHolder?.id
+					? [
+							lowestClubId,
+							...player.hand
+								.filter((cardId) => cardId !== lowestClubId)
+								.slice(0, 2),
+						]
+					: player.hand.slice(0, 3)
+			state = submitPass(state, player.id, selected)
+		}
+
+		expect(state.phase).toBe("playing")
+		expect(state.currentPlayerId).toBe(expectedLeader.id)
+		expect(state.trickLeaderId).toBe(expectedLeader.id)
+		expect(toPublicGameView(state)).toMatchObject({
+			currentPlayerId: expectedLeader.id,
+			statusMessage: `${expectedLeader.name} leads the lowest club.`,
+			trickLeaderId: expectedLeader.id,
+		})
+	})
+
+	it("publishes the opening leader immediately on a hold round", () => {
+		const readyForHold = lobby(4)
+		readyForHold.roundNumber = 3
+		const state = dealRound(readyForHold, seededRandom(HOLD_ROUND_LEADER_SEED))
+
+		expect(state.phase).toBe("playing")
+		expect(state.passDirection).toBe("hold")
+		expect(state.currentPlayerId).not.toBeNull()
+		expect(state.trickLeaderId).toBe(state.currentPlayerId)
+		expect(toPublicGameView(state).currentPlayerId).toBe(state.currentPlayerId)
 	})
 
 	it.each([
