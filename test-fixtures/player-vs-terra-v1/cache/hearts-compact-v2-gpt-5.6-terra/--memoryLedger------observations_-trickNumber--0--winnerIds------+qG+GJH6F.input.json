@@ -143,7 +143,7 @@
 		},
 		"publicView": {
 			"completedTricks": [],
-			"currentPlayerId": "user::81957b70-e9f6-484f-b47e-03c6b325b18e",
+			"currentPlayerId": null,
 			"currentTrick": [],
 			"heartsBroken": false,
 			"hostId": "user::81957b70-e9f6-484f-b47e-03c6b325b18e",
@@ -232,7 +232,7 @@
 			"roomCode": "ZVHB",
 			"roundNumber": 1,
 			"statusMessage": "Choose three cards to pass across.",
-			"trickLeaderId": "user::81957b70-e9f6-484f-b47e-03c6b325b18e",
+			"trickLeaderId": null,
 			"trickNumber": 0,
 			"winnerIds": []
 		}
