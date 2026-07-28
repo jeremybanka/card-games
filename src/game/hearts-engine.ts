@@ -683,6 +683,7 @@ export function toPrivatePlayerView(
 		return {
 			awardedLeftoverCard: null,
 			cards: [],
+			passReceipt: null,
 			passSubmitted: false,
 			playableCardIds: [],
 			playerId: null,
@@ -691,12 +692,35 @@ export function toPrivatePlayerView(
 	const awardedLeftoverCardId = state.completedTricks.find(
 		(trick) => trick.leftoverAward?.recipientId === playerId,
 	)?.leftoverAward?.cardId
+	const playerPosition = state.players.findIndex(
+		(candidate) => candidate.id === playerId,
+	)
+	const passSender =
+		state.passDirection === "hold" || state.phase === "passing"
+			? undefined
+			: state.players.find(
+					(candidate, index) =>
+						passRecipientSeatIndex(
+							index,
+							state.players.length,
+							state.passDirection,
+						) === playerPosition,
+				)
+	const receivedCardIds = passSender?.passSelection ?? []
 	return {
 		awardedLeftoverCard:
 			awardedLeftoverCardId === undefined
 				? null
 				: visibleCard(state, awardedLeftoverCardId),
 		cards: player.hand.map((cardId) => visibleCard(state, cardId)),
+		passReceipt:
+			passSender === undefined
+				? null
+				: {
+						cards: receivedCardIds.map((cardId) => visibleCard(state, cardId)),
+						roundNumber: state.roundNumber,
+						senderId: passSender.id,
+					},
 		passSubmitted: player.passSelection !== null,
 		playableCardIds: playableCardIdsFor(state, playerId),
 		playerId,

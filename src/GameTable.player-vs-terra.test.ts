@@ -438,6 +438,9 @@ describe("recorded player versus Terra table", () => {
 	})
 
 	it("replays every browser action and hits every Terra cache entry", async () => {
+		// Exercise the reduced-motion presentation path so the full 26-trick replay
+		// keeps every cognitive settle beat without depending on 26 animation dwells.
+		vi.stubGlobal("matchMedia", () => ({ matches: true }))
 		const cacheFiles = await readdir(cacheDirectory, { recursive: true })
 		const cacheInputCount = cacheFiles.filter((file) =>
 			file.endsWith(".input.json"),
@@ -786,7 +789,34 @@ describe("recorded player versus Terra table", () => {
 			fireEvent.click(
 				screen.getByRole("button", { name: "Pass across to Terra AI 1" }),
 			)
+			const receiptDialog = await screen.findByRole("dialog", {
+				name: "Cards received from Terra AI 1",
+			})
+			const receivedCardIds = Array.from(
+				receiptDialog.querySelectorAll<HTMLElement>(
+					"receipt-card[data-card-id]",
+				),
+				(card) => card.dataset.cardId,
+			)
+			expect(receivedCardIds).toHaveLength(3)
+			expect(screen.getByLabelText("Your hand: 23 cards")).toBeTruthy()
+			fireEvent.click(
+				screen.getByRole("button", { name: "Add cards to my hand" }),
+			)
+			await waitFor(() => {
+				expect(screen.getByLabelText("Your hand: 26 cards")).toBeTruthy()
+				for (const cardId of receivedCardIds) {
+					expect(
+						document.querySelector(
+							`player-hand playing-card[data-card-id="${cardId}"]`,
+						),
+					).not.toBeNull()
+				}
+			})
 			await screen.findByText("Your play")
+			await waitFor(() => {
+				expect(document.activeElement?.closest("player-hand")).not.toBeNull()
+			})
 
 			const tableCenter = document.querySelector("table-center")
 			const trickCenter = document.querySelector("trick-center")
@@ -818,9 +848,25 @@ describe("recorded player versus Terra table", () => {
 			})
 
 			for (const [playIndex, cardName] of recordedHumanPlays.entries()) {
-				const continueButton = screen.queryByRole("button", {
-					name: "Continue to next trick",
-				})
+				const continueButton =
+					playIndex === 0
+						? null
+						: await waitFor(
+								() => {
+									const reviewButton = screen.queryByRole("button", {
+										name: "Continue to next trick",
+									})
+									const nextCard = screen.queryByRole("button", {
+										name: cardName,
+									}) as HTMLButtonElement | null
+									expect(
+										reviewButton !== null ||
+											(nextCard !== null && !nextCard.disabled),
+									).toBe(true)
+									return reviewButton
+								},
+								{ timeout: 2_000 },
+							)
 				if (continueButton !== null) {
 					fireEvent.click(continueButton)
 				}
@@ -951,12 +997,12 @@ describe("recorded player versus Terra table", () => {
 				})
 			}
 
-			const finalContinueButton = screen.queryByRole("button", {
-				name: "Continue to next trick",
-			})
-			if (finalContinueButton !== null) {
-				fireEvent.click(finalContinueButton)
-			}
+			const finalContinueButton = await screen.findByRole(
+				"button",
+				{ name: "Continue to next trick" },
+				{ timeout: 2_000 },
+			)
+			fireEvent.click(finalContinueButton)
 			const scores = await screen.findByRole("heading", {
 				name: "Scores",
 			})
@@ -1036,6 +1082,7 @@ describe("recorded player versus Terra table", () => {
 		} finally {
 			view.unmount()
 			await stopRealtimeTable(table)
+			vi.unstubAllGlobals()
 		}
 	}, 30_000)
 })

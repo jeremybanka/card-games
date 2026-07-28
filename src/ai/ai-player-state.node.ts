@@ -64,14 +64,18 @@ export function createAiPlayerSiloState(
 
 	const contextFromState = (get: {
 		<T>(token: RegularAtomToken<T>): T
-	}): AiGameContext => ({
-		memoryLedger: get(aiMemoryLedgerAtom),
-		observations: get(aiTurnObservationsAtom),
-		playerId,
-		previousPlan: get(aiCurrentPlanAtom),
-		privateView: get(privatePlayerViewAtom),
-		publicView: get(publicGameViewAtom),
-	})
+	}): AiGameContext => {
+		const strategicPrivateView = { ...get(privatePlayerViewAtom) }
+		Reflect.deleteProperty(strategicPrivateView, "passReceipt")
+		return {
+			memoryLedger: get(aiMemoryLedgerAtom),
+			observations: get(aiTurnObservationsAtom),
+			playerId,
+			previousPlan: get(aiCurrentPlanAtom),
+			privateView: strategicPrivateView,
+			publicView: get(publicGameViewAtom),
+		}
+	}
 
 	const aiRenderedGameFactsSelector = silo.selector<string>({
 		key: "aiRenderedGameFacts",
