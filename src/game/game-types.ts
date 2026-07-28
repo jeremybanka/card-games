@@ -29,19 +29,27 @@ export type CompletedTrick = {
 	winnerId: PlayerId
 }
 
-export type GamePhase =
+export type HeartsPhase =
 	| "lobby"
 	| "passing"
+	| "playing"
+	| "roundComplete"
+	| "gameComplete"
+
+export type OhHellPhase =
+	| "lobby"
 	| "bidding"
 	| "playing"
 	| "roundComplete"
 	| "gameComplete"
 
+export type GamePhase = HeartsPhase | OhHellPhase
 export type PassDirection = "left" | "right" | "across" | "hold"
 
-export type PublicPlayerView = {
+type CommonPublicPlayerView = {
 	aiModel: AiModelId | null
-	capturedCardIds: CardId[]
+	bid?: number | null
+	capturedCardIds?: CardId[]
 	connected: boolean
 	handCardIds: CardId[]
 	id: PlayerId
@@ -49,50 +57,99 @@ export type PublicPlayerView = {
 	name: string
 	roundPoints: number
 	score: number
-	bid?: number | null
 	tricksWon?: number
 }
 
-export type PublicGameView = {
-	gameKind?: GameKind
+export type HeartsPublicPlayerView = CommonPublicPlayerView & {
+	bid?: never
+	capturedCardIds: CardId[]
+	tricksWon?: never
+}
+
+export type OhHellPublicPlayerView = CommonPublicPlayerView & {
+	bid: number | null
+	capturedCardIds?: never
+	tricksWon: number
+}
+
+export type PublicPlayerView = HeartsPublicPlayerView | OhHellPublicPlayerView
+
+type CommonPublicGameView = {
 	completedTricks: CompletedTrick[]
 	currentPlayerId: PlayerId | null
 	currentTrick: TrickPlay[]
 	deckCardIds: CardId[]
-	heartsBroken: boolean
 	hostId: PlayerId | null
 	lastTrickWinnerId: PlayerId | null
-	passDirection: PassDirection
-	passSubmittedPlayerIds: PlayerId[]
-	phase: GamePhase
-	players: PublicPlayerView[]
 	roomCode: string
 	roundNumber: number
 	statusMessage: string
 	trickLeaderId: PlayerId | null
 	trickNumber: number
 	winnerIds: PlayerId[]
-	dealerId?: PlayerId | null
-	trumpSuit?: Suit | null
-	roundHandSize?: number
-	bidPlayerId?: PlayerId | null
-	bidsSubmitted?: number
-	maximumRounds?: number
 }
 
-export type PrivatePlayerView = {
-	awardedLeftoverCard?: VisibleCard | null
+export type HeartsPublicGameView = CommonPublicGameView & {
+	bidPlayerId?: never
+	bidsSubmitted?: never
+	dealerId?: never
+	gameKind: "hearts"
+	heartsBroken: boolean
+	maximumRounds?: never
+	passDirection: PassDirection
+	passSubmittedPlayerIds: PlayerId[]
+	phase: HeartsPhase
+	players: HeartsPublicPlayerView[]
+	roundHandSize?: never
+	trumpSuit?: never
+}
+
+export type OhHellPublicGameView = CommonPublicGameView & {
+	bidPlayerId: PlayerId | null
+	bidsSubmitted: number
+	dealerId: PlayerId | null
+	gameKind: "ohHell"
+	heartsBroken?: never
+	maximumRounds: number
+	passDirection?: never
+	passSubmittedPlayerIds?: never
+	phase: OhHellPhase
+	players: OhHellPublicPlayerView[]
+	roundHandSize: number
+	trumpSuit: Suit | null
+}
+
+export type PublicGameView = HeartsPublicGameView | OhHellPublicGameView
+
+type CommonPrivatePlayerView = {
 	cards: VisibleCard[]
-	passReceipt?: {
+	playableCardIds: CardId[]
+	playerId: PlayerId | null
+}
+
+export type HeartsPrivatePlayerView = CommonPrivatePlayerView & {
+	awardedLeftoverCard: VisibleCard | null
+	gameKind: "hearts"
+	legalBids?: never
+	passReceipt: {
 		cards: VisibleCard[]
 		roundNumber: number
 		senderId: PlayerId
 	} | null
 	passSubmitted: boolean
-	playableCardIds: CardId[]
-	playerId: PlayerId | null
-	legalBids?: number[]
 }
+
+export type OhHellPrivatePlayerView = CommonPrivatePlayerView & {
+	awardedLeftoverCard?: never
+	gameKind: "ohHell"
+	legalBids: number[]
+	passReceipt?: never
+	passSubmitted?: never
+}
+
+export type PrivatePlayerView =
+	| HeartsPrivatePlayerView
+	| OhHellPrivatePlayerView
 
 export type AiStrategyReviewAction =
 	| { cards: CardValue[]; kind: "passCards" }
@@ -150,7 +207,7 @@ export type ServerToClientEvents = {
 	roomClosed: (message: string) => void
 }
 
-export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
+export const EMPTY_PUBLIC_GAME_VIEW: HeartsPublicGameView = {
 	gameKind: "hearts",
 	completedTricks: [],
 	currentPlayerId: null,
@@ -169,20 +226,14 @@ export const EMPTY_PUBLIC_GAME_VIEW: PublicGameView = {
 	trickLeaderId: null,
 	trickNumber: 0,
 	winnerIds: [],
-	dealerId: null,
-	trumpSuit: null,
-	roundHandSize: 0,
-	bidPlayerId: null,
-	bidsSubmitted: 0,
-	maximumRounds: 0,
 }
 
-export const EMPTY_PRIVATE_PLAYER_VIEW: PrivatePlayerView = {
+export const EMPTY_PRIVATE_PLAYER_VIEW: HeartsPrivatePlayerView = {
 	awardedLeftoverCard: null,
 	cards: [],
+	gameKind: "hearts",
 	passReceipt: null,
 	passSubmitted: false,
 	playableCardIds: [],
 	playerId: null,
-	legalBids: [],
 }

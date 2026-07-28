@@ -20,9 +20,9 @@ import {
 	parsePassCardsPayload,
 	parsePlayCardPayload,
 } from "../src/game/hearts-actions.ts"
+import { createPhysicalCardIds } from "../src/game/card-domain.ts"
 import {
 	createHeartsGame,
-	createPhysicalCardIds,
 	disconnectPlayer,
 	HeartsRuleError,
 	joinHeartsGame,
@@ -48,12 +48,12 @@ import {
 	type SeededRandom,
 } from "../src/game/seeded-random.ts"
 import {
-	heartsStateAtoms,
+	gameStateAtoms,
 	privatePlayerViewProjectionSelectors,
 	privatePlayerViewAtom,
 	publicGameViewAtom,
 	publicGameViewProjectionSelectors,
-} from "../src/game/hearts-state.ts"
+} from "../src/game/game-state-atoms.ts"
 import type {
 	ActionAck,
 	CardId,
@@ -61,7 +61,7 @@ import type {
 	GameKind,
 	PlayerId,
 	ServerToClientEvents,
-} from "../src/game/hearts-types.ts"
+} from "../src/game/game-types.ts"
 import {
 	type ActiveSpan,
 	serverLogger,
@@ -125,11 +125,11 @@ function createRoomCode(): string {
 }
 
 function getRoomState(roomCode: string): GameState {
-	return getState(heartsStateAtoms, roomCode)
+	return getState(gameStateAtoms, roomCode)
 }
 
 function setRoomState(roomCode: string, state: GameState): void {
-	setState(heartsStateAtoms, roomCode, state)
+	setState(gameStateAtoms, roomCode, state)
 }
 
 function cardForLog(state: GameState, cardId: CardId): unknown {
@@ -297,7 +297,7 @@ function leaveCurrentRoom(
 	if (state.players.length === 0) {
 		for (const aiPlayer of room.aiPlayers.values()) aiPlayer.dispose()
 		rooms.delete(roomCode)
-		disposeState(heartsStateAtoms, roomCode)
+		disposeState(gameStateAtoms, roomCode)
 		serverLogger.info("room.disposed", {
 			playerId,
 			roomCode,

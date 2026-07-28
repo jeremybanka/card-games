@@ -1,7 +1,7 @@
 import type { VNode } from "preact"
 import { useEffect, useRef } from "preact/hooks"
 
-import type { VisibleCard } from "./game/hearts-types.ts"
+import type { VisibleCard } from "./game/game-types.ts"
 import css from "./PassReceipt.module.css"
 
 function suitMark(suit: VisibleCard["suit"]): string {

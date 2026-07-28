@@ -1,7 +1,7 @@
 import type { VNode } from "preact"
 import { useEffect, useMemo, useState } from "preact/hooks"
 
-import type { PlayerId, PublicGameView, Suit } from "./game/hearts-types.ts"
+import type { OhHellPublicGameView, PlayerId, Suit } from "./game/game-types.ts"
 import css from "./BiddingConsole.module.css"
 
 function trumpMark(suit: Suit | null | undefined): string {
@@ -25,7 +25,7 @@ export function BiddingConsole({
 	myPlayerId,
 	onSubmitBid,
 }: {
-	game: PublicGameView
+	game: OhHellPublicGameView
 	legalBids: readonly number[]
 	myPlayerId: PlayerId
 	onSubmitBid: (bid: number) => void

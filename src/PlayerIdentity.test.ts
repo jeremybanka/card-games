@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react"
 import { createElement, type FunctionComponent } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import type { PublicPlayerView } from "./game/hearts-types.ts"
+import type { PublicPlayerView } from "./game/game-types.ts"
 import { playerInitials } from "./player-avatar.ts"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 import { PlayerNameplate } from "./PlayerNameplate.tsx"

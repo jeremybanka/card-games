@@ -4,7 +4,7 @@ import { aiModelLabel } from "./ai/ai-models.ts"
 import type {
 	AiStrategyReview as AiStrategyReviewData,
 	CardValue,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import css from "./AiStrategyReview.module.css"
 
 type AiStrategyReviewProps = {

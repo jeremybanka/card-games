@@ -1,4 +1,4 @@
-import type { PassDirection } from "./hearts-types.ts"
+import type { PassDirection } from "./game-types.ts"
 
 function assertPlayerCount(playerCount: number): void {
 	if (!Number.isInteger(playerCount) || playerCount < 1) {

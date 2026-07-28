@@ -8,7 +8,7 @@ import { io, type Socket } from "socket.io-client"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "../game/hearts-state.ts"
+} from "../game/game-state-atoms.ts"
 import type {
 	ActionResult,
 	AiStrategyReviewAction,
@@ -19,9 +19,10 @@ import type {
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
+	HeartsPublicGameView,
 	ServerToClientEvents,
 	VisibleCard,
-} from "../game/hearts-types.ts"
+} from "../game/game-types.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
@@ -67,7 +68,7 @@ function passSeatOffset(direction: PassDirection, playerCount: number): number {
 }
 
 function passPartnerId(
-	game: PublicGameView,
+	game: HeartsPublicGameView,
 	playerId: PlayerId,
 	role: "recipient" | "sender",
 ): PlayerId {
@@ -107,12 +108,17 @@ export function isAiTurnReady(
 ): boolean {
 	if (privateView.playerId !== playerId) return false
 	if (game.phase === "passing") {
-		return !privateView.passSubmitted && privateView.cards.length >= 3
+		return (
+			privateView.gameKind === "hearts" &&
+			!privateView.passSubmitted &&
+			privateView.cards.length >= 3
+		)
 	}
 	if (game.phase === "bidding") {
 		return (
+			privateView.gameKind === "ohHell" &&
 			game.currentPlayerId === playerId &&
-			(privateView.legalBids?.length ?? 0) > 0
+			privateView.legalBids.length > 0
 		)
 	}
 	return (
@@ -322,6 +328,12 @@ async function createAiPlayerRuntime(
 										decision.nextAction.cardId,
 									)
 					if (result.ok && decision.nextAction.action === "passCards") {
+						if (
+							gameAtStart.gameKind !== "hearts" ||
+							privateViewAtStart.gameKind !== "hearts"
+						) {
+							throw new Error("Only Hearts can submit a card pass.")
+						}
 						const selectedIds = new Set(decision.nextAction.cardIds)
 						const passedCards = privateViewAtStart.cards.filter((card) =>
 							selectedIds.has(card.id),

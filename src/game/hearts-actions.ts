@@ -1,7 +1,7 @@
 import { ArkErrors, type } from "arktype"
 
 import { HeartsRuleError } from "./hearts-engine.ts"
-import type { CardId } from "./hearts-types.ts"
+import type { CardId } from "./game-types.ts"
 
 export const cardIdType = type(/^card::.+/)
 export const passCardIdsType = cardIdType

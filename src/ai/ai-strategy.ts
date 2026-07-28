@@ -1,8 +1,8 @@
 import { ArkErrors } from "arktype"
 
-import { chooseHeartsAutoPlayCard } from "../game/hearts-auto-play.ts"
-import type { VisibleCard } from "../game/hearts-types.ts"
+import type { VisibleCard } from "../game/game-types.ts"
 import type { AiGameContext } from "./ai-game-facts.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import {
 	aiTurnDecisionType,
 	type AiNextAction,
@@ -47,11 +47,7 @@ function choosePass(context: AiGameContext): AiNextAction {
 function choosePlay(context: AiGameContext): AiNextAction {
 	return {
 		action: "playCard",
-		cardId: chooseHeartsAutoPlayCard(
-			context.privateView.cards,
-			context.privateView.playableCardIds,
-			context.publicView.currentTrick,
-		),
+		cardId: aiGameStrategy(context.publicView.gameKind).choosePlay(context),
 	}
 }
 
@@ -98,7 +94,7 @@ export function fallbackAiDecision(context: AiGameContext): AiTurnDecision {
 				? "Reduce immediate point-card risk while preserving flexible low cards."
 				: nextAction.action === "submitBid"
 					? "Make a conservative legal bid from the strength visible in this hand."
-					: "Avoid taking point-heavy tricks when possible and discard dangerous cards when void.",
+					: aiGameStrategy(context.publicView.gameKind).playPlan,
 		nextAction,
 		observation:
 			context.publicView.currentTrick.length === 0

@@ -15,7 +15,7 @@ import {
 	type Rank,
 	type Suit,
 	type VisibleCard,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
 
 const me = "user::me" as PlayerId
 const other = "user::other" as PlayerId
@@ -163,7 +163,29 @@ describe("auto-play turn identity and readiness", () => {
 		).toBe(false)
 		expect(
 			isAutoPlayTurnActionable(
-				{ ...game, gameKind: "ohHell" },
+				{
+					bidPlayerId: null,
+					bidsSubmitted: 0,
+					completedTricks: [],
+					currentPlayerId: me,
+					currentTrick: [],
+					dealerId: other,
+					deckCardIds: [],
+					gameKind: "ohHell",
+					hostId: me,
+					lastTrickWinnerId: null,
+					maximumRounds: 5,
+					phase: "playing",
+					players: [],
+					roomCode: "WIND",
+					roundHandSize: 2,
+					roundNumber: 2,
+					statusMessage: "Your play.",
+					trickLeaderId: me,
+					trickNumber: 0,
+					trumpSuit: "clubs",
+					winnerIds: [],
+				},
 				privateView,
 				me,
 				true,

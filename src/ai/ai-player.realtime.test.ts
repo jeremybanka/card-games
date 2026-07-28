@@ -12,13 +12,13 @@ import { parsePlayCardPayload } from "../game/hearts-actions.ts"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "../game/hearts-state.ts"
+} from "../game/game-state-atoms.ts"
 import type {
 	CardId,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
-} from "../game/hearts-types.ts"
+} from "../game/game-types.ts"
 
 const aiCardId = "card::ai-private-queen" satisfies CardId
 const humanCardId = "card::human-private-ace" satisfies CardId
@@ -29,6 +29,7 @@ function publicView(playerId: PlayerId): PublicGameView {
 		currentPlayerId: playerId,
 		currentTrick: [],
 		deckCardIds: [],
+		gameKind: "hearts",
 		heartsBroken: false,
 		hostId: playerId,
 		lastTrickWinnerId: null,
@@ -68,6 +69,8 @@ function privateView(
 	return {
 		awardedLeftoverCard: null,
 		cards: [ownCard],
+		gameKind: "hearts",
+		passReceipt: null,
 		passSubmitted: false,
 		playableCardIds: [ownCard.id],
 		playerId,

@@ -13,7 +13,7 @@ import {
 	toOhHellPrivatePlayerView,
 	toOhHellPublicGameView,
 } from "./oh-hell-engine.ts"
-import type { PlayerId } from "./hearts-types.ts"
+import type { PlayerId } from "./game-types.ts"
 
 const ADA = "user::ada" satisfies PlayerId
 const BEA = "user::bea" satisfies PlayerId
@@ -93,8 +93,13 @@ describe("Oh Hell engine", () => {
 		const physicalIds = [...state.physicalCardIds]
 		const firstMapping = structuredClone(state.cardValues)
 		const publicView = toOhHellPublicGameView(state)
+		expect(publicView.gameKind).toBe("ohHell")
+		expect("heartsBroken" in publicView).toBe(false)
+		expect("passDirection" in publicView).toBe(false)
 		expect(JSON.stringify(publicView)).not.toContain('"rank"')
 		const privateView = toOhHellPrivatePlayerView(state, ADA)
+		expect(privateView.gameKind).toBe("ohHell")
+		expect("passReceipt" in privateView).toBe(false)
 		expect(privateView.cards).toHaveLength(5)
 		expect(privateView.cards.every((card) => card.rank >= 2)).toBe(true)
 

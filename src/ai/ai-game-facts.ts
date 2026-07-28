@@ -5,7 +5,7 @@ import type {
 	Rank,
 	Suit,
 	VisibleCard,
-} from "../game/hearts-types.ts"
+} from "../game/game-types.ts"
 import type { AiMemoryLedgerEntry, AiTurnObservation } from "./ai-types.ts"
 
 export type AiGameContext = {
@@ -64,7 +64,7 @@ function renderPlayers(context: AiGameContext): string[] {
 		return `- P${index}${perspective} ${player.name} (${controller}): score=${
 			player.score
 		} hand=${player.handCardIds.length} captured=${
-			player.capturedCardIds.length
+			player.capturedCardIds?.length ?? 0
 		} ${player.connected ? "connected" : "disconnected"}`
 	})
 }
@@ -145,6 +145,14 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		context.memoryLedger.length === 0
 			? ["- none"]
 			: context.memoryLedger.map((entry) => renderMemoryLedger(context, entry))
+	const gameDetails =
+		context.publicView.gameKind === "ohHell"
+			? `trump ${context.publicView.trumpSuit ?? "none"} | bid ${
+					me?.bid ?? "pending"
+				} | tricks ${me?.tricksWon ?? 0}`
+			: `hearts ${
+					context.publicView.heartsBroken ? "broken" : "intact"
+				} | pass ${context.publicView.passDirection}`
 
 	return [
 		`# ${context.publicView.gameKind === "ohHell" ? "Oh Hell" : "Hearts"} facts (cards: T/J/Q/K/A; suits: C/D/H/S)`,
@@ -155,15 +163,7 @@ export function renderAiGameFacts(context: AiGameContext): string {
 			context.publicView.phase
 		} | round ${context.publicView.roundNumber} | trick ${
 			context.publicView.trickNumber + 1
-		} | turn ${currentPlayer} | hearts ${
-			context.publicView.heartsBroken ? "broken" : "intact"
-		} | pass ${context.publicView.passDirection}${
-			context.publicView.gameKind === "ohHell"
-				? ` | trump ${context.publicView.trumpSuit ?? "none"} | bid ${
-						me?.bid ?? "pending"
-					} | tricks ${me?.tricksWon ?? 0}`
-				: ""
-		}`,
+		} | turn ${currentPlayer} | ${gameDetails}`,
 		"",
 		"## Seats",
 		...renderPlayers(context),
@@ -176,7 +176,11 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		"",
 		`## Hand (${
 			context.publicView.phase === "bidding"
-				? `legal bids: ${(context.privateView.legalBids ?? []).join(", ")}`
+				? `legal bids: ${
+						context.privateView.gameKind === "ohHell"
+							? context.privateView.legalBids.join(", ")
+							: ""
+					}`
 				: "during passing choose any 3 IDs"
 		})`,
 		...hand,

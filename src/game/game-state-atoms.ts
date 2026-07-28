@@ -6,7 +6,7 @@ import {
 	type PlayerId,
 	type PrivatePlayerView,
 	type PublicGameView,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
 import {
 	createHeartsGame,
 	toPrivatePlayerView,
@@ -20,8 +20,8 @@ import {
 
 const emptyPlayerId = "user::empty" satisfies PlayerId
 
-export const heartsStateAtoms = atomFamily<GameState, string>({
-	key: "heartsState",
+export const gameStateAtoms = atomFamily<GameState, string>({
+	key: "gameState",
 	default: (roomCode) => createHeartsGame(roomCode, emptyPlayerId, ""),
 })
 
@@ -33,7 +33,7 @@ export const publicGameViewProjectionSelectors = selectorFamily<
 	get:
 		(roomCode) =>
 		({ get }) => {
-			const state = get(heartsStateAtoms, roomCode)
+			const state = get(gameStateAtoms, roomCode)
 			return isOhHellState(state)
 				? toOhHellPublicGameView(state)
 				: toPublicGameView(state)
@@ -48,7 +48,7 @@ export const privatePlayerViewProjectionSelectors = selectorFamily<
 	get:
 		([roomCode, playerId]) =>
 		({ get }) => {
-			const state = get(heartsStateAtoms, roomCode)
+			const state = get(gameStateAtoms, roomCode)
 			return isOhHellState(state)
 				? toOhHellPrivatePlayerView(state, playerId)
 				: toPrivatePlayerView(state, playerId)

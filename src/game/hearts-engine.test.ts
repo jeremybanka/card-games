@@ -13,7 +13,7 @@ import {
 	type HeartsState,
 } from "./hearts-engine.ts"
 import { createSeededRandom } from "./seeded-random.ts"
-import type { CardId, CardValue, PlayerId } from "./hearts-types.ts"
+import type { CardId, CardValue, PlayerId } from "./game-types.ts"
 
 const playerIds = [
 	"user::00000000-0000-4000-8000-000000000001",
@@ -136,8 +136,12 @@ describe("Hearts dealing and visibility", () => {
 		const firstPrivateView = toPrivatePlayerView(state, playerIds[0])
 		const secondPrivateView = toPrivatePlayerView(state, playerIds[1])
 
+		expect(publicView.gameKind).toBe("hearts")
+		expect("trumpSuit" in publicView).toBe(false)
 		expect(JSON.stringify(publicView)).not.toContain('"rank"')
 		expect(JSON.stringify(publicView)).not.toContain('"suit"')
+		expect(firstPrivateView.gameKind).toBe("hearts")
+		expect("legalBids" in firstPrivateView).toBe(false)
 		expect(firstPrivateView.cards).toHaveLength(13)
 		expect(secondPrivateView.cards).toHaveLength(13)
 		expect(

@@ -6,7 +6,7 @@ import type {
 	Suit,
 	TrickPlay,
 	VisibleCard,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
 
 const SUIT_ORDER: Record<Suit, number> = {
 	clubs: 0,

@@ -1,6 +1,6 @@
 import type { VNode } from "preact"
 
-import type { PublicPlayerView } from "./game/hearts-types.ts"
+import type { PublicPlayerView } from "./game/game-types.ts"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 import css from "./PlayerNameplate.module.css"
 

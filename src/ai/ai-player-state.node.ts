@@ -8,8 +8,8 @@ import type {
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "../game/hearts-state.ts"
-import type { AiStrategyReviewTurn, PlayerId } from "../game/hearts-types.ts"
+} from "../game/game-state-atoms.ts"
+import type { AiStrategyReviewTurn, PlayerId } from "../game/game-types.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
 import type {

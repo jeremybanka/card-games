@@ -1,18 +1,38 @@
 import type { AiModelId } from "../ai/ai-models.ts"
+import {
+	cardValue as sharedCardValue,
+	createDeck,
+	createPhysicalCardIds,
+	secureRandom,
+	shuffled,
+	sortedHand as sharedSortedHand,
+	visibleCard as sharedVisibleCard,
+} from "./card-domain.ts"
 import type {
 	CardId,
 	CardValue,
-	GamePhase,
+	HeartsPhase,
+	HeartsPrivatePlayerView,
+	HeartsPublicGameView,
 	PassDirection,
 	PlayerId,
-	PrivatePlayerView,
-	PublicGameView,
 	Rank,
-	Suit,
 	TrickPlay,
 	VisibleCard,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
 import { passRecipientSeatIndex } from "./seat-order.ts"
+import {
+	advanceIncompleteTrick,
+	beginCardPlay,
+	completeTrick,
+	copyGameState,
+	disconnectTablePlayer,
+	joinTablePlayer,
+	playerIndex as sharedPlayerIndex,
+	projectPublicPlayer,
+	projectVisibleTrick,
+	requireHostAction,
+} from "./trick-taking-domain.ts"
 
 export const PLAYER_MINIMUM = 2
 export const PLAYER_MAXIMUM = 4
@@ -44,12 +64,13 @@ export type HeartsState = {
 	}>
 	currentPlayerId: PlayerId | null
 	currentTrick: Array<{ cardId: CardId; playerId: PlayerId }>
+	gameKind: "hearts"
 	heartsBroken: boolean
 	hostId: PlayerId | null
 	lastTrickWinnerId: PlayerId | null
 	leftoverCardId: CardId | null
 	passDirection: PassDirection
-	phase: GamePhase
+	phase: HeartsPhase
 	physicalCardIds: CardId[]
 	players: HeartsPlayer[]
 	roomCode: string
@@ -63,47 +84,31 @@ export type HeartsState = {
 export class HeartsRuleError extends Error {}
 
 function copyState(state: HeartsState): HeartsState {
-	return structuredClone(state)
-}
-
-function secureRandom(): number {
-	const value = crypto.getRandomValues(new Uint32Array(1))[0] as number
-	return value / 4_294_967_296
-}
-
-function shuffled<T>(input: readonly T[], random: () => number): T[] {
-	const output = [...input]
-	for (let index = output.length - 1; index > 0; index -= 1) {
-		const swapIndex = Math.floor(random() * (index + 1))
-		const value = output[index]
-		output[index] = output[swapIndex] as T
-		output[swapIndex] = value as T
-	}
-	return output
+	return copyGameState(state)
 }
 
 function cardValue(state: HeartsState, cardId: CardId): CardValue {
-	const value = state.cardValues[cardId]
-	if (value === undefined) {
-		throw new HeartsRuleError("That card is not active in this round.")
-	}
-	return value
+	return sharedCardValue(
+		state,
+		cardId,
+		() => new HeartsRuleError("That card is not active in this round."),
+	)
 }
 
 function visibleCard(state: HeartsState, cardId: CardId): VisibleCard {
-	return { id: cardId, ...cardValue(state, cardId) }
+	return sharedVisibleCard(
+		state,
+		cardId,
+		() => new HeartsRuleError("That card is not active in this round."),
+	)
 }
 
 function playerIndex(state: HeartsState, playerId: PlayerId): number {
-	const index = state.players.findIndex((player) => player.id === playerId)
-	if (index === -1)
-		throw new HeartsRuleError("That player is not at the table.")
-	return index
-}
-
-function nextPlayerId(state: HeartsState, playerId: PlayerId): PlayerId {
-	const index = playerIndex(state, playerId)
-	return (state.players[(index + 1) % state.players.length] as HeartsPlayer).id
+	return sharedPlayerIndex(
+		state,
+		playerId,
+		() => new HeartsRuleError("That player is not at the table."),
+	)
 }
 
 function isPointCard(value: CardValue): boolean {
@@ -113,19 +118,11 @@ function isPointCard(value: CardValue): boolean {
 }
 
 function sortedHand(state: HeartsState, hand: readonly CardId[]): CardId[] {
-	const suitOrder: Record<Suit, number> = {
-		clubs: 0,
-		diamonds: 1,
-		spades: 2,
-		hearts: 3,
-	}
-	return [...hand].sort((leftId, rightId) => {
-		const left = cardValue(state, leftId)
-		const right = cardValue(state, rightId)
-		return (
-			suitOrder[left.suit] - suitOrder[right.suit] || left.rank - right.rank
-		)
-	})
+	return sharedSortedHand(
+		state,
+		hand,
+		() => new HeartsRuleError("That card is not active in this round."),
+	)
 }
 
 function passDirectionFor(
@@ -171,15 +168,6 @@ function lowestClubOwner(state: HeartsState): PlayerId {
 	return lowest.playerId
 }
 
-export function createPhysicalCardIds(
-	createId: () => string = () => crypto.randomUUID(),
-): CardId[] {
-	return Array.from(
-		{ length: 52 },
-		() => `card::${createId()}` satisfies CardId,
-	)
-}
-
 export function createHeartsGame(
 	roomCode: string,
 	hostId: PlayerId,
@@ -191,6 +179,7 @@ export function createHeartsGame(
 		completedTricks: [],
 		currentPlayerId: null,
 		currentTrick: [],
+		gameKind: "hearts",
 		heartsBroken: false,
 		hostId,
 		lastTrickWinnerId: null,
@@ -230,64 +219,37 @@ export function joinHeartsGame(
 		kind: "human",
 	},
 ): HeartsState {
-	const next = copyState(state)
-	const existing = next.players.find((player) => player.id === playerId)
-	if (existing !== undefined) {
-		existing.connected = true
-		existing.name = playerName
-		return next
-	}
-	if (next.phase !== "lobby") {
-		throw new HeartsRuleError("This game is already in progress.")
-	}
-	if (next.players.length >= PLAYER_MAXIMUM) {
-		throw new HeartsRuleError("This table already has four players.")
-	}
-	next.players.push({
-		aiModel: controller.aiModel,
-		connected: true,
-		hand: [],
-		id: playerId,
-		kind: controller.kind,
-		name: playerName,
-		passSelection: null,
-		roundPoints: 0,
-		score: 0,
-		taken: [],
+	return joinTablePlayer(state, playerId, playerName, controller, {
+		createPlayer: ({
+			controller: nextController,
+			playerId: id,
+			playerName: name,
+		}): HeartsPlayer => ({
+			...nextController,
+			connected: true,
+			hand: [],
+			id,
+			name,
+			passSelection: null,
+			roundPoints: 0,
+			score: 0,
+			taken: [],
+		}),
+		fullTableError: () =>
+			new HeartsRuleError("This table already has four players."),
+		inProgressError: () =>
+			new HeartsRuleError("This game is already in progress."),
+		maximumPlayers: PLAYER_MAXIMUM,
+		minimumPlayers: PLAYER_MINIMUM,
+		waitingStatus: "Invite at least one more player.",
 	})
-	next.statusMessage =
-		next.players.length < PLAYER_MINIMUM
-			? "Invite at least one more player."
-			: "The host can start the game."
-	return next
 }
 
 export function disconnectPlayer(
 	state: HeartsState,
 	playerId: PlayerId,
 ): HeartsState {
-	const next = copyState(state)
-	const player = next.players.find((candidate) => candidate.id === playerId)
-	if (player === undefined) return next
-	if (next.phase === "lobby") {
-		next.players = next.players.filter((candidate) => candidate.id !== playerId)
-		if (next.hostId === playerId) next.hostId = next.players[0]?.id ?? null
-	} else {
-		player.connected = false
-		next.statusMessage = `${player.name} disconnected. Waiting for them to return.`
-	}
-	return next
-}
-
-export function createDeck(): CardValue[] {
-	const suits: Suit[] = ["clubs", "diamonds", "spades", "hearts"]
-	const deck: CardValue[] = []
-	for (const suit of suits) {
-		for (let rank = 2; rank <= 14; rank += 1) {
-			deck.push({ rank: rank as Rank, suit })
-		}
-	}
-	return deck
+	return disconnectTablePlayer(state, playerId)
 }
 
 export function dealRound(
@@ -514,28 +476,25 @@ export function playCard(
 	playerId: PlayerId,
 	cardId: CardId,
 ): HeartsState {
-	const next = copyState(state)
-	if (next.phase !== "playing") {
-		throw new HeartsRuleError("The round is not ready for play.")
-	}
-	if (next.currentPlayerId !== playerId) {
-		throw new HeartsRuleError("It is not your turn.")
-	}
-	const player = next.players[playerIndex(next, playerId)] as HeartsPlayer
-	if (!player.hand.includes(cardId)) {
-		throw new HeartsRuleError("That card is not in your hand.")
-	}
-	if (!playableCardIdsFor(next, playerId).includes(cardId)) {
-		throw new HeartsRuleError("That card cannot be played right now.")
-	}
-
-	player.hand = player.hand.filter((candidate) => candidate !== cardId)
-	next.currentTrick.push({ cardId, playerId })
+	const { next } = beginCardPlay(state, playerId, cardId, {
+		illegalCardError: () =>
+			new HeartsRuleError("That card cannot be played right now."),
+		inactiveRoundError: () =>
+			new HeartsRuleError("The round is not ready for play."),
+		notInHandError: () => new HeartsRuleError("That card is not in your hand."),
+		notPlayersTurnError: () => new HeartsRuleError("It is not your turn."),
+		playableCardIds: playableCardIdsFor,
+		playerError: () => new HeartsRuleError("That player is not at the table."),
+	})
 	if (cardValue(next, cardId).suit === "hearts") next.heartsBroken = true
 
-	if (next.currentTrick.length < next.players.length) {
-		next.currentPlayerId = nextPlayerId(next, playerId)
-		next.statusMessage = `${next.players.find((candidate) => candidate.id === next.currentPlayerId)?.name} to play.`
+	if (
+		advanceIncompleteTrick(
+			next,
+			playerId,
+			() => new HeartsRuleError("That player is not at the table."),
+		)
+	) {
 		return next
 	}
 
@@ -546,35 +505,26 @@ export function playCard(
 		next.currentTrick.some((play) => isPointCard(cardValue(next, play.cardId)))
 			? { cardId: next.leftoverCardId, recipientId: winnerId }
 			: null
-	next.completedTricks.push({
-		leftoverAward,
-		plays: next.currentTrick.map((play) => ({ ...play })),
-		winnerId,
-	})
 	winner.taken.push(...next.currentTrick.map((play) => play.cardId))
 	if (leftoverAward !== null) {
 		winner.taken.push(leftoverAward.cardId)
 		next.leftoverCardId = null
 	}
-	next.lastTrickWinnerId = winnerId
-	next.currentTrick = []
-	next.trickNumber += 1
-
-	if (next.players.every((candidate) => candidate.hand.length === 0)) {
+	const completed = completeTrick(
+		next,
+		winnerId,
+		leftoverAward,
+		() => new HeartsRuleError("That player is not at the table."),
+	)
+	if (completed.handsEmpty) {
 		scoreRound(next)
-		return next
 	}
-
-	next.currentPlayerId = winnerId
-	next.trickLeaderId = winnerId
-	next.statusMessage = `${winner.name} takes the trick and leads.`
 	return next
 }
 
 export function restartGame(state: HeartsState, hostId: PlayerId): HeartsState {
-	if (state.hostId !== hostId) {
+	if (state.hostId !== hostId)
 		throw new HeartsRuleError("Only the host can restart the game.")
-	}
 	const next = copyState(state)
 	next.phase = "lobby"
 	next.roundNumber = 0
@@ -605,12 +555,13 @@ export function startGame(
 	hostId: PlayerId,
 	random: () => number = secureRandom,
 ): HeartsState {
-	if (state.hostId !== hostId) {
-		throw new HeartsRuleError("Only the host can start the game.")
-	}
-	if (state.phase !== "lobby") {
-		throw new HeartsRuleError("The game has already started.")
-	}
+	requireHostAction(
+		state,
+		hostId,
+		"lobby",
+		() => new HeartsRuleError("Only the host can start the game."),
+		() => new HeartsRuleError("The game has already started."),
+	)
 	return dealRound(state, random)
 }
 
@@ -619,23 +570,23 @@ export function startNextRound(
 	hostId: PlayerId,
 	random: () => number = secureRandom,
 ): HeartsState {
-	if (state.hostId !== hostId) {
-		throw new HeartsRuleError("Only the host can deal the next round.")
-	}
-	if (state.phase !== "roundComplete") {
-		throw new HeartsRuleError("The current round is not complete.")
-	}
+	requireHostAction(
+		state,
+		hostId,
+		"roundComplete",
+		() => new HeartsRuleError("Only the host can deal the next round."),
+		() => new HeartsRuleError("The current round is not complete."),
+	)
 	return dealRound(state, random)
 }
 
 function publicTrick(state: HeartsState): TrickPlay[] {
-	return state.currentTrick.map((play) => ({
-		card: visibleCard(state, play.cardId),
-		playerId: play.playerId,
-	}))
+	return projectVisibleTrick(state.currentTrick, (cardId) =>
+		visibleCard(state, cardId),
+	)
 }
 
-export function toPublicGameView(state: HeartsState): PublicGameView {
+export function toPublicGameView(state: HeartsState): HeartsPublicGameView {
 	return {
 		completedTricks: state.completedTricks.map((trick) => ({
 			leftoverAward:
@@ -649,6 +600,7 @@ export function toPublicGameView(state: HeartsState): PublicGameView {
 		currentPlayerId: state.currentPlayerId,
 		currentTrick: publicTrick(state),
 		deckCardIds: state.leftoverCardId === null ? [] : [state.leftoverCardId],
+		gameKind: "hearts",
 		heartsBroken: state.heartsBroken,
 		hostId: state.hostId,
 		lastTrickWinnerId: state.lastTrickWinnerId,
@@ -658,15 +610,8 @@ export function toPublicGameView(state: HeartsState): PublicGameView {
 			.map((player) => player.id),
 		phase: state.phase,
 		players: state.players.map((player) => ({
-			aiModel: player.aiModel,
+			...projectPublicPlayer(player),
 			capturedCardIds: [...player.taken],
-			connected: player.connected,
-			handCardIds: [...player.hand],
-			id: player.id,
-			kind: player.kind,
-			name: player.name,
-			roundPoints: player.roundPoints,
-			score: player.score,
 		})),
 		roomCode: state.roomCode,
 		roundNumber: state.roundNumber,
@@ -680,12 +625,13 @@ export function toPublicGameView(state: HeartsState): PublicGameView {
 export function toPrivatePlayerView(
 	state: HeartsState,
 	playerId: PlayerId,
-): PrivatePlayerView {
+): HeartsPrivatePlayerView {
 	const player = state.players.find((candidate) => candidate.id === playerId)
 	if (player === undefined) {
 		return {
 			awardedLeftoverCard: null,
 			cards: [],
+			gameKind: "hearts",
 			passReceipt: null,
 			passSubmitted: false,
 			playableCardIds: [],
@@ -716,6 +662,7 @@ export function toPrivatePlayerView(
 				? null
 				: visibleCard(state, awardedLeftoverCardId),
 		cards: player.hand.map((cardId) => visibleCard(state, cardId)),
+		gameKind: "hearts",
 		passReceipt:
 			passSender === undefined
 				? null

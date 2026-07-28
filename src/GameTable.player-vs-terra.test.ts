@@ -35,28 +35,29 @@ import {
 	parsePassCardsPayload,
 	parsePlayCardPayload,
 } from "./game/hearts-actions.ts"
+import { createPhysicalCardIds } from "./game/card-domain.ts"
 import {
 	createHeartsGame,
-	createPhysicalCardIds,
 	joinHeartsGame,
 	playCard,
 	startGame,
 	submitPass,
+	type HeartsState,
 } from "./game/hearts-engine.ts"
 import { createSeededRandom } from "./game/seeded-random.ts"
 import {
-	heartsStateAtoms,
+	gameStateAtoms,
 	privatePlayerViewAtom,
 	privatePlayerViewProjectionSelectors,
 	publicGameViewAtom,
 	publicGameViewProjectionSelectors,
-} from "./game/hearts-state.ts"
+} from "./game/game-state-atoms.ts"
 import type {
 	ActionAck,
 	ClientToServerEvents,
 	PlayerId,
 	ServerToClientEvents,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import { serverLogger } from "./observability/span-logger.node.ts"
 
 vi.mock("preact/hooks", async () => {
@@ -151,6 +152,12 @@ function actionFailure(ack: ActionAck, error: unknown): void {
 	})
 }
 
+function currentHeartsState(): HeartsState {
+	const state = getState(gameStateAtoms, roomCode)
+	if (state.gameKind !== "hearts") throw new Error("Expected a Hearts table.")
+	return state
+}
+
 async function startRealtimeTable(): Promise<RealtimeTable> {
 	const dealRandom = createSeededRandom(`deal:${roomCode}:${seed}`)
 	const identityRandom = createSeededRandom(`identity:${roomCode}:${seed}`)
@@ -160,7 +167,7 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 		"Player",
 		createPhysicalCardIds(identityRandom.uuid),
 	)
-	setState(heartsStateAtoms, roomCode, initial)
+	setState(gameStateAtoms, roomCode, initial)
 
 	const httpServer = createServer()
 	const socketServer = new Server<
@@ -216,14 +223,12 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 						throw new Error("Unknown deterministic table.")
 					}
 					setState(
-						heartsStateAtoms,
+						gameStateAtoms,
 						roomCode,
-						joinHeartsGame(
-							getState(heartsStateAtoms, roomCode),
-							playerId,
-							playerName,
-							{ aiModel: "gpt-5.6-terra", kind: "ai" },
-						),
+						joinHeartsGame(currentHeartsState(), playerId, playerName, {
+							aiModel: "gpt-5.6-terra",
+							kind: "ai",
+						}),
 					)
 					disposeProjection()
 					disposeProjection = provideState(socket, playerId)
@@ -284,13 +289,9 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 			socket.on("startGame", (ack) => {
 				try {
 					setState(
-						heartsStateAtoms,
+						gameStateAtoms,
 						roomCode,
-						startGame(
-							getState(heartsStateAtoms, roomCode),
-							playerId,
-							dealRandom.next,
-						),
+						startGame(currentHeartsState(), playerId, dealRandom.next),
 					)
 					ack({ ok: true, roomCode })
 				} catch (error) {
@@ -302,13 +303,9 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 				try {
 					const payload = parsePassCardsPayload({ cardIds })
 					setState(
-						heartsStateAtoms,
+						gameStateAtoms,
 						roomCode,
-						submitPass(
-							getState(heartsStateAtoms, roomCode),
-							playerId,
-							payload.cardIds,
-						),
+						submitPass(currentHeartsState(), playerId, payload.cardIds),
 					)
 					ack({ ok: true, roomCode })
 				} catch (error) {
@@ -320,13 +317,9 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 				try {
 					const payload = parsePlayCardPayload({ cardId })
 					setState(
-						heartsStateAtoms,
+						gameStateAtoms,
 						roomCode,
-						playCard(
-							getState(heartsStateAtoms, roomCode),
-							playerId,
-							payload.cardId,
-						),
+						playCard(currentHeartsState(), playerId, payload.cardId),
 					)
 					ack({ ok: true, roomCode })
 				} catch (error) {
@@ -335,7 +328,7 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 			})
 
 			socket.on("requestAiStrategyReview", (aiPlayerId, ack) => {
-				const state = getState(heartsStateAtoms, roomCode)
+				const state = currentHeartsState()
 				if (
 					playerId !== humanId ||
 					aiPlayerId !== terraId ||
@@ -409,7 +402,7 @@ async function stopRealtimeTable(table: RealtimeTable): Promise<void> {
 	await new Promise<void>((resolveClose) => {
 		table.server.close(() => resolveClose())
 	})
-	disposeState(heartsStateAtoms, roomCode)
+	disposeState(gameStateAtoms, roomCode)
 }
 
 const GameTableCompat = GameTable as unknown as FunctionComponent<{
@@ -509,7 +502,7 @@ describe("recorded player versus Terra table", () => {
 			)
 			table.clientSilo.setState(autoPlayEnabledAtom, false)
 			await waitFor(() => {
-				const terraPlayer = getState(heartsStateAtoms, roomCode).players.find(
+				const terraPlayer = currentHeartsState().players.find(
 					(player) => player.id === terraId,
 				)
 				expect(terraPlayer?.passSelection).toHaveLength(3)
@@ -1187,7 +1180,7 @@ describe("recorded player versus Terra table", () => {
 					name: "Terra AI 1 strategy log",
 				}),
 			).toBeNull()
-			const finalState = getState(heartsStateAtoms, roomCode)
+			const finalState = currentHeartsState()
 			const terra = finalState.players.find((player) => player.id === terraId)
 			const terraRawPoints = terra?.taken.reduce((points, cardId) => {
 				const card = finalState.cardValues[cardId]

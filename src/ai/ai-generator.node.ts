@@ -5,6 +5,7 @@ import { Squirrel } from "varmint"
 
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { renderAiGameFacts } from "./ai-game-facts.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import type { AiModelId } from "./ai-models.ts"
 import {
 	createGuardedAiTurnGenerator,
@@ -57,17 +58,40 @@ export function wrapAiGeneratorWithVarmint(
 ): AiTurnGenerator {
 	const wrapped = squirrel.add(key, generate)
 	return async (context) => {
-		const {
-			awardedLeftoverCard: _awardedLeftoverCard,
-			...cacheablePrivateView
-		} = context.privateView
+		const cacheablePrivateView =
+			context.privateView.gameKind === "hearts"
+				? (({
+						awardedLeftoverCard: _awardedLeftoverCard,
+						gameKind: _gameKind,
+						passReceipt: _passReceipt,
+						...view
+					}) => view)(context.privateView)
+				: context.privateView
 		const { deckCardIds: _deckCardIds, ...publicViewWithoutDeck } =
 			context.publicView
+		const publicViewWithoutGameKind =
+			publicViewWithoutDeck.gameKind === "hearts"
+				? (({ gameKind: _gameKind, ...view }) => view)(publicViewWithoutDeck)
+				: publicViewWithoutDeck
 		const cacheablePublicView = {
-			...publicViewWithoutDeck,
-			completedTricks: publicViewWithoutDeck.completedTricks.map(
+			...publicViewWithoutGameKind,
+			completedTricks: publicViewWithoutGameKind.completedTricks.map(
 				({ leftoverAward: _leftoverAward, ...trick }) => trick,
 			),
+			players:
+				context.publicView.gameKind === "hearts"
+					? context.publicView.players.map((player) => ({
+							aiModel: player.aiModel,
+							capturedCardIds: player.capturedCardIds,
+							connected: player.connected,
+							handCardIds: player.handCardIds,
+							id: player.id,
+							kind: player.kind,
+							name: player.name,
+							roundPoints: player.roundPoints,
+							score: player.score,
+						}))
+					: publicViewWithoutGameKind.players,
 		}
 		const cacheableContext = {
 			...context,
@@ -88,19 +112,6 @@ export function wrapAiGeneratorWithVarmint(
 			.get(cacheableContext)
 	}
 }
-
-const systemPrompt = [
-	"You are a strategic Hearts player seated at a private multiplayer table.",
-	"Choose exactly one legal next action using an opaque card ID from the supplied hand.",
-	"Success means: obey the current phase, follow suit, minimize expected points, track exposed cards, and return a concise observation and reusable plan.",
-	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
-	"Use private pass memory and completed tricks as exact memory. Cards you passed remain known to be with their recipient until publicly played.",
-	"Card values uniquely identify deck cards, so history omits opaque IDs without losing strategic identity.",
-	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
-	"For passing, return exactly three different card IDs from your private hand.",
-	"For play, copy exactly the card:: ID inside brackets on a hand row labeled LEGAL; do not include brackets or the label.",
-	"Keep observation and plan terse; refer to cards by compact code and never repeat opaque IDs outside nextAction.",
-].join("\n")
 
 export function createOpenAiTurnGenerator(
 	modelId: AiModelId,
@@ -142,7 +153,9 @@ export function createOpenAiTurnGenerator(
 				trickNumber: context.publicView.trickNumber,
 			},
 			async (span) => {
+				const gameKind = context.publicView.gameKind ?? "hearts"
 				const renderedFacts = renderAiGameFacts(context)
+				const systemPrompt = aiGameStrategy(gameKind).systemPrompt
 				span.event("ai.prompt.rendered", {
 					renderedFacts,
 					systemPrompt,
@@ -151,8 +164,13 @@ export function createOpenAiTurnGenerator(
 					model,
 					output: Output.object({
 						description:
-							"A legal Hearts action plus a private observation and strategic plan.",
-						name: "hearts_turn_decision",
+							gameKind === "hearts"
+								? "A legal Hearts action plus a private observation and strategic plan."
+								: "A legal Oh Hell action plus a private observation and strategic plan.",
+						name:
+							gameKind === "hearts"
+								? "hearts_turn_decision"
+								: "oh_hell_turn_decision",
 						schema: jsonSchema<AiTurnDecision>(aiTurnDecisionJsonSchema),
 					}),
 					prompt: renderedFacts,

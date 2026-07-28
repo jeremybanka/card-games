@@ -44,7 +44,7 @@ import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "./game/hearts-state.ts"
+} from "./game/game-state-atoms.ts"
 import {
 	clockwiseOpponentSeatIndices,
 	clockwiseSeatOffset,
@@ -63,7 +63,7 @@ import type {
 	PublicPlayerView,
 	Suit,
 	VisibleCard,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import css from "./GameTable.module.css"
 import { GameTransitions } from "./GameTransitions.tsx"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
@@ -420,7 +420,7 @@ function OpponentZone({
 			</opponent-hand>
 			<TakenStack
 				bid={player.bid}
-				cardIds={player.capturedCardIds}
+				cardIds={player.capturedCardIds ?? []}
 				hiddenCardIds={hiddenCardIds}
 				label={`${player.name}'s captured cards`}
 				playerCount={playerCount}
@@ -748,7 +748,10 @@ function PlayerZone({
 	const handCards = passing
 		? visibleCards.filter((card) => !passSelection.includes(card.id))
 		: visibleCards
-	const passAction = passActionLabel(game.passDirection, passRecipientName)
+	const passAction =
+		game.gameKind === "hearts"
+			? passActionLabel(game.passDirection, passRecipientName)
+			: ""
 	const cardFromHandPointer = (
 		element: HTMLElement,
 		clientX: number,
@@ -786,7 +789,7 @@ function PlayerZone({
 			</player-heading>
 			<TakenStack
 				bid={myPlayer.bid}
-				cardIds={myPlayer.capturedCardIds}
+				cardIds={myPlayer.capturedCardIds ?? []}
 				hiddenCardIds={hiddenCardIds}
 				label="Your captured cards"
 				playerCount={playerCount}
@@ -1140,7 +1143,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		)
 	}, [game.players, mySeatIndex])
 	const passRecipient =
-		mySeatIndex === -1 || game.passDirection === "hold"
+		mySeatIndex === -1 ||
+		game.gameKind !== "hearts" ||
+		game.passDirection === "hold"
 			? null
 			: (game.players[
 					passRecipientSeatIndex(

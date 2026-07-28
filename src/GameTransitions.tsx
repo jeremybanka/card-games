@@ -7,7 +7,7 @@ import type {
 	PublicGameView,
 	Suit,
 	VisibleCard,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import { orderedTrickReviewPlays } from "./game-presentation.ts"
 import css from "./GameTransitions.module.css"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"

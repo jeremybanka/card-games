@@ -6,9 +6,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type {
 	CompletedTrick,
+	HeartsPublicGameView,
 	PlayerId,
-	PublicGameView,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import { GameTransitions } from "./GameTransitions.tsx"
 
 const me = "user::me" as PlayerId
@@ -27,11 +27,12 @@ const trick: CompletedTrick = {
 	],
 	winnerId: terra,
 }
-const game: PublicGameView = {
+const game: HeartsPublicGameView = {
 	completedTricks: [trick],
 	currentPlayerId: terra,
 	currentTrick: [],
 	deckCardIds: [],
+	gameKind: "hearts",
 	heartsBroken: false,
 	hostId: me,
 	lastTrickWinnerId: terra,
@@ -142,7 +143,7 @@ describe("GameTransitions", () => {
 	])(
 		"keeps the full accessible turn label while protecting its final phrase for %s",
 		(name, visualLabel) => {
-			const longNameGame: PublicGameView = {
+			const longNameGame: HeartsPublicGameView = {
 				...game,
 				players: game.players.map((player) =>
 					player.id === terra ? { ...player, name } : player,

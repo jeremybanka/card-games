@@ -1,14 +1,18 @@
 import { Squirrel } from "varmint"
 import { describe, expect, it, vi } from "vitest"
 
-import type {
-	CardId,
-	PlayerId,
-	PrivatePlayerView,
-	PublicGameView,
-	VisibleCard,
-} from "../game/hearts-types.ts"
+import {
+	EMPTY_PRIVATE_PLAYER_VIEW,
+	type CardId,
+	type HeartsPrivatePlayerView,
+	type HeartsPublicGameView,
+	type OhHellPrivatePlayerView,
+	type OhHellPublicGameView,
+	type PlayerId,
+	type VisibleCard,
+} from "../game/game-types.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { wrapAiGeneratorWithVarmint } from "./ai-generator.node.ts"
 import { isAiTurnReady } from "./ai-player.node.ts"
 import {
@@ -31,14 +35,19 @@ function card(
 }
 
 function gameContext(
-	privateView: PrivatePlayerView,
-	overrides: Partial<PublicGameView> = {},
+	privateOverrides: Partial<HeartsPrivatePlayerView>,
+	overrides: Partial<HeartsPublicGameView> = {},
 ): AiGameContext {
-	const publicView: PublicGameView = {
+	const privateView: HeartsPrivatePlayerView = {
+		...EMPTY_PRIVATE_PLAYER_VIEW,
+		...privateOverrides,
+	}
+	const publicView: HeartsPublicGameView = {
 		completedTricks: [],
 		currentPlayerId: aiPlayerId,
 		currentTrick: [],
 		deckCardIds: [],
+		gameKind: "hearts",
 		heartsBroken: false,
 		hostId: humanPlayerId,
 		lastTrickWinnerId: null,
@@ -76,6 +85,75 @@ function gameContext(
 		trickNumber: 2,
 		winnerIds: [],
 		...overrides,
+	}
+	return {
+		memoryLedger: [],
+		observations: [],
+		playerId: aiPlayerId,
+		previousPlan: "",
+		privateView,
+		publicView,
+	}
+}
+
+function ohHellContext(
+	cards: VisibleCard[],
+	options: { bid: number; tricksWon: number },
+): AiGameContext {
+	const privateView: OhHellPrivatePlayerView = {
+		cards,
+		gameKind: "ohHell",
+		legalBids: [],
+		playableCardIds: cards.map((entry) => entry.id),
+		playerId: aiPlayerId,
+	}
+	const publicView: OhHellPublicGameView = {
+		bidPlayerId: null,
+		bidsSubmitted: 2,
+		completedTricks: [],
+		currentPlayerId: aiPlayerId,
+		currentTrick: [],
+		dealerId: humanPlayerId,
+		deckCardIds: [],
+		gameKind: "ohHell",
+		hostId: humanPlayerId,
+		lastTrickWinnerId: null,
+		maximumRounds: 5,
+		phase: "playing",
+		players: [
+			{
+				aiModel: "gpt-5.6-terra",
+				bid: options.bid,
+				connected: true,
+				handCardIds: cards.map((entry) => entry.id),
+				id: aiPlayerId,
+				kind: "ai",
+				name: "Terra AI",
+				roundPoints: 0,
+				score: 0,
+				tricksWon: options.tricksWon,
+			},
+			{
+				aiModel: null,
+				bid: 0,
+				connected: true,
+				handCardIds: [],
+				id: humanPlayerId,
+				kind: "human",
+				name: "Ada",
+				roundPoints: 0,
+				score: 0,
+				tricksWon: 0,
+			},
+		],
+		roomCode: "WIND",
+		roundHandSize: cards.length,
+		roundNumber: 1,
+		statusMessage: "Your play.",
+		trickLeaderId: aiPlayerId,
+		trickNumber: 0,
+		trumpSuit: "spades",
+		winnerIds: [],
 	}
 	return {
 		memoryLedger: [],
@@ -352,5 +430,26 @@ describe("AI Hearts generators", () => {
 			}),
 		)
 		expect(base.mock.calls[0]?.[0].publicView).not.toHaveProperty("deckCardIds")
+	})
+})
+
+describe("AI Oh Hell strategy", () => {
+	it("uses an Oh Hell prompt and targets the exact bid", () => {
+		const low = card("low-club", "clubs", 2)
+		const trump = card("ace-spade", "spades", 14)
+		const strategy = aiGameStrategy("ohHell")
+
+		expect(strategy.systemPrompt).toContain("strategic Oh Hell player")
+		expect(strategy.systemPrompt).not.toContain("minimize expected points")
+		expect(
+			chooseFallbackAiAction(
+				ohHellContext([low, trump], { bid: 1, tricksWon: 0 }),
+			),
+		).toEqual({ action: "playCard", cardId: trump.id })
+		expect(
+			chooseFallbackAiAction(
+				ohHellContext([low, trump], { bid: 1, tricksWon: 1 }),
+			),
+		).toEqual({ action: "playCard", cardId: low.id })
 	})
 })

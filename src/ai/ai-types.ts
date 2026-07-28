@@ -7,7 +7,7 @@ import type {
 	PassDirection,
 	PlayerId,
 	VisibleCard,
-} from "../game/hearts-types.ts"
+} from "../game/game-types.ts"
 
 export type AiNextAction =
 	| { action: "passCards"; cardIds: CardId[] }
