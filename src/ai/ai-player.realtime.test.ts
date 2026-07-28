@@ -8,7 +8,7 @@ import { createElement, type Context, useContext, useEffect } from "react"
 import type { Socket } from "socket.io-client"
 import { describe, expect, it } from "vitest"
 
-import { parsePlayCardPayload } from "../game/hearts-actions.ts"
+import { parsePlayCardPayload } from "../game/game-actions.ts"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,

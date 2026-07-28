@@ -31,10 +31,8 @@ import type { AiTurnGenerator } from "./ai/ai-strategy.ts"
 import { autoPlayEnabledAtom } from "./client-state.ts"
 import { GameTable } from "./GameTable.tsx"
 import type { GameSocket } from "./game-socket.ts"
-import {
-	parsePassCardsPayload,
-	parsePlayCardPayload,
-} from "./game/hearts-actions.ts"
+import { parsePlayCardPayload } from "./game/game-actions.ts"
+import { parsePassCardsPayload } from "./game/hearts-actions.ts"
 import { createPhysicalCardIds } from "./game/card-domain.ts"
 import {
 	createHeartsGame,

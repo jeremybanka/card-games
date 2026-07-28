@@ -28,10 +28,8 @@ import {
 	type AiTurnGenerator,
 } from "./ai-strategy.ts"
 import type { AiTurnDecision } from "./ai-types.ts"
-import {
-	parsePassCardsPayload,
-	parsePlayCardPayload,
-} from "../game/hearts-actions.ts"
+import { parsePlayCardPayload } from "../game/game-actions.ts"
+import { parsePassCardsPayload } from "../game/hearts-actions.ts"
 import { createPhysicalCardIds } from "../game/card-domain.ts"
 import {
 	createHeartsGame,

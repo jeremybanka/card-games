@@ -1,7 +1,8 @@
 import { type } from "arktype"
 import type { JSONSchema7 } from "ai"
 
-import { cardIdType, passCardIdsType } from "../game/hearts-actions.ts"
+import { cardIdType } from "../game/game-actions.ts"
+import { passCardIdsType } from "../game/hearts-actions.ts"
 import type {
 	CardId,
 	PassDirection,

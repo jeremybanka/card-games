@@ -15,38 +15,9 @@ import {
 	createAiPlayer,
 	type AiPlayerRuntime,
 } from "../src/ai/ai-player.node.ts"
-import { isAiModelId, type AiModelId } from "../src/ai/ai-models.ts"
-import {
-	parsePassCardsPayload,
-	parsePlayCardPayload,
-} from "../src/game/hearts-actions.ts"
-import { createPhysicalCardIds } from "../src/game/card-domain.ts"
-import {
-	createHeartsGame,
-	disconnectPlayer,
-	HeartsRuleError,
-	joinHeartsGame,
-	playCard,
-	restartGame,
-	startGame,
-	startNextRound,
-	submitPass,
-} from "../src/game/hearts-engine.ts"
-import { isOhHellState, type GameState } from "../src/game/game-state.ts"
-import {
-	createOhHellGame,
-	disconnectOhHellPlayer,
-	joinOhHellGame,
-	playOhHellCard,
-	restartOhHellGame,
-	startNextOhHellRound,
-	startOhHellGame,
-	submitOhHellBid,
-} from "../src/game/oh-hell-engine.ts"
-import {
-	createSeededRandom,
-	type SeededRandom,
-} from "../src/game/seeded-random.ts"
+import type { AiModelId } from "../src/ai/ai-models.ts"
+import type { GameState } from "../src/game/game-state.ts"
+import { createSeededRandom } from "../src/game/seeded-random.ts"
 import {
 	gameStateAtoms,
 	privatePlayerViewProjectionSelectors,
@@ -56,7 +27,6 @@ import {
 } from "../src/game/game-state-atoms.ts"
 import type {
 	ActionAck,
-	CardId,
 	ClientToServerEvents,
 	GameKind,
 	PlayerId,
@@ -67,12 +37,28 @@ import {
 	serverLogger,
 } from "../src/observability/span-logger.node.ts"
 import { generateAiPlayerName } from "./ai-player-name.node.ts"
+import {
+	createGameController,
+	type Dispose,
+	type GameActionAcknowledger,
+	type GameActionsOf,
+	type GameController,
+	type GameEventSocket,
+	type GameStateOf,
+	type GameStateStore,
+	type PlayerController,
+} from "./game-controller.node.ts"
+import { heartsGame } from "./hearts-game.node.ts"
+import { ohHellGame } from "./oh-hell-game.node.ts"
+import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
 
 const SERVER_PORT = Number.parseInt(process.env.PORT ?? "8787", 10)
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 const PLAYER_NAME_MAXIMUM_LENGTH = 18
 const GAME_SEED = process.env.GAME_SEED?.trim() || randomUUID()
 const roomCodeRandom = createSeededRandom(`room-code:${GAME_SEED}`)
+
+class RoomError extends Error {}
 
 type GameServerSocket = Socket<
 	ClientToServerEvents,
@@ -81,15 +67,52 @@ type GameServerSocket = Socket<
 	{ playerId: PlayerId }
 >
 
-type Room = {
-	aiNameRandom: SeededRandom
-	aiPlayers: Map<PlayerId, AiPlayerRuntime>
+type Room<Game> = {
 	connections: Map<PlayerId, { dispose: () => void; socket: GameServerSocket }>
-	dealRandom: SeededRandom
-	identityRandom: SeededRandom
+	controller: GameController<Game>
 }
 
-const rooms = new Map<string, Room>()
+type HeartsRoom = Room<typeof heartsGame>
+type OhHellRoom = Room<typeof ohHellGame>
+
+type StoredRoom = {
+	bindActions: (
+		socket: GameServerSocket,
+		playerId: PlayerId,
+		acknowledge: GameActionAcknowledger,
+	) => Dispose
+	connectPlayer: (
+		playerId: PlayerId,
+		playerName: string,
+		controller: PlayerController,
+	) => void
+	connections: Map<PlayerId, { dispose: Dispose; socket: GameServerSocket }>
+	disconnectPlayer: (playerId: PlayerId) => void
+	dispose: Dispose
+	isVacant: () => boolean
+	stateSnapshotForLog: () => unknown
+	stateSummaryForLog: () => unknown
+}
+
+function storeRoom<Game>(room: Room<Game>): StoredRoom {
+	return {
+		bindActions: (socket, playerId, acknowledge) =>
+			room.controller.bindActions(
+				socket as unknown as GameEventSocket<GameActionsOf<Game>>,
+				playerId,
+				acknowledge,
+			),
+		connectPlayer: room.controller.connectPlayer,
+		connections: room.connections,
+		disconnectPlayer: room.controller.disconnectPlayer,
+		dispose: room.controller.dispose,
+		isVacant: room.controller.isVacant,
+		stateSnapshotForLog: room.controller.stateSnapshotForLog,
+		stateSummaryForLog: room.controller.stateSummaryForLog,
+	}
+}
+
+const rooms = new Map<string, StoredRoom>()
 const roomCodeByPlayer = new Map<PlayerId, string>()
 const playerSecrets = new Map<string, string>()
 const aiModelsByPlayer = new Map<PlayerId, AiModelId>()
@@ -97,7 +120,7 @@ const aiModelsByPlayer = new Map<PlayerId, AiModelId>()
 function normalizePlayerName(input: string): string {
 	const name = input.trim().replace(/\s+/g, " ")
 	if (name.length < 1 || name.length > PLAYER_NAME_MAXIMUM_LENGTH) {
-		throw new HeartsRuleError(
+		throw new RoomError(
 			`Names must be between 1 and ${PLAYER_NAME_MAXIMUM_LENGTH} characters.`,
 		)
 	}
@@ -107,7 +130,7 @@ function normalizePlayerName(input: string): string {
 function normalizeRoomCode(input: string): string {
 	const roomCode = input.trim().toUpperCase()
 	if (!/^[A-Z]{4}$/.test(roomCode)) {
-		throw new HeartsRuleError("Room codes contain four letters.")
+		throw new RoomError("Room codes contain four letters.")
 	}
 	return roomCode
 }
@@ -124,84 +147,21 @@ function createRoomCode(): string {
 	throw new Error("Could not allocate a room code.")
 }
 
-function getRoomState(roomCode: string): GameState {
-	return getState(gameStateAtoms, roomCode)
-}
-
-function setRoomState(roomCode: string, state: GameState): void {
-	setState(gameStateAtoms, roomCode, state)
-}
-
-function cardForLog(state: GameState, cardId: CardId): unknown {
+function gameStateStore<State extends GameState>(
+	roomCode: string,
+	gameKind: State["gameKind"],
+): GameStateStore<State> {
 	return {
-		id: cardId,
-		value: state.cardValues[cardId] ?? null,
-	}
-}
-
-function stateSummaryForLog(state: GameState): unknown {
-	return {
-		currentPlayerId: state.currentPlayerId,
-		gameKind: isOhHellState(state) ? "ohHell" : "hearts",
-		heartsBroken: isOhHellState(state) ? undefined : state.heartsBroken,
-		trumpSuit: isOhHellState(state) ? state.trumpSuit : undefined,
-		hostId: state.hostId,
-		lastTrickWinnerId: state.lastTrickWinnerId,
-		passDirection: isOhHellState(state) ? undefined : state.passDirection,
-		phase: state.phase,
-		players: state.players.map((player) => ({
-			aiModel: player.aiModel,
-			connected: player.connected,
-			handSize: player.hand.length,
-			id: player.id,
-			kind: player.kind,
-			name: player.name,
-			passSubmitted:
-				"passSelection" in player ? player.passSelection !== null : undefined,
-			bid: "bid" in player ? player.bid : undefined,
-			roundPoints: player.roundPoints,
-			score: player.score,
-			takenSize: "taken" in player ? player.taken.length : undefined,
-			tricksWon: "tricksWon" in player ? player.tricksWon : undefined,
-		})),
-		roomCode: state.roomCode,
-		roundNumber: state.roundNumber,
-		statusMessage: state.statusMessage,
-		trickLeaderId: state.trickLeaderId,
-		trickNumber: state.trickNumber,
-		winnerIds: state.winnerIds,
-	}
-}
-
-function stateSnapshotForLog(state: GameState): unknown {
-	const {
-		cardValues: _cardValues,
-		currentTrick,
-		physicalCardIds: _physicalCardIds,
-		players,
-		...table
-	} = state
-	return {
-		...table,
-		currentTrick: currentTrick.map((play) => ({
-			card: cardForLog(state, play.cardId),
-			playerId: play.playerId,
-		})),
-		players: players.map((player) => {
-			const base = {
-				...player,
-				hand: player.hand.map((cardId) => cardForLog(state, cardId)),
+		get: () => {
+			const state = getState(gameStateAtoms, roomCode)
+			if (state.gameKind !== gameKind) {
+				throw new Error(
+					`Room ${roomCode} contains ${state.gameKind}, expected ${gameKind}.`,
+				)
 			}
-			return "passSelection" in player
-				? {
-						...base,
-						passSelection: player.passSelection?.map((cardId) =>
-							cardForLog(state, cardId),
-						),
-						taken: player.taken.map((cardId) => cardForLog(state, cardId)),
-					}
-				: base
-		}),
+			return state as State
+		},
+		set: (state) => setState(gameStateAtoms, roomCode, state),
 	}
 }
 
@@ -209,10 +169,6 @@ function actionErrorMessage(thrown: unknown): string {
 	return thrown instanceof Error
 		? thrown.message
 		: "The table could not complete that action."
-}
-
-function strategyTextForReview(text: string): string {
-	return text.replace(/card::[^\s,)\]}]+/g, "[private card]")
 }
 
 function acknowledgeAction(
@@ -228,9 +184,7 @@ function acknowledgeAction(
 				span.setAttributes({ roomCode })
 				span.event("action.accepted", {
 					roomCode,
-					state: rooms.has(roomCode)
-						? stateSummaryForLog(getRoomState(roomCode))
-						: null,
+					state: rooms.get(roomCode)?.stateSummaryForLog() ?? null,
 				})
 				ack({ ok: true, roomCode })
 			} catch (thrown) {
@@ -249,7 +203,7 @@ function acknowledgeAction(
 						message,
 						room:
 							roomCode !== undefined && rooms.has(roomCode)
-								? stateSnapshotForLog(getRoomState(roomCode))
+								? rooms.get(roomCode)?.stateSnapshotForLog()
 								: null,
 						roomCode,
 					},
@@ -285,55 +239,36 @@ function leaveCurrentRoom(
 	const connection = room.connections.get(playerId)
 	connection?.dispose()
 	room.connections.delete(playerId)
-	const currentState = getRoomState(roomCode)
-	setRoomState(
-		roomCode,
-		isOhHellState(currentState)
-			? disconnectOhHellPlayer(currentState, playerId)
-			: disconnectPlayer(currentState, playerId),
-	)
+	room.disconnectPlayer(playerId)
 
-	const state = getRoomState(roomCode)
-	if (state.players.length === 0) {
-		for (const aiPlayer of room.aiPlayers.values()) aiPlayer.dispose()
+	if (room.isVacant()) {
+		room.dispose()
+		const state = room.stateSummaryForLog()
 		rooms.delete(roomCode)
 		disposeState(gameStateAtoms, roomCode)
 		serverLogger.info("room.disposed", {
 			playerId,
 			roomCode,
-			state: stateSummaryForLog(state),
+			state,
 		})
-		return
-	}
-	if (state.hostId === null && state.players[0] !== undefined) {
-		state.hostId = state.players[0].id
-		setRoomState(roomCode, state)
 	}
 }
 
 function connectPlayerToRoom(
-	room: Room,
+	room: StoredRoom,
 	roomCode: string,
 	socket: GameServerSocket,
 	playerId: PlayerId,
 	playerName: string,
 ): void {
 	leaveCurrentRoom(playerId)
-	setRoomState(
-		roomCode,
-		(() => {
-			const state = getRoomState(roomCode)
-			const controller = aiModelsByPlayer.has(playerId)
-				? {
-						aiModel: aiModelsByPlayer.get(playerId) as AiModelId,
-						kind: "ai" as const,
-					}
-				: { aiModel: null, kind: "human" as const }
-			return isOhHellState(state)
-				? joinOhHellGame(state, playerId, playerName, controller)
-				: joinHeartsGame(state, playerId, playerName, controller)
-		})(),
-	)
+	const playerController = aiModelsByPlayer.has(playerId)
+		? {
+				aiModel: aiModelsByPlayer.get(playerId) as AiModelId,
+				kind: "ai" as const,
+			}
+		: { aiModel: null, kind: "human" as const }
+	room.connectPlayer(playerId, playerName, playerController)
 
 	const provideState = realtimeStateProvider({
 		consumer: playerId,
@@ -346,7 +281,18 @@ function connectPlayerToRoom(
 	])
 	const disposePublic = provideState(publicGameViewAtom, publicGameView)
 	const disposePrivate = provideState(privatePlayerViewAtom, privatePlayerView)
+	const disposeActions = room.bindActions(
+		socket,
+		playerId,
+		(ack, spanName, attributes, action) => {
+			acknowledgeAction(ack, spanName, attributes, async (span) => {
+				await action(span)
+				return roomCode
+			})
+		},
+	)
 	const dispose = () => {
+		disposeActions()
 		disposePrivate()
 		disposePublic()
 	}
@@ -358,21 +304,107 @@ function connectPlayerToRoom(
 		privateProjection: privatePlayerView.key,
 		publicProjection: publicGameView.key,
 		roomCode,
-		state: stateSummaryForLog(getRoomState(roomCode)),
+		state: room.stateSummaryForLog(),
 	})
 }
 
-function roomForPlayer(playerId: PlayerId): [string, Room] {
-	const roomCode = roomCodeByPlayer.get(playerId)
-	if (roomCode === undefined) {
-		throw new HeartsRuleError("Join a room before playing.")
+function createWayfarerGameResources(roomCode: string): WayfarerGameResources {
+	const aiNameRandom = createSeededRandom(`ai-name:${roomCode}:${GAME_SEED}`)
+	const aiPlayers = new Map<PlayerId, AiPlayerRuntime>()
+	const identityRandom = createSeededRandom(`identity:${roomCode}:${GAME_SEED}`)
+	return {
+		aiNameRandom,
+		aiPlayers,
+		assignAiSeat: async (modelId, existingPlayerNames) => {
+			const rawPlayerId = identityRandom.uuid()
+			const aiPlayerId = `user::${rawPlayerId}` satisfies PlayerId
+			const playerSecret = randomUUID()
+			const name = generateAiPlayerName(aiNameRandom, existingPlayerNames)
+			aiModelsByPlayer.set(aiPlayerId, modelId)
+			try {
+				const runtime = await createAiPlayer({
+					modelId,
+					name,
+					playerId: aiPlayerId,
+					playerSecret,
+					roomCode,
+					serverUrl: `http://127.0.0.1:${SERVER_PORT}`,
+				})
+				aiPlayers.set(aiPlayerId, runtime)
+			} catch (error) {
+				aiModelsByPlayer.delete(aiPlayerId)
+				playerSecrets.delete(rawPlayerId)
+				throw error
+			}
+			return { aiPlayerId, name }
+		},
+		dealRandom: createSeededRandom(`deal:${roomCode}:${GAME_SEED}`),
+		identityRandom,
+		removeAiSeat: (aiPlayerId) => {
+			aiPlayers.get(aiPlayerId)?.dispose()
+			aiPlayers.delete(aiPlayerId)
+			aiModelsByPlayer.delete(aiPlayerId)
+			playerSecrets.delete(aiPlayerId.replace(/^user::/, ""))
+			leaveCurrentRoom(aiPlayerId)
+		},
 	}
-	const room = rooms.get(roomCode)
-	if (room === undefined) {
-		throw new HeartsRuleError("That room no longer exists.")
-	}
-	return [roomCode, room]
 }
+
+function createHeartsRoom(
+	roomCode: string,
+	hostId: PlayerId,
+	hostName: string,
+): StoredRoom {
+	const resources = createWayfarerGameResources(roomCode)
+	const state = heartsGame.create({
+		host: { id: hostId, name: hostName },
+		resources,
+		roomCode,
+	})
+	setState(gameStateAtoms, roomCode, state)
+	const room: HeartsRoom = {
+		connections: new Map(),
+		controller: createGameController(
+			heartsGame,
+			roomCode,
+			resources,
+			gameStateStore<GameStateOf<typeof heartsGame>>(roomCode, "hearts"),
+		),
+	}
+	return storeRoom(room)
+}
+
+function createOhHellRoom(
+	roomCode: string,
+	hostId: PlayerId,
+	hostName: string,
+): StoredRoom {
+	const resources = createWayfarerGameResources(roomCode)
+	const state = ohHellGame.create({
+		host: { id: hostId, name: hostName },
+		resources,
+		roomCode,
+	})
+	setState(gameStateAtoms, roomCode, state)
+	const room: OhHellRoom = {
+		connections: new Map(),
+		controller: createGameController(
+			ohHellGame,
+			roomCode,
+			resources,
+			gameStateStore<GameStateOf<typeof ohHellGame>>(roomCode, "ohHell"),
+		),
+	}
+	return storeRoom(room)
+}
+
+const createGameRoom = {
+	hearts: createHeartsRoom,
+	ohHell: createOhHellRoom,
+} satisfies Record<
+	GameKind,
+	(roomCode: string, hostId: PlayerId, hostName: string) => StoredRoom
+>
 
 function serveSocket(socketInput: UserServerConfig): () => void {
 	const playerId = socketInput.consumer as PlayerId
@@ -389,35 +421,11 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 				const gameKind: GameKind =
 					gameKindInput === "ohHell" ? "ohHell" : "hearts"
 				const roomCode = createRoomCode()
-				const room: Room = {
-					aiNameRandom: createSeededRandom(`ai-name:${roomCode}:${GAME_SEED}`),
-					aiPlayers: new Map(),
-					connections: new Map(),
-					dealRandom: createSeededRandom(`deal:${roomCode}:${GAME_SEED}`),
-					identityRandom: createSeededRandom(
-						`identity:${roomCode}:${GAME_SEED}`,
-					),
-				}
-				setRoomState(
-					roomCode,
-					gameKind === "ohHell"
-						? createOhHellGame(
-								roomCode,
-								playerId,
-								playerName,
-								createPhysicalCardIds(room.identityRandom.uuid),
-							)
-						: createHeartsGame(
-								roomCode,
-								playerId,
-								playerName,
-								createPhysicalCardIds(room.identityRandom.uuid),
-							),
-				)
+				const room = createGameRoom[gameKind](roomCode, playerId, playerName)
 				rooms.set(roomCode, room)
 				connectPlayerToRoom(room, roomCode, socket, playerId, playerName)
 				span.event("room.created", {
-					room: stateSummaryForLog(getRoomState(roomCode)),
+					room: room.stateSummaryForLog(),
 				})
 				return roomCode
 			},
@@ -434,13 +442,13 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 				const playerName = normalizePlayerName(playerNameInput)
 				const room = rooms.get(roomCode)
 				if (room === undefined) {
-					throw new HeartsRuleError("No active table has that room code.")
+					throw new RoomError("No active table has that room code.")
 				}
 				connectPlayerToRoom(room, roomCode, socket, playerId, playerName)
 				span.event("room.player_joined", {
 					playerId,
 					playerName,
-					room: stateSummaryForLog(getRoomState(roomCode)),
+					room: room.stateSummaryForLog(),
 				})
 				return roomCode
 			},
@@ -456,325 +464,6 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			(span) => {
 				leaveCurrentRoom(playerId)
 				span.event("room.player_left", { playerId, roomCode })
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("assignAiSeat", (modelIdInput, ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.assign_ai_seat",
-			{ modelId: modelIdInput, playerId },
-			async (span) => {
-				const [roomCode, room] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				if (state.hostId !== playerId) {
-					throw new HeartsRuleError("Only the host can assign AI seats.")
-				}
-				if (state.phase !== "lobby") {
-					throw new HeartsRuleError(
-						"AI seats can only be assigned before the game starts.",
-					)
-				}
-				if (state.players.length >= 4) {
-					throw new HeartsRuleError("This table already has four players.")
-				}
-				if (!isAiModelId(modelIdInput)) {
-					throw new HeartsRuleError("Choose a supported OpenAI model.")
-				}
-
-				const rawPlayerId = room.identityRandom.uuid()
-				const aiPlayerId = `user::${rawPlayerId}` satisfies PlayerId
-				const playerSecret = randomUUID()
-				const name = generateAiPlayerName(
-					room.aiNameRandom,
-					state.players.map((player) => player.name),
-				)
-				aiModelsByPlayer.set(aiPlayerId, modelIdInput)
-				try {
-					const runtime = await createAiPlayer({
-						modelId: modelIdInput,
-						name,
-						playerId: aiPlayerId,
-						playerSecret,
-						roomCode,
-						serverUrl: `http://127.0.0.1:${SERVER_PORT}`,
-					})
-					room.aiPlayers.set(aiPlayerId, runtime)
-				} catch (error) {
-					aiModelsByPlayer.delete(aiPlayerId)
-					playerSecrets.delete(rawPlayerId)
-					throw error
-				}
-				span.event("room.ai_seat_assigned", {
-					aiPlayerId,
-					modelId: modelIdInput,
-					name,
-					room: stateSummaryForLog(getRoomState(roomCode)),
-				})
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("removeAiSeat", (aiPlayerId, ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.remove_ai_seat",
-			{ aiPlayerId, playerId },
-			(span) => {
-				const [roomCode, room] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				if (state.hostId !== playerId) {
-					throw new HeartsRuleError("Only the host can remove AI seats.")
-				}
-				if (state.phase !== "lobby") {
-					throw new HeartsRuleError(
-						"AI seats can only be removed before the game starts.",
-					)
-				}
-				const aiPlayer = state.players.find(
-					(candidate) => candidate.id === aiPlayerId && candidate.kind === "ai",
-				)
-				if (aiPlayer === undefined) {
-					throw new HeartsRuleError("That AI seat is not at this table.")
-				}
-				room.aiPlayers.get(aiPlayerId)?.dispose()
-				room.aiPlayers.delete(aiPlayerId)
-				aiModelsByPlayer.delete(aiPlayerId)
-				playerSecrets.delete(aiPlayerId.replace(/^user::/, ""))
-				leaveCurrentRoom(aiPlayerId)
-				span.event("room.ai_seat_removed", {
-					aiPlayer,
-					roomCode,
-				})
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("startGame", (ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.start_game",
-			{ playerId },
-			(span) => {
-				const [roomCode, room] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				const nextState = isOhHellState(state)
-					? startOhHellGame(state, playerId, room.dealRandom.next)
-					: startGame(state, playerId, room.dealRandom.next)
-				setRoomState(roomCode, nextState)
-				span.event("game.dealt", {
-					room: stateSnapshotForLog(nextState),
-				})
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("passCards", (cardIds, ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.pass_cards",
-			{ cardIds, playerId },
-			(span) => {
-				const [roomCode] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				if (isOhHellState(state)) {
-					throw new HeartsRuleError("Oh Hell does not pass cards.")
-				}
-				const payload = parsePassCardsPayload({ cardIds })
-				const nextState = submitPass(state, playerId, payload.cardIds)
-				setRoomState(roomCode, nextState)
-				span.event("game.cards_passed", {
-					direction: state.passDirection,
-					playerId,
-					selectedCards: payload.cardIds.map((cardId) =>
-						cardForLog(state, cardId),
-					),
-					state: stateSummaryForLog(nextState),
-				})
-				if (nextState.phase === "playing") {
-					span.event("game.pass_completed", {
-						room: stateSnapshotForLog(nextState),
-					})
-				}
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("playCard", (cardId, ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.play_card",
-			{ cardId, playerId },
-			(span) => {
-				const [roomCode] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				const payload = parsePlayCardPayload({ cardId })
-				const player = state.players.find(
-					(candidate) => candidate.id === playerId,
-				)
-				const nextState = isOhHellState(state)
-					? playOhHellCard(state, playerId, payload.cardId)
-					: playCard(state, playerId, payload.cardId)
-				setRoomState(roomCode, nextState)
-				span.event("game.card_played", {
-					card: cardForLog(state, payload.cardId),
-					currentTrickBefore: state.currentTrick.map((play) => ({
-						card: cardForLog(state, play.cardId),
-						playerId: play.playerId,
-					})),
-					handSizeBefore: player?.hand.length,
-					playerId,
-					state: stateSummaryForLog(nextState),
-				})
-				if (
-					nextState.lastTrickWinnerId !== state.lastTrickWinnerId ||
-					nextState.phase === "roundComplete" ||
-					nextState.phase === "gameComplete"
-				) {
-					const winner = nextState.players.find(
-						(candidate) => candidate.id === nextState.lastTrickWinnerId,
-					)
-					span.event("game.trick_resolved", {
-						lastTrickWinnerId: nextState.lastTrickWinnerId,
-						state: stateSummaryForLog(nextState),
-						winnerTakenCards:
-							winner !== undefined && "taken" in winner
-								? winner.taken.map((takenCardId) =>
-										cardForLog(nextState, takenCardId),
-									)
-								: undefined,
-					})
-				}
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("submitBid", (bid, ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.submit_bid",
-			{ bid, playerId },
-			(span) => {
-				const [roomCode] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				if (!isOhHellState(state)) {
-					throw new HeartsRuleError("Hearts does not use bidding.")
-				}
-				const nextState = submitOhHellBid(state, playerId, bid)
-				setRoomState(roomCode, nextState)
-				span.event("game.bid_submitted", {
-					bid,
-					playerId,
-					state: stateSummaryForLog(nextState),
-				})
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("requestAiStrategyReview", (aiPlayerId, ack) => {
-		void serverLogger.withRootSpan(
-			"realtime.action.request_ai_strategy_review",
-			{ aiPlayerId, playerId },
-			(span) => {
-				try {
-					const [roomCode, room] = roomForPlayer(playerId)
-					const state = getRoomState(roomCode)
-					if (
-						state.phase !== "roundComplete" &&
-						state.phase !== "gameComplete"
-					) {
-						throw new HeartsRuleError(
-							"Strategy review is available after the round.",
-						)
-					}
-					const aiPlayer = state.players.find(
-						(candidate) =>
-							candidate.id === aiPlayerId && candidate.kind === "ai",
-					)
-					const runtime = room.aiPlayers.get(aiPlayerId)
-					if (aiPlayer === undefined || runtime === undefined) {
-						throw new HeartsRuleError("That AI seat is not at this table.")
-					}
-					const turns = runtime.silo
-						.getState(runtime.state.aiStrategyReviewTurnsAtom)
-						.map((turn) => ({
-							...turn,
-							observation: strategyTextForReview(turn.observation),
-							plan: strategyTextForReview(turn.plan),
-						}))
-					ack({
-						ok: true,
-						review: {
-							modelId: runtime.modelId,
-							playerId: aiPlayer.id,
-							playerName: aiPlayer.name,
-							roundNumber: state.roundNumber,
-							turns,
-						},
-					})
-					span.setAttributes({
-						roomCode,
-						roundNumber: state.roundNumber,
-						turnCount: turns.length,
-					})
-					span.event("ai.strategy_review.provided")
-				} catch (thrown) {
-					const message = actionErrorMessage(thrown)
-					span.setOutcome("error")
-					span.event(
-						"ai.strategy_review.rejected",
-						{ error: thrown, message },
-						"warn",
-					)
-					ack({ ok: false, error: message })
-				}
-			},
-		)
-	})
-
-	socket.on("startNextRound", (ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.start_next_round",
-			{ playerId },
-			(span) => {
-				const [roomCode, room] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				const nextState = isOhHellState(state)
-					? startNextOhHellRound(state, playerId, room.dealRandom.next)
-					: startNextRound(state, playerId, room.dealRandom.next)
-				setRoomState(roomCode, nextState)
-				span.event("game.dealt", {
-					room: stateSnapshotForLog(nextState),
-				})
-				return roomCode
-			},
-		)
-	})
-
-	socket.on("restartGame", (ack) => {
-		acknowledgeAction(
-			ack,
-			"realtime.action.restart_game",
-			{ playerId },
-			(span) => {
-				const [roomCode] = roomForPlayer(playerId)
-				const state = getRoomState(roomCode)
-				const nextState = isOhHellState(state)
-					? restartOhHellGame(state, playerId)
-					: restartGame(state, playerId)
-				setRoomState(roomCode, nextState)
-				span.event("game.restarted", {
-					room: stateSnapshotForLog(nextState),
-				})
 				return roomCode
 			},
 		)

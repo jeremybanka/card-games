@@ -185,23 +185,52 @@ export type AiStrategyReviewResult =
 
 export type AiStrategyReviewAck = (result: AiStrategyReviewResult) => void
 
-export type ClientToServerEvents = {
-	assignAiSeat: (modelId: AiModelId, ack: ActionAck) => void
+export type RoomClientEvents = {
 	createRoom: (playerName: string, gameKind: GameKind, ack: ActionAck) => void
 	joinRoom: (roomCode: string, playerName: string, ack: ActionAck) => void
 	leaveRoom: (ack: ActionAck) => void
-	passCards: (cardIds: CardId[], ack: ActionAck) => void
-	playCard: (cardId: CardId, ack: ActionAck) => void
-	submitBid: (bid: number, ack: ActionAck) => void
+}
+
+export type AiSeatClientEvents = {
+	assignAiSeat: (modelId: AiModelId, ack: ActionAck) => void
 	removeAiSeat: (playerId: PlayerId, ack: ActionAck) => void
 	requestAiStrategyReview: (
 		playerId: PlayerId,
 		ack: AiStrategyReviewAck,
 	) => void
+}
+
+export type PassCardsClientEvents = {
+	passCards: (cardIds: CardId[], ack: ActionAck) => void
+}
+
+export type PlayCardClientEvents = {
+	playCard: (cardId: CardId, ack: ActionAck) => void
+}
+
+export type SubmitBidClientEvents = {
+	submitBid: (bid: number, ack: ActionAck) => void
+}
+
+export type RoundLifecycleClientEvents = {
 	restartGame: (ack: ActionAck) => void
 	startGame: (ack: ActionAck) => void
 	startNextRound: (ack: ActionAck) => void
 }
+
+export type HeartsClientEvents = AiSeatClientEvents &
+	PassCardsClientEvents &
+	PlayCardClientEvents &
+	RoundLifecycleClientEvents
+
+export type OhHellClientEvents = AiSeatClientEvents &
+	PlayCardClientEvents &
+	RoundLifecycleClientEvents &
+	SubmitBidClientEvents
+
+export type ClientToServerEvents = RoomClientEvents &
+	HeartsClientEvents &
+	OhHellClientEvents
 
 export type ServerToClientEvents = {
 	roomClosed: (message: string) => void
