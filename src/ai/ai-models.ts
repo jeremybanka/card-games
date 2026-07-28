@@ -18,7 +18,7 @@ export const OPENAI_HEARTS_MODELS = [
 
 export type AiModelId = (typeof OPENAI_HEARTS_MODELS)[number]["id"]
 
-export const DEFAULT_AI_MODEL_ID: AiModelId = "gpt-5.6-terra"
+export const DEFAULT_AI_MODEL_ID: AiModelId = "gpt-5.6-luna"
 
 export function isAiModelId(input: unknown): input is AiModelId {
 	return OPENAI_HEARTS_MODELS.some((model) => model.id === input)
