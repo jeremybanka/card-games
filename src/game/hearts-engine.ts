@@ -341,13 +341,16 @@ export function dealRound(
 	}
 
 	next.passDirection = passDirectionFor(next.roundNumber, next.players.length)
-	next.currentPlayerId = lowestClubOwner(next)
-	next.trickLeaderId = next.currentPlayerId
 	next.phase = next.passDirection === "hold" ? "playing" : "passing"
-	next.statusMessage =
-		next.passDirection === "hold"
-			? `${next.players.find((player) => player.id === next.currentPlayerId)?.name} leads the lowest club.`
-			: directionLabel(next.passDirection)
+	if (next.phase === "playing") {
+		next.currentPlayerId = lowestClubOwner(next)
+		next.trickLeaderId = next.currentPlayerId
+		next.statusMessage = `${next.players.find((player) => player.id === next.currentPlayerId)?.name} leads the lowest club.`
+	} else {
+		next.currentPlayerId = null
+		next.trickLeaderId = null
+		next.statusMessage = directionLabel(next.passDirection)
+	}
 	return next
 }
 
