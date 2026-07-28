@@ -31,7 +31,7 @@ describe("game table stacking contract", () => {
 		expect(new Set(layers).size).toBe(layerNames.length)
 	})
 
-	it("raises both card-owning ancestors while leaving broad surfaces transparent", () => {
+	it("keeps a permanent hand hit surface while visual cards stay transparent", () => {
 		expect(
 			Array.from(stylesheet.matchAll(/&\[data-card-active\]/g)),
 		).toHaveLength(2)
@@ -42,8 +42,10 @@ describe("game table stacking contract", () => {
 			/> player-hand \{[\s\S]*?z-index: var\(--z-hand\);[\s\S]*?pointer-events: none;[\s\S]*?&\[data-card-active\] \{[\s\S]*?z-index: var\(--z-active-card\);/,
 		)
 		expect(stylesheet).toMatch(
-			/&\[data-hover-active\]:not\(\[data-card-active\]\) \{\s*pointer-events: auto;[\s\S]*?> hand-card \{\s*pointer-events: auto;/,
+			/> hand-hit-surface \{[\s\S]*?right: calc\(min\(var\(--hand-card-width\) \* 0\.671, 2\.48rem\) \* -1\);[\s\S]*?left: calc\(min\(var\(--hand-card-width\) \* 0\.7, 2\.5rem\) \* -1\);[\s\S]*?pointer-events: auto;/,
 		)
+		expect(stylesheet).toMatch(/> hand-card \{[\s\S]*?pointer-events: none;/)
+		expect(stylesheet).not.toContain("[data-hover-active]")
 	})
 
 	it("keeps overlays and transitions above active cards", () => {

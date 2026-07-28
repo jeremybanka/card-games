@@ -508,6 +508,9 @@ describe("recorded player versus Terra table", () => {
 				expect(terraPlayer?.passSelection).toHaveLength(3)
 			})
 			const localHand = screen.getByLabelText("Your hand: 26 cards")
+			const handHitSurface =
+				localHand.querySelector<HTMLElement>("hand-hit-surface")
+			expect(handHitSurface).not.toBeNull()
 			expect(
 				within(localHand).getByLabelText("26 cards in your hand"),
 			).toHaveProperty("textContent", "26")
@@ -537,7 +540,7 @@ describe("recorded player versus Terra table", () => {
 					x: 460,
 					y: 100,
 				})
-			fireEvent.pointerMove(hoveredCardButton, {
+			fireEvent.pointerMove(handHitSurface!, {
 				clientX: 500,
 				clientY: 150,
 				pointerId: 39,
@@ -561,21 +564,12 @@ describe("recorded player versus Terra table", () => {
 			expect((hoveredCardWrapper as HTMLElement | null)?.style.transform).toBe(
 				restingTransform,
 			)
-			fireEvent.pointerLeave(hoveredCardButton, {
-				pointerId: 39,
-				pointerType: "mouse",
-				relatedTarget: localHand,
-			})
-			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
-			expect(localHand.hasAttribute("data-hover-active")).toBe(true)
-			fireEvent.pointerLeave(localHand, {
+			fireEvent.pointerLeave(handHitSurface!, {
 				pointerId: 39,
 				pointerType: "mouse",
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
 			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
-			centeredHoverRect.mockRestore()
-
 			const passZone = screen.getByLabelText(
 				"0 of 3 cards to pass to Terra AI 1",
 			)
@@ -587,9 +581,9 @@ describe("recorded player versus Terra table", () => {
 					}) as HTMLButtonElement
 				).disabled,
 			).toBe(true)
-			fireEvent.pointerDown(hoveredCardButton, {
-				clientX: 100,
-				clientY: 100,
+			fireEvent.pointerDown(handHitSurface!, {
+				clientX: 500,
+				clientY: 150,
 				pointerId: 40,
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
@@ -597,9 +591,9 @@ describe("recorded player versus Terra table", () => {
 			expect(passZone.getAttribute("aria-label")).toBe(
 				"0 of 3 cards to pass to Terra AI 1",
 			)
-			fireEvent.pointerUp(hoveredCardButton, {
-				clientX: 100,
-				clientY: 100,
+			fireEvent.pointerUp(handHitSurface!, {
+				clientX: 500,
+				clientY: 150,
 				pointerId: 40,
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
@@ -607,6 +601,7 @@ describe("recorded player versus Terra table", () => {
 			expect(passZone.getAttribute("aria-label")).toBe(
 				"0 of 3 cards to pass to Terra AI 1",
 			)
+			centeredHoverRect.mockRestore()
 
 			const scrubButtons = within(localHand).getAllByRole("button")
 			const scrubWrappers = Array.from(
@@ -625,13 +620,13 @@ describe("recorded player versus Terra table", () => {
 					y: 100,
 				}),
 			)
-			fireEvent.pointerMove(scrubButtons[0]!, {
+			fireEvent.pointerMove(handHitSurface!, {
 				clientX: 40,
 				clientY: 150,
 				pointerId: 45,
 				pointerType: "mouse",
 			})
-			fireEvent.pointerMove(scrubButtons[0]!, {
+			fireEvent.pointerMove(handHitSurface!, {
 				clientX: 140,
 				clientY: 150,
 				pointerId: 45,
@@ -643,21 +638,13 @@ describe("recorded player versus Terra table", () => {
 			expect(
 				scrubButtons[1]?.closest("playing-card")?.hasAttribute("data-hovered"),
 			).toBe(true)
-			fireEvent.pointerLeave(scrubButtons[0]!, {
-				pointerId: 45,
-				pointerType: "mouse",
-				relatedTarget: scrubButtons[1],
-			})
-			expect(
-				scrubButtons[1]?.closest("playing-card")?.hasAttribute("data-hovered"),
-			).toBe(true)
-			fireEvent.pointerLeave(localHand, {
+			fireEvent.pointerLeave(handHitSurface!, {
 				pointerId: 45,
 				pointerType: "mouse",
 			})
 			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
 
-			fireEvent.pointerDown(scrubButtons[0]!, {
+			fireEvent.pointerDown(handHitSurface!, {
 				clientX: 40,
 				clientY: 150,
 				pointerId: 44,
@@ -665,7 +652,7 @@ describe("recorded player versus Terra table", () => {
 			expect(
 				scrubButtons[0]?.closest("playing-card")?.hasAttribute("data-hovered"),
 			).toBe(true)
-			fireEvent.pointerMove(scrubButtons[0]!, {
+			fireEvent.pointerMove(handHitSurface!, {
 				clientX: 140,
 				clientY: 150,
 				pointerId: 44,
@@ -677,31 +664,34 @@ describe("recorded player versus Terra table", () => {
 			expect(
 				scrubButtons[1]?.closest("playing-card")?.hasAttribute("data-hovered"),
 			).toBe(true)
-			fireEvent.pointerUp(scrubButtons[0]!, {
+			fireEvent.pointerUp(handHitSurface!, {
 				clientX: 140,
 				clientY: 150,
 				pointerId: 44,
 			})
 			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
-			for (const spy of scrubRectSpies) spy.mockRestore()
 			await new Promise((resolve) => window.setTimeout(resolve, 0))
 
-			fireEvent.pointerDown(hoveredCardButton, {
-				clientX: 100,
-				clientY: 100,
+			const hoveredScrubRect = (
+				hoveredCardWrapper as HTMLElement
+			).getBoundingClientRect()
+			const hoveredScrubX = (hoveredScrubRect.left + hoveredScrubRect.right) / 2
+			fireEvent.pointerDown(handHitSurface!, {
+				clientX: hoveredScrubX,
+				clientY: 150,
 				pointerId: 41,
 			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
-			fireEvent.pointerMove(hoveredCardButton, {
-				clientX: 100,
-				clientY: 40,
+			fireEvent.pointerMove(handHitSurface!, {
+				clientX: hoveredScrubX,
+				clientY: 90,
 				pointerId: 41,
 			})
 			expect(gestureTable?.getAttribute("data-card-gesture")).toBe("dragging")
 			expect(localHand.querySelector("playing-card[data-hovered]")).toBeNull()
 			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
 			expect(localHand.hasAttribute("data-card-active")).toBe(true)
-			fireEvent.pointerUp(hoveredCardButton, {
+			fireEvent.pointerUp(handHitSurface!, {
 				clientX: 500,
 				clientY: 300,
 				pointerId: 41,
@@ -723,7 +713,7 @@ describe("recorded player versus Terra table", () => {
 				x: 50,
 				y: 0,
 			})
-			vi.spyOn(localHand, "getBoundingClientRect").mockReturnValue({
+			vi.spyOn(handHitSurface!, "getBoundingClientRect").mockReturnValue({
 				bottom: 400,
 				height: 200,
 				left: 0,
@@ -734,18 +724,18 @@ describe("recorded player versus Terra table", () => {
 				x: 0,
 				y: 200,
 			})
-			fireEvent.pointerDown(hoveredCardButton, {
-				clientX: 100,
-				clientY: 100,
+			fireEvent.pointerDown(handHitSurface!, {
+				clientX: hoveredScrubX,
+				clientY: 150,
 				pointerId: 42,
 			})
-			fireEvent.pointerMove(hoveredCardButton, {
+			fireEvent.pointerMove(handHitSurface!, {
 				clientX: 150,
 				clientY: 40,
 				pointerId: 42,
 			})
 			expect(localHand.hasAttribute("data-card-active")).toBe(true)
-			fireEvent.pointerUp(hoveredCardButton, {
+			fireEvent.pointerUp(handHitSurface!, {
 				clientX: 150,
 				clientY: 40,
 				pointerId: 42,
@@ -754,6 +744,7 @@ describe("recorded player versus Terra table", () => {
 				"1 of 3 cards to pass to Terra AI 1",
 			)
 			expect(localHand.hasAttribute("data-card-active")).toBe(false)
+			for (const spy of scrubRectSpies) spy.mockRestore()
 			const passCardButton = within(passZone).getByRole("button", {
 				name: "A of clubs",
 			})
@@ -918,6 +909,8 @@ describe("recorded player versus Terra table", () => {
 					})
 				} else if (cardName === "2 of clubs") {
 					const playingHand = cardButton.closest("player-hand")
+					const playingSurface =
+						playingHand?.querySelector<HTMLElement>("hand-hit-surface")
 					const playingCard = cardButton.closest("playing-card")
 					const playableWrapper = cardButton.closest<HTMLElement>("hand-card")
 					const disabledWrapper = [
@@ -930,10 +923,9 @@ describe("recorded player versus Terra table", () => {
 					)
 					const disabledNeighbor =
 						disabledWrapper?.querySelector("playing-card")
-					const disabledButton =
-						disabledNeighbor?.querySelector<HTMLButtonElement>("button")
 					expect(tableCenter.getAttribute("data-dropzone")).toBe("trick")
 					expect(playingHand).not.toBeNull()
+					expect(playingSurface).not.toBeNull()
 					expect(playableWrapper?.hasAttribute("data-disabled")).toBe(false)
 					expect(cardButton.disabled).toBe(false)
 					expect(disabledWrapper).not.toBeNull()
@@ -947,15 +939,15 @@ describe("recorded player versus Terra table", () => {
 					expect(disabledNeighbor).not.toBeNull()
 					const seamClientX = 170
 					const handRect = vi
-						.spyOn(playingHand!, "getBoundingClientRect")
+						.spyOn(playingSurface!, "getBoundingClientRect")
 						.mockReturnValue({
 							bottom: 210,
 							height: 120,
 							left: 0,
-							right: 150,
+							right: 220,
 							toJSON: () => ({}),
 							top: 90,
-							width: 150,
+							width: 220,
 							x: 0,
 							y: 90,
 						})
@@ -987,7 +979,7 @@ describe("recorded player versus Terra table", () => {
 						})
 					expect(seamClientX).toBeGreaterThan(150)
 					expect(seamClientX).toBeLessThan(210)
-					fireEvent.pointerMove(cardButton, {
+					fireEvent.pointerMove(playingSurface!, {
 						clientX: 100,
 						clientY: 180,
 						pointerId: 50,
@@ -995,9 +987,9 @@ describe("recorded player versus Terra table", () => {
 					})
 					expect(playingCard?.hasAttribute("data-hovered")).toBe(true)
 					expect(disabledNeighbor?.hasAttribute("data-hovered")).toBe(false)
-					fireEvent.pointerLeave(playingHand!)
+					fireEvent.pointerLeave(playingSurface!)
 					expect(playingCard?.hasAttribute("data-hovered")).toBe(false)
-					fireEvent.pointerMove(disabledButton!, {
+					fireEvent.pointerMove(playingSurface!, {
 						clientX: seamClientX,
 						clientY: 190,
 						pointerId: 50,
@@ -1005,19 +997,15 @@ describe("recorded player versus Terra table", () => {
 					})
 					expect(playingCard?.hasAttribute("data-hovered")).toBe(true)
 					expect(disabledNeighbor?.hasAttribute("data-hovered")).toBe(false)
-					handRect.mockRestore()
-					playableRect.mockRestore()
-					disabledRect.mockRestore()
-
-					fireEvent.pointerDown(cardButton, {
-						clientX: 0,
-						clientY: 100,
+					fireEvent.pointerDown(playingSurface!, {
+						clientX: 100,
+						clientY: 150,
 						pointerId: 1,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBe("picking")
-					fireEvent.pointerMove(cardButton, {
-						clientX: 30,
-						clientY: 80,
+					fireEvent.pointerMove(playingSurface!, {
+						clientX: 130,
+						clientY: 130,
 						pointerId: 1,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBe("picking")
@@ -1029,13 +1017,13 @@ describe("recorded player versus Terra table", () => {
 						(cardButton.closest("playing-card") as HTMLElement | null)?.dataset
 							.cardId,
 					)
-					fireEvent.pointerMove(cardButton, {
-						clientX: 35,
-						clientY: 0,
+					fireEvent.pointerMove(playingSurface!, {
+						clientX: 135,
+						clientY: 50,
 						pointerId: 1,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBe("dragging")
-					fireEvent.pointerUp(cardButton, {
+					fireEvent.pointerUp(playingSurface!, {
 						// This point is inside table-center but outside trick-center.
 						clientX: 20,
 						clientY: 0,
@@ -1045,24 +1033,46 @@ describe("recorded player versus Terra table", () => {
 					await waitFor(() => {
 						expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
 					})
+					handRect.mockRestore()
+					playableRect.mockRestore()
+					disabledRect.mockRestore()
 				} else if (cardName === "4 of clubs") {
-					fireEvent.pointerDown(cardButton, {
-						clientX: 0,
-						clientY: 100,
+					const playingHand = cardButton.closest("player-hand")
+					const playingSurface =
+						playingHand?.querySelector<HTMLElement>("hand-hit-surface")
+					const playingWrapper = cardButton.closest<HTMLElement>("hand-card")
+					expect(playingSurface).not.toBeNull()
+					const playingRect = vi
+						.spyOn(playingWrapper!, "getBoundingClientRect")
+						.mockReturnValue({
+							bottom: 200,
+							height: 100,
+							left: 60,
+							right: 140,
+							toJSON: () => ({}),
+							top: 100,
+							width: 80,
+							x: 60,
+							y: 100,
+						})
+					fireEvent.pointerDown(playingSurface!, {
+						clientX: 100,
+						clientY: 150,
 						pointerId: 2,
 					})
-					fireEvent.pointerMove(cardButton, {
-						clientX: 35,
-						clientY: 0,
+					fireEvent.pointerMove(playingSurface!, {
+						clientX: 135,
+						clientY: 50,
 						pointerId: 2,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBe("dragging")
-					fireEvent.pointerUp(cardButton, {
+					fireEvent.pointerUp(playingSurface!, {
 						clientX: 500,
 						clientY: 300,
 						pointerId: 2,
 					})
 					expect(gameTable?.getAttribute("data-card-gesture")).toBeNull()
+					playingRect.mockRestore()
 					expect(
 						screen
 							.getByRole("button", { name: cardName })
