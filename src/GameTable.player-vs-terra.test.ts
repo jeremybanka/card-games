@@ -930,6 +930,8 @@ describe("recorded player versus Terra table", () => {
 					)
 					const disabledNeighbor =
 						disabledWrapper?.querySelector("playing-card")
+					const disabledButton =
+						disabledNeighbor?.querySelector<HTMLButtonElement>("button")
 					expect(tableCenter.getAttribute("data-dropzone")).toBe("trick")
 					expect(playingHand).not.toBeNull()
 					expect(playableWrapper?.hasAttribute("data-disabled")).toBe(false)
@@ -943,6 +945,20 @@ describe("recorded player versus Terra table", () => {
 						)?.disabled,
 					).toBe(true)
 					expect(disabledNeighbor).not.toBeNull()
+					const seamClientX = 170
+					const handRect = vi
+						.spyOn(playingHand!, "getBoundingClientRect")
+						.mockReturnValue({
+							bottom: 210,
+							height: 120,
+							left: 0,
+							right: 150,
+							toJSON: () => ({}),
+							top: 90,
+							width: 150,
+							x: 0,
+							y: 90,
+						})
 					const playableRect = vi
 						.spyOn(playableWrapper!, "getBoundingClientRect")
 						.mockReturnValue({
@@ -969,6 +985,8 @@ describe("recorded player versus Terra table", () => {
 							x: 130,
 							y: 100,
 						})
+					expect(seamClientX).toBeGreaterThan(150)
+					expect(seamClientX).toBeLessThan(210)
 					fireEvent.pointerMove(cardButton, {
 						clientX: 100,
 						clientY: 180,
@@ -979,14 +997,15 @@ describe("recorded player versus Terra table", () => {
 					expect(disabledNeighbor?.hasAttribute("data-hovered")).toBe(false)
 					fireEvent.pointerLeave(playingHand!)
 					expect(playingCard?.hasAttribute("data-hovered")).toBe(false)
-					fireEvent.pointerMove(playingHand!, {
-						clientX: 170,
+					fireEvent.pointerMove(disabledButton!, {
+						clientX: seamClientX,
 						clientY: 190,
 						pointerId: 50,
 						pointerType: "mouse",
 					})
 					expect(playingCard?.hasAttribute("data-hovered")).toBe(true)
 					expect(disabledNeighbor?.hasAttribute("data-hovered")).toBe(false)
+					handRect.mockRestore()
 					playableRect.mockRestore()
 					disabledRect.mockRestore()
 

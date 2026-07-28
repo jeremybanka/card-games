@@ -675,6 +675,10 @@ game-table.class {
 
 			&[data-hover-active]:not([data-card-active]) {
 				pointer-events: auto;
+
+				> hand-card {
+					pointer-events: auto;
+				}
 			}
 
 			> hand-card {
