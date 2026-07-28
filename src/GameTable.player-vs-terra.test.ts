@@ -470,7 +470,14 @@ describe("recorded player versus Terra table", () => {
 		try {
 			await screen.findByRole("heading", { name: roomCode })
 
-			fireEvent.change(
+			expect(
+				(
+					screen.getByRole("combobox", {
+						name: "OpenAI opponent",
+					}) as HTMLSelectElement
+				).value,
+			).toBe("gpt-5.6-luna")
+			fireEvent.input(
 				screen.getByRole("combobox", { name: "OpenAI opponent" }),
 				{ target: { value: "gpt-5.6-terra" } },
 			)
