@@ -673,6 +673,10 @@ game-table.class {
 				}
 			}
 
+			&[data-hover-active]:not([data-card-active]) {
+				pointer-events: auto;
+			}
+
 			> hand-card {
 				position: absolute;
 				z-index: var(--fan-index);

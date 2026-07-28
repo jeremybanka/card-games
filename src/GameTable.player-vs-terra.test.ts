@@ -917,6 +917,79 @@ describe("recorded player versus Terra table", () => {
 						).toBe(true)
 					})
 				} else if (cardName === "2 of clubs") {
+					const playingHand = cardButton.closest("player-hand")
+					const playingCard = cardButton.closest("playing-card")
+					const playableWrapper = cardButton.closest<HTMLElement>("hand-card")
+					const disabledWrapper = [
+						playableWrapper?.previousElementSibling,
+						playableWrapper?.nextElementSibling,
+					].find(
+						(element): element is HTMLElement =>
+							element instanceof HTMLElement &&
+							element.matches("hand-card[data-disabled]"),
+					)
+					const disabledNeighbor =
+						disabledWrapper?.querySelector("playing-card")
+					expect(tableCenter.getAttribute("data-dropzone")).toBe("trick")
+					expect(playingHand).not.toBeNull()
+					expect(playableWrapper?.hasAttribute("data-disabled")).toBe(false)
+					expect(cardButton.disabled).toBe(false)
+					expect(disabledWrapper).not.toBeNull()
+					expect(
+						(
+							disabledWrapper?.querySelector(
+								"button",
+							) as HTMLButtonElement | null
+						)?.disabled,
+					).toBe(true)
+					expect(disabledNeighbor).not.toBeNull()
+					const playableRect = vi
+						.spyOn(playableWrapper!, "getBoundingClientRect")
+						.mockReturnValue({
+							bottom: 200,
+							height: 100,
+							left: 60,
+							right: 140,
+							toJSON: () => ({}),
+							top: 100,
+							width: 80,
+							x: 60,
+							y: 100,
+						})
+					const disabledRect = vi
+						.spyOn(disabledWrapper!, "getBoundingClientRect")
+						.mockReturnValue({
+							bottom: 200,
+							height: 100,
+							left: 130,
+							right: 210,
+							toJSON: () => ({}),
+							top: 100,
+							width: 80,
+							x: 130,
+							y: 100,
+						})
+					fireEvent.pointerMove(cardButton, {
+						clientX: 100,
+						clientY: 180,
+						pointerId: 50,
+						pointerType: "mouse",
+					})
+					expect(playingCard?.hasAttribute("data-hovered")).toBe(true)
+					expect(disabledNeighbor?.hasAttribute("data-hovered")).toBe(false)
+					fireEvent.pointerLeave(playingHand!)
+					expect(playingCard?.hasAttribute("data-hovered")).toBe(false)
+					fireEvent.pointerMove(playingHand!, {
+						clientX: 170,
+						clientY: 190,
+						pointerId: 50,
+						pointerType: "mouse",
+					})
+					expect(playingCard?.hasAttribute("data-hovered")).toBe(true)
+					expect(disabledNeighbor?.hasAttribute("data-hovered")).toBe(false)
+					playableRect.mockRestore()
+					disabledRect.mockRestore()
+
 					fireEvent.pointerDown(cardButton, {
 						clientX: 0,
 						clientY: 100,

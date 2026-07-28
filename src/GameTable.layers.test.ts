@@ -41,6 +41,9 @@ describe("game table stacking contract", () => {
 		expect(stylesheet).toMatch(
 			/> player-hand \{[\s\S]*?z-index: var\(--z-hand\);[\s\S]*?pointer-events: none;[\s\S]*?&\[data-card-active\] \{[\s\S]*?z-index: var\(--z-active-card\);/,
 		)
+		expect(stylesheet).toMatch(
+			/&\[data-hover-active\]:not\(\[data-card-active\]\) \{\s*pointer-events: auto;/,
+		)
 	})
 
 	it("keeps overlays and transitions above active cards", () => {

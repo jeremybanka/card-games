@@ -670,6 +670,7 @@ function PlayerZone({
 	onDragMove,
 	onDragStart,
 	onHoverEnd,
+	onHoverMove,
 	onSelectCard,
 	onSubmitPass,
 	passSelection,
@@ -705,6 +706,7 @@ function PlayerZone({
 		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
 	) => void
 	onHoverEnd: () => void
+	onHoverMove: (hand: HTMLElement, clientX: number) => void
 	onSelectCard: (cardId: CardId, keyboard: boolean) => void
 	onSubmitPass: () => void
 	passSelection: CardId[]
@@ -832,6 +834,9 @@ function PlayerZone({
 					}
 					onHoverEnd()
 				}}
+				onPointerMove={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+					onHoverMove(event.currentTarget, event.clientX)
+				}
 			>
 				{handCards.map((card, index) => {
 					const selected = selectedCard === card.id
@@ -1500,23 +1505,17 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					})
 				}}
 				onHoverEnd={() => setHoveredCard(null)}
-				onDragMove={(_card, event) => {
-					if (pointerOrigin.current === null) {
-						const closest = closestHandCard(
-							handCardCandidates(event.currentTarget),
-							event.clientX,
-						)
-						const cardId = closest?.dataset.cardId as CardId | undefined
-						const button = closest?.querySelector<HTMLElement>("button")
-						if (
-							cardId !== undefined &&
-							button !== null &&
-							button !== undefined
-						) {
-							setHoveredCard(hoveredCardFromElement(cardId, button))
-						}
-						return
+				onHoverMove={(hand, clientX) => {
+					if (pointerOrigin.current !== null) return
+					const closest = closestHandCard(handCardCandidates(hand), clientX)
+					const cardId = closest?.dataset.cardId as CardId | undefined
+					const button = closest?.querySelector<HTMLElement>("button")
+					if (cardId !== undefined && button !== null && button !== undefined) {
+						setHoveredCard(hoveredCardFromElement(cardId, button))
 					}
+				}}
+				onDragMove={(_card, event) => {
+					if (pointerOrigin.current === null) return
 					const x = event.clientX - pointerOrigin.current.x
 					const y = event.clientY - pointerOrigin.current.y
 					const moved = Math.hypot(x, y) > 8
