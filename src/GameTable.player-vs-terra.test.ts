@@ -537,7 +537,12 @@ describe("recorded player versus Terra table", () => {
 					x: 460,
 					y: 100,
 				})
-			fireEvent.pointerEnter(hoveredCardButton)
+			fireEvent.pointerMove(hoveredCardButton, {
+				clientX: 500,
+				clientY: 150,
+				pointerId: 39,
+				pointerType: "mouse",
+			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
 			expect(localHand.hasAttribute("data-hover-active")).toBe(true)
 			expect(
@@ -556,7 +561,17 @@ describe("recorded player versus Terra table", () => {
 			expect((hoveredCardWrapper as HTMLElement | null)?.style.transform).toBe(
 				restingTransform,
 			)
-			fireEvent.pointerLeave(hoveredCardButton)
+			fireEvent.pointerLeave(hoveredCardButton, {
+				pointerId: 39,
+				pointerType: "mouse",
+				relatedTarget: localHand,
+			})
+			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(true)
+			expect(localHand.hasAttribute("data-hover-active")).toBe(true)
+			fireEvent.pointerLeave(localHand, {
+				pointerId: 39,
+				pointerType: "mouse",
+			})
 			expect(hoveredCard?.hasAttribute("data-hovered")).toBe(false)
 			expect(localHand.hasAttribute("data-hover-active")).toBe(false)
 			centeredHoverRect.mockRestore()
@@ -610,7 +625,7 @@ describe("recorded player versus Terra table", () => {
 					y: 100,
 				}),
 			)
-			fireEvent.pointerEnter(scrubButtons[0]!, {
+			fireEvent.pointerMove(scrubButtons[0]!, {
 				clientX: 40,
 				clientY: 150,
 				pointerId: 45,

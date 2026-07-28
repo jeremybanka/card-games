@@ -224,7 +224,6 @@ function PlayingCard({
 	onDragMove,
 	onDragCancel,
 	onDragStart,
-	onHoverChange,
 	onSelect,
 	hoverOffset,
 	selected = false,
@@ -241,7 +240,6 @@ function PlayingCard({
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragCancel: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragStart: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
-	onHoverChange?: (hovered: boolean, element: HTMLButtonElement) => void
 	onSelect: (event: JSX.TargetedMouseEvent<HTMLButtonElement>) => void
 	hoverOffset?:
 		| {
@@ -291,8 +289,6 @@ function PlayingCard({
 				aria-pressed={selected}
 				disabled={disabled}
 				onClick={onSelect}
-				onPointerEnter={(event) => onHoverChange?.(true, event.currentTarget)}
-				onPointerLeave={(event) => onHoverChange?.(false, event.currentTarget)}
 				onPointerCancel={onDragCancel}
 				onPointerDown={onDragStart}
 				onPointerMove={onDragMove}
@@ -673,7 +669,7 @@ function PlayerZone({
 	onDragEnd,
 	onDragMove,
 	onDragStart,
-	onHoverCard,
+	onHoverEnd,
 	onSelectCard,
 	onSubmitPass,
 	passSelection,
@@ -708,7 +704,7 @@ function PlayerZone({
 		card: VisibleCard,
 		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
 	) => void
-	onHoverCard: (cardId: CardId | null, element?: HTMLElement) => void
+	onHoverEnd: () => void
 	onSelectCard: (cardId: CardId, keyboard: boolean) => void
 	onSubmitPass: () => void
 	passSelection: CardId[]
@@ -834,7 +830,7 @@ function PlayerZone({
 					) {
 						return
 					}
-					onHoverCard(null)
+					onHoverEnd()
 				}}
 			>
 				{handCards.map((card, index) => {
@@ -878,9 +874,6 @@ function PlayerZone({
 								onDragEnd={(event) => onDragEnd(card, event)}
 								onDragMove={(event) => onDragMove(card, event)}
 								onDragStart={(event) => onDragStart(card, event)}
-								onHoverChange={(hovered, element) =>
-									onHoverCard(card.id, hovered ? element : undefined)
-								}
 								onSelect={(event) => onSelectCard(card.id, event.detail === 0)}
 								hoverOffset={
 									!hovered
@@ -1506,19 +1499,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						y: 0,
 					})
 				}}
-				onHoverCard={(cardId, element) => {
-					if (cardId === null) {
-						setHoveredCard(null)
-						return
-					}
-					if (element === undefined) {
-						setHoveredCard((current) =>
-							current?.cardId === cardId ? null : current,
-						)
-						return
-					}
-					setHoveredCard(hoveredCardFromElement(cardId, element))
-				}}
+				onHoverEnd={() => setHoveredCard(null)}
 				onDragMove={(_card, event) => {
 					if (pointerOrigin.current === null) {
 						const closest = closestHandCard(
