@@ -140,6 +140,25 @@ function closestHandCard(
 	)
 }
 
+function handCardAtPoint(
+	candidates: readonly HTMLElement[],
+	clientX: number,
+	clientY: number,
+): HTMLElement | null {
+	return closestHandCard(
+		candidates.filter((candidate) => {
+			const rect = candidate.getBoundingClientRect()
+			return (
+				clientX >= rect.left &&
+				clientX <= rect.right &&
+				clientY >= rect.top &&
+				clientY <= rect.bottom
+			)
+		}),
+		clientX,
+	)
+}
+
 function suitMark(suit: Suit): string {
 	switch (suit) {
 		case "clubs":
@@ -224,7 +243,6 @@ function PlayingCard({
 	onDragMove,
 	onDragCancel,
 	onDragStart,
-	onHoverChange,
 	onSelect,
 	hoverOffset,
 	selected = false,
@@ -241,7 +259,6 @@ function PlayingCard({
 	onDragMove: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragCancel: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
 	onDragStart: (event: JSX.TargetedPointerEvent<HTMLButtonElement>) => void
-	onHoverChange?: (hovered: boolean, element: HTMLButtonElement) => void
 	onSelect: (event: JSX.TargetedMouseEvent<HTMLButtonElement>) => void
 	hoverOffset?:
 		| {
@@ -291,8 +308,6 @@ function PlayingCard({
 				aria-pressed={selected}
 				disabled={disabled}
 				onClick={onSelect}
-				onPointerEnter={(event) => onHoverChange?.(true, event.currentTarget)}
-				onPointerLeave={(event) => onHoverChange?.(false, event.currentTarget)}
 				onPointerCancel={onDragCancel}
 				onPointerDown={onDragStart}
 				onPointerMove={onDragMove}
@@ -673,7 +688,8 @@ function PlayerZone({
 	onDragEnd,
 	onDragMove,
 	onDragStart,
-	onHoverCard,
+	onHoverEnd,
+	onHoverMove,
 	onSelectCard,
 	onSubmitPass,
 	passSelection,
@@ -694,21 +710,22 @@ function PlayerZone({
 	manualPlayDisabled: boolean
 	onDragCancel: (
 		card: VisibleCard,
-		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
+		event: JSX.TargetedPointerEvent<HTMLElement>,
 	) => void
 	onDragEnd: (
 		card: VisibleCard,
-		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
+		event: JSX.TargetedPointerEvent<HTMLElement>,
 	) => void
 	onDragMove: (
 		card: VisibleCard,
-		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
+		event: JSX.TargetedPointerEvent<HTMLElement>,
 	) => void
 	onDragStart: (
 		card: VisibleCard,
-		event: JSX.TargetedPointerEvent<HTMLButtonElement>,
+		event: JSX.TargetedPointerEvent<HTMLElement>,
 	) => void
-	onHoverCard: (cardId: CardId | null, element?: HTMLElement) => void
+	onHoverEnd: () => void
+	onHoverMove: (hand: HTMLElement, clientX: number) => void
 	onSelectCard: (cardId: CardId, keyboard: boolean) => void
 	onSubmitPass: () => void
 	passSelection: CardId[]
@@ -732,6 +749,24 @@ function PlayerZone({
 		? visibleCards.filter((card) => !passSelection.includes(card.id))
 		: visibleCards
 	const passAction = passActionLabel(game.passDirection, passRecipientName)
+	const cardFromHandPointer = (
+		element: HTMLElement,
+		clientX: number,
+		clientY?: number,
+	): VisibleCard | undefined => {
+		const candidates = handCardCandidates(element)
+		const wrapper =
+			clientY === undefined
+				? closestHandCard(candidates, clientX)
+				: handCardAtPoint(candidates, clientX, clientY)
+		return handCards.find((card) => card.id === wrapper?.dataset.cardId)
+	}
+	const gestureCard = (
+		element: HTMLElement,
+		clientX: number,
+	): VisibleCard | undefined =>
+		handCards.find((card) => card.id === dragState?.cardId) ??
+		cardFromHandPointer(element, clientX)
 	return (
 		<player-zone
 			data-current={game.currentPlayerId === myPlayer.id || undefined}
@@ -827,16 +862,40 @@ function PlayerZone({
 				data-hover-active={
 					handCards.some((card) => hoveredCard?.cardId === card.id) || undefined
 				}
-				onPointerLeave={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
-					if (
-						event.relatedTarget instanceof Node &&
-						event.currentTarget.contains(event.relatedTarget)
-					) {
-						return
-					}
-					onHoverCard(null)
-				}}
 			>
+				<hand-hit-surface
+					aria-hidden="true"
+					onClick={(event: JSX.TargetedMouseEvent<HTMLElement>) => {
+						const card = cardFromHandPointer(
+							event.currentTarget,
+							event.clientX,
+							event.clientY,
+						)
+						if (card !== undefined) onSelectCard(card.id, false)
+					}}
+					onPointerCancel={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
+						const card = gestureCard(event.currentTarget, event.clientX)
+						if (card !== undefined) onDragCancel(card, event)
+					}}
+					onPointerDown={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
+						const card = cardFromHandPointer(
+							event.currentTarget,
+							event.clientX,
+							event.clientY,
+						)
+						if (card !== undefined) onDragStart(card, event)
+					}}
+					onPointerLeave={() => onHoverEnd()}
+					onPointerMove={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
+						onHoverMove(event.currentTarget, event.clientX)
+						const card = gestureCard(event.currentTarget, event.clientX)
+						if (card !== undefined) onDragMove(card, event)
+					}}
+					onPointerUp={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
+						const card = gestureCard(event.currentTarget, event.clientX)
+						if (card !== undefined) onDragEnd(card, event)
+					}}
+				/>
 				{handCards.map((card, index) => {
 					const selected = selectedCard === card.id
 					const layout = handCardLayout(handCards.length, index)
@@ -878,9 +937,6 @@ function PlayerZone({
 								onDragEnd={(event) => onDragEnd(card, event)}
 								onDragMove={(event) => onDragMove(card, event)}
 								onDragStart={(event) => onDragStart(card, event)}
-								onHoverChange={(hovered, element) =>
-									onHoverCard(card.id, hovered ? element : undefined)
-								}
 								onSelect={(event) => onSelectCard(card.id, event.detail === 0)}
 								hoverOffset={
 									!hovered
@@ -1490,9 +1546,13 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					draggingCardId.current = card.id
 					dragOriginZone.current =
 						event.currentTarget.closest("pass-zone") === null ? "hand" : "pass"
+					const hoverElement =
+						handCardCandidates(event.currentTarget)
+							.find((candidate) => candidate.dataset.cardId === card.id)
+							?.querySelector<HTMLElement>("button") ?? event.currentTarget
 					setHoveredCard(
 						dragOriginZone.current === "hand"
-							? hoveredCardFromElement(card.id, event.currentTarget)
+							? hoveredCardFromElement(card.id, hoverElement)
 							: null,
 					)
 					dragPhase.current = "picking"
@@ -1506,36 +1566,18 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						y: 0,
 					})
 				}}
-				onHoverCard={(cardId, element) => {
-					if (cardId === null) {
-						setHoveredCard(null)
-						return
+				onHoverEnd={() => setHoveredCard(null)}
+				onHoverMove={(hand, clientX) => {
+					if (pointerOrigin.current !== null) return
+					const closest = closestHandCard(handCardCandidates(hand), clientX)
+					const cardId = closest?.dataset.cardId as CardId | undefined
+					const button = closest?.querySelector<HTMLElement>("button")
+					if (cardId !== undefined && button !== null && button !== undefined) {
+						setHoveredCard(hoveredCardFromElement(cardId, button))
 					}
-					if (element === undefined) {
-						setHoveredCard((current) =>
-							current?.cardId === cardId ? null : current,
-						)
-						return
-					}
-					setHoveredCard(hoveredCardFromElement(cardId, element))
 				}}
 				onDragMove={(_card, event) => {
-					if (pointerOrigin.current === null) {
-						const closest = closestHandCard(
-							handCardCandidates(event.currentTarget),
-							event.clientX,
-						)
-						const cardId = closest?.dataset.cardId as CardId | undefined
-						const button = closest?.querySelector<HTMLElement>("button")
-						if (
-							cardId !== undefined &&
-							button !== null &&
-							button !== undefined
-						) {
-							setHoveredCard(hoveredCardFromElement(cardId, button))
-						}
-						return
-					}
+					if (pointerOrigin.current === null) return
 					const x = event.clientX - pointerOrigin.current.x
 					const y = event.clientY - pointerOrigin.current.y
 					const moved = Math.hypot(x, y) > 8
@@ -1639,7 +1681,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						event.clientY >= passRect.top &&
 						event.clientY <= passRect.bottom
 					const handRect = document
-						.querySelector("player-hand")
+						.querySelector("hand-hit-surface")
 						?.getBoundingClientRect()
 					const releasedOverHand =
 						handRect !== undefined &&
