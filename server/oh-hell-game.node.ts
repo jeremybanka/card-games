@@ -6,8 +6,8 @@ import {
 } from "./game-controller.node.ts"
 import {
 	cardForLog,
-	trickTakingStateSnapshotForLog,
-	trickTakingStateSummaryForLog,
+	ohHellStateSnapshotForLog,
+	ohHellStateSummaryForLog,
 } from "./trick-taking-log.node.ts"
 import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
 
@@ -170,6 +170,6 @@ export const ohHellGame: Game<
 	kind: "ohHell",
 	privateView: toOhHellPrivatePlayerView,
 	publicView: toOhHellPublicGameView,
-	stateSnapshotForLog: trickTakingStateSnapshotForLog,
-	stateSummaryForLog: trickTakingStateSummaryForLog,
+	stateSnapshotForLog: ohHellStateSnapshotForLog,
+	stateSummaryForLog: ohHellStateSummaryForLog,
 }

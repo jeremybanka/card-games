@@ -1,11 +1,12 @@
 import type { AiModelId } from "../ai/ai-models.ts"
+import type { GameKind } from "./game-kinds.ts"
+
+export type { GameKind } from "./game-kinds.ts"
 
 export type Suit = "clubs" | "diamonds" | "spades" | "hearts"
 export type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14
 export type CardId = `card::${string}`
 export type PlayerId = `user::${string}`
-export type GameKind = "hearts" | "ohHell"
-
 export type CardValue = {
 	rank: Rank
 	suit: Suit

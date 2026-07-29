@@ -1,28 +1,30 @@
 import { chooseHeartsAutoPlayCard } from "../game/hearts-auto-play.ts"
-import type { CardId, GameKind, VisibleCard } from "../game/game-types.ts"
+import type {
+	CardId,
+	GameKind,
+	OhHellPublicGameView,
+	VisibleCard,
+} from "../game/game-types.ts"
 import type { AiGameContext } from "./ai-game-facts.ts"
 
 type AiGameStrategy = {
 	choosePlay: (context: AiGameContext) => CardId
+	outputDescription: string
+	outputName: string
 	playPlan: string
 	systemPrompt: string
 }
 
 function chooseOhHellPlay(context: AiGameContext): CardId {
+	const publicView = context.publicView as OhHellPublicGameView
 	const legalCards = context.privateView.cards.filter((card) =>
 		context.privateView.playableCardIds.includes(card.id),
 	)
 	if (legalCards.length === 0) throw new Error("The AI has no legal card.")
-	const me = context.publicView.players.find(
-		(player) => player.id === context.playerId,
-	)
+	const me = publicView.players.find((player) => player.id === context.playerId)
 	const needsTrick = (me?.tricksWon ?? 0) < (me?.bid ?? 0)
 	const cardStrength = (card: VisibleCard): number => {
-		const trumpBonus =
-			context.publicView.gameKind === "ohHell" &&
-			card.suit === context.publicView.trumpSuit
-				? 100
-				: 0
+		const trumpBonus = card.suit === publicView.trumpSuit ? 100 : 0
 		return trumpBonus + card.rank
 	}
 	const selected = [...legalCards].sort((left, right) =>
@@ -51,6 +53,9 @@ const strategies: Record<GameKind, AiGameStrategy> = {
 				context.privateView.playableCardIds,
 				context.publicView.currentTrick,
 			),
+		outputDescription:
+			"A legal Hearts action plus a private observation and strategic plan.",
+		outputName: "hearts_turn_decision",
 		playPlan:
 			"Avoid taking point-heavy tricks when possible and discard dangerous cards when void.",
 		systemPrompt: [
@@ -68,6 +73,9 @@ const strategies: Record<GameKind, AiGameStrategy> = {
 	},
 	ohHell: {
 		choosePlay: chooseOhHellPlay,
+		outputDescription:
+			"A legal Oh Hell action plus a private observation and strategic plan.",
+		outputName: "oh_hell_turn_decision",
 		playPlan:
 			"Target the exact bid: take tricks still needed, then shed strength and avoid extra tricks.",
 		systemPrompt: [

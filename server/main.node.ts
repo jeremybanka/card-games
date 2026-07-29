@@ -17,6 +17,7 @@ import {
 } from "../src/ai/ai-player.node.ts"
 import type { AiModelId } from "../src/ai/ai-models.ts"
 import type { GameState } from "../src/game/game-state.ts"
+import { parseGameKind } from "../src/game/game-catalog.ts"
 import { createSeededRandom } from "../src/game/seeded-random.ts"
 import {
 	gameStateAtoms,
@@ -43,8 +44,8 @@ import {
 	type GameActionAcknowledger,
 	type GameActionsOf,
 	type GameController,
+	type GameDefinition,
 	type GameEventSocket,
-	type GameStateOf,
 	type GameStateStore,
 	type PlayerController,
 } from "./game-controller.node.ts"
@@ -71,9 +72,6 @@ type Room<Game> = {
 	connections: Map<PlayerId, { dispose: () => void; socket: GameServerSocket }>
 	controller: GameController<Game>
 }
-
-type HeartsRoom = Room<typeof heartsGame>
-type OhHellRoom = Room<typeof ohHellGame>
 
 type StoredRoom = {
 	bindActions: (
@@ -149,7 +147,7 @@ function createRoomCode(): string {
 
 function gameStateStore<State extends GameState>(
 	roomCode: string,
-	gameKind: State["gameKind"],
+	gameKind: GameKind,
 ): GameStateStore<State> {
 	return {
 		get: () => {
@@ -350,57 +348,45 @@ function createWayfarerGameResources(roomCode: string): WayfarerGameResources {
 	}
 }
 
-function createHeartsRoom(
-	roomCode: string,
-	hostId: PlayerId,
-	hostName: string,
-): StoredRoom {
-	const resources = createWayfarerGameResources(roomCode)
-	const state = heartsGame.create({
-		host: { id: hostId, name: hostName },
-		resources,
-		roomCode,
-	})
-	setState(gameStateAtoms, roomCode, state)
-	const room: HeartsRoom = {
-		connections: new Map(),
-		controller: createGameController(
-			heartsGame,
-			roomCode,
+function createRoomFactory<
+	const Kind extends GameKind,
+	State extends GameState & { gameKind: Kind },
+	PublicView,
+	PrivateView,
+	Actions extends object,
+>(
+	game: GameDefinition<
+		Kind,
+		State,
+		PublicView,
+		PrivateView,
+		Actions,
+		WayfarerGameResources
+	>,
+): (roomCode: string, hostId: PlayerId, hostName: string) => StoredRoom {
+	return (roomCode, hostId, hostName) => {
+		const resources = createWayfarerGameResources(roomCode)
+		const state = game.create({
+			host: { id: hostId, name: hostName },
 			resources,
-			gameStateStore<GameStateOf<typeof heartsGame>>(roomCode, "hearts"),
-		),
-	}
-	return storeRoom(room)
-}
-
-function createOhHellRoom(
-	roomCode: string,
-	hostId: PlayerId,
-	hostName: string,
-): StoredRoom {
-	const resources = createWayfarerGameResources(roomCode)
-	const state = ohHellGame.create({
-		host: { id: hostId, name: hostName },
-		resources,
-		roomCode,
-	})
-	setState(gameStateAtoms, roomCode, state)
-	const room: OhHellRoom = {
-		connections: new Map(),
-		controller: createGameController(
-			ohHellGame,
 			roomCode,
-			resources,
-			gameStateStore<GameStateOf<typeof ohHellGame>>(roomCode, "ohHell"),
-		),
+		})
+		setState(gameStateAtoms, roomCode, state)
+		return storeRoom({
+			connections: new Map(),
+			controller: createGameController(
+				game,
+				roomCode,
+				resources,
+				gameStateStore<State>(roomCode, game.kind),
+			),
+		})
 	}
-	return storeRoom(room)
 }
 
 const createGameRoom = {
-	hearts: createHeartsRoom,
-	ohHell: createOhHellRoom,
+	hearts: createRoomFactory(heartsGame),
+	ohHell: createRoomFactory(ohHellGame),
 } satisfies Record<
 	GameKind,
 	(roomCode: string, hostId: PlayerId, hostName: string) => StoredRoom
@@ -418,8 +404,7 @@ function serveSocket(socketInput: UserServerConfig): () => void {
 			{ gameKindInput, playerId, playerNameInput },
 			(span) => {
 				const playerName = normalizePlayerName(playerNameInput)
-				const gameKind: GameKind =
-					gameKindInput === "ohHell" ? "ohHell" : "hearts"
+				const gameKind = parseGameKind(gameKindInput)
 				const roomCode = createRoomCode()
 				const room = createGameRoom[gameKind](roomCode, playerId, playerName)
 				rooms.set(roomCode, room)

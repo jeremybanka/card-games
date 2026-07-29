@@ -40,6 +40,12 @@ import {
 	chooseHeartsAutoPlayCard,
 	isAutoPlayTurnActionable,
 } from "./game/hearts-auto-play.ts"
+import { gameCatalog } from "./game/game-catalog.ts"
+import {
+	gameTableAdapter,
+	passingTableAdapter,
+	supportsTableAutoPlay,
+} from "./game/game-table-adapter.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
@@ -49,14 +55,12 @@ import {
 	clockwiseOpponentSeatIndices,
 	clockwiseSeatOffset,
 	clockwiseSeatPosition,
-	passRecipientSeatIndex,
 } from "./game/seat-order.ts"
 import type {
 	ActionResult,
 	AiStrategyReview as AiStrategyReviewData,
 	CardId,
 	CompletedTrick,
-	PassDirection,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
@@ -185,29 +189,6 @@ function rankMark(rank: VisibleCard["rank"]): string {
 		default:
 			return String(rank)
 	}
-}
-
-function passLabel(direction: PassDirection): string {
-	switch (direction) {
-		case "left":
-			return "Pass left"
-		case "right":
-			return "Pass right"
-		case "across":
-			return "Pass across"
-		case "hold":
-			return "Hold"
-	}
-}
-
-function passActionLabel(
-	direction: PassDirection,
-	recipientName: string | null,
-): string {
-	const directionLabel = passLabel(direction)
-	return recipientName === null
-		? directionLabel
-		: `${directionLabel} to ${recipientName}`
 }
 
 function handleResult(result: ActionResult): void {
@@ -467,14 +448,7 @@ function TrickCenter({
 						? "Your play"
 						: game.statusMessage}
 				</strong>
-				<span>
-					Trick {Math.min(game.trickNumber + 1, game.roundHandSize ?? 26)}
-					{game.gameKind === "ohHell"
-						? ` · ${game.trumpSuit ?? "no"} trump`
-						: game.heartsBroken
-							? " · hearts broken"
-							: ""}
-				</span>
+				<span>{gameTableAdapter(game).trickDetail(game)}</span>
 			</trick-heading>
 			<trick-slots>
 				{game.players.map((player, index) => {
@@ -598,11 +572,7 @@ function ScoreSheet({
 			</score-heading>
 			<ol>
 				{[...game.players]
-					.sort((left, right) =>
-						game.gameKind === "ohHell"
-							? right.score - left.score
-							: left.score - right.score,
-					)
+					.sort(gameTableAdapter(game).compareScores)
 					.map((player) => (
 						<li
 							data-reviewable={player.kind === "ai" || undefined}
@@ -641,11 +611,7 @@ function ScoreSheet({
 									/>
 								)}
 							</score-identity>
-							<small>
-								{game.gameKind === "ohHell"
-									? `${player.tricksWon ?? 0}/${player.bid ?? "—"} · +${player.roundPoints}`
-									: `+${player.roundPoints}`}
-							</small>
+							<small>{gameTableAdapter(game).scoreDetail(player)}</small>
 							<strong>{player.score}</strong>
 						</li>
 					))}
@@ -749,9 +715,7 @@ function PlayerZone({
 		? visibleCards.filter((card) => !passSelection.includes(card.id))
 		: visibleCards
 	const passAction =
-		game.gameKind === "hearts"
-			? passActionLabel(game.passDirection, passRecipientName)
-			: ""
+		passingTableAdapter(game)?.actionLabel(game, passRecipientName) ?? ""
 	const cardFromHandPointer = (
 		element: HTMLElement,
 		clientX: number,
@@ -1142,18 +1106,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			(index) => game.players[index] as PublicPlayerView,
 		)
 	}, [game.players, mySeatIndex])
+	const tableAdapter = gameTableAdapter(game)
 	const passRecipient =
-		mySeatIndex === -1 ||
-		game.gameKind !== "hearts" ||
-		game.passDirection === "hold"
-			? null
-			: (game.players[
-					passRecipientSeatIndex(
-						mySeatIndex,
-						game.players.length,
-						game.passDirection,
-					)
-				] ?? null)
+		passingTableAdapter(game)?.recipient(game, mySeatIndex) ?? null
 
 	const clearPendingPlay = (requestId: number): void => {
 		if (pendingPlay.current?.requestId !== requestId) return
@@ -1336,21 +1291,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						{game.phase === "lobby" ? "TABLE" : `ROUND ${game.roundNumber}`}
 					</small>
 					<strong>
-						{game.gameKind === "ohHell"
-							? game.phase === "lobby"
-								? "OH HELL!"
-								: `${game.trumpSuit ?? "no"} trump`
-							: game.phase === "passing"
-								? passActionLabel(
-										game.passDirection,
-										passRecipient?.name ?? null,
-									)
-								: game.heartsBroken
-									? "♥ broken"
-									: "♥ whole"}
+						{tableAdapter.headerStatus(game, passRecipient?.name ?? null)}
 					</strong>
 				</round-mark>
-				{game.gameKind !== "ohHell" && game.phase !== "lobby" ? (
+				{supportsTableAutoPlay(game) && game.phase !== "lobby" ? (
 					<auto-play-control>
 						<label>
 							<input
@@ -1402,10 +1346,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					<waiting-room>
 						<small>PASS THE CODE</small>
 						<h2>{game.roomCode}</h2>
-						<p>
-							{game.gameKind === "ohHell" ? "Oh Hell! · " : "Hearts · "}
-							{game.players.length} of 4 players seated
-						</p>
+						<p>{tableAdapter.lobbyDescription(game)}</p>
 						<seated-list>
 							{game.players.map((player) => (
 								<seat-pill
@@ -1479,7 +1420,8 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								<button
 									type="button"
 									disabled={
-										game.players.length < (game.gameKind === "ohHell" ? 3 : 2)
+										game.players.length <
+										gameCatalog[game.gameKind].minimumPlayers
 									}
 									onClick={() => {
 										socket.emit("startGame", handleResult)

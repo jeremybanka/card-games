@@ -8,21 +8,18 @@ import {
 	type PublicGameView,
 } from "./game-types.ts"
 import {
-	createHeartsGame,
-	toPrivatePlayerView,
-	toPublicGameView,
-} from "./hearts-engine.ts"
-import { isOhHellState, type GameState } from "./game-state.ts"
-import {
-	toOhHellPrivatePlayerView,
-	toOhHellPublicGameView,
-} from "./oh-hell-engine.ts"
+	gameCatalog,
+	privatePlayerView,
+	publicGameView,
+} from "./game-catalog.ts"
+import type { GameState } from "./game-state.ts"
 
 const emptyPlayerId = "user::empty" satisfies PlayerId
 
 export const gameStateAtoms = atomFamily<GameState, string>({
 	key: "gameState",
-	default: (roomCode) => createHeartsGame(roomCode, emptyPlayerId, ""),
+	default: (roomCode) =>
+		gameCatalog.hearts.createInitialState(roomCode, emptyPlayerId, ""),
 })
 
 export const publicGameViewProjectionSelectors = selectorFamily<
@@ -34,9 +31,7 @@ export const publicGameViewProjectionSelectors = selectorFamily<
 		(roomCode) =>
 		({ get }) => {
 			const state = get(gameStateAtoms, roomCode)
-			return isOhHellState(state)
-				? toOhHellPublicGameView(state)
-				: toPublicGameView(state)
+			return publicGameView(state)
 		},
 })
 
@@ -49,9 +44,7 @@ export const privatePlayerViewProjectionSelectors = selectorFamily<
 		([roomCode, playerId]) =>
 		({ get }) => {
 			const state = get(gameStateAtoms, roomCode)
-			return isOhHellState(state)
-				? toOhHellPrivatePlayerView(state, playerId)
-				: toPrivatePlayerView(state, playerId)
+			return privatePlayerView(state, playerId)
 		},
 })
 

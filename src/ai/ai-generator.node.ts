@@ -6,6 +6,7 @@ import { Squirrel } from "varmint"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { renderAiGameFacts } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
+import { legacyCompatibleCacheViews } from "./legacy-hearts-cache.ts"
 import type { AiModelId } from "./ai-models.ts"
 import {
 	createGuardedAiTurnGenerator,
@@ -58,41 +59,10 @@ export function wrapAiGeneratorWithVarmint(
 ): AiTurnGenerator {
 	const wrapped = squirrel.add(key, generate)
 	return async (context) => {
-		const cacheablePrivateView =
-			context.privateView.gameKind === "hearts"
-				? (({
-						awardedLeftoverCard: _awardedLeftoverCard,
-						gameKind: _gameKind,
-						passReceipt: _passReceipt,
-						...view
-					}) => view)(context.privateView)
-				: context.privateView
-		const { deckCardIds: _deckCardIds, ...publicViewWithoutDeck } =
-			context.publicView
-		const publicViewWithoutGameKind =
-			publicViewWithoutDeck.gameKind === "hearts"
-				? (({ gameKind: _gameKind, ...view }) => view)(publicViewWithoutDeck)
-				: publicViewWithoutDeck
-		const cacheablePublicView = {
-			...publicViewWithoutGameKind,
-			completedTricks: publicViewWithoutGameKind.completedTricks.map(
-				({ leftoverAward: _leftoverAward, ...trick }) => trick,
-			),
-			players:
-				context.publicView.gameKind === "hearts"
-					? context.publicView.players.map((player) => ({
-							aiModel: player.aiModel,
-							capturedCardIds: player.capturedCardIds,
-							connected: player.connected,
-							handCardIds: player.handCardIds,
-							id: player.id,
-							kind: player.kind,
-							name: player.name,
-							roundPoints: player.roundPoints,
-							score: player.score,
-						}))
-					: publicViewWithoutGameKind.players,
-		}
+		const {
+			privateView: cacheablePrivateView,
+			publicView: cacheablePublicView,
+		} = legacyCompatibleCacheViews(context)
 		const cacheableContext = {
 			...context,
 			privateView: cacheablePrivateView,
@@ -155,7 +125,8 @@ export function createOpenAiTurnGenerator(
 			async (span) => {
 				const gameKind = context.publicView.gameKind ?? "hearts"
 				const renderedFacts = renderAiGameFacts(context)
-				const systemPrompt = aiGameStrategy(gameKind).systemPrompt
+				const strategy = aiGameStrategy(gameKind)
+				const systemPrompt = strategy.systemPrompt
 				span.event("ai.prompt.rendered", {
 					renderedFacts,
 					systemPrompt,
@@ -163,14 +134,8 @@ export function createOpenAiTurnGenerator(
 				const result = await generateText({
 					model,
 					output: Output.object({
-						description:
-							gameKind === "hearts"
-								? "A legal Hearts action plus a private observation and strategic plan."
-								: "A legal Oh Hell action plus a private observation and strategic plan.",
-						name:
-							gameKind === "hearts"
-								? "hearts_turn_decision"
-								: "oh_hell_turn_decision",
+						description: strategy.outputDescription,
+						name: strategy.outputName,
 						schema: jsonSchema<AiTurnDecision>(aiTurnDecisionJsonSchema),
 					}),
 					prompt: renderedFacts,

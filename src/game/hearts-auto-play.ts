@@ -1,5 +1,6 @@
 import type {
 	CardId,
+	GameKind,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
@@ -115,12 +116,38 @@ export function isAutoPlayTurnActionable(
 	playerId: PlayerId,
 	presentationReady: boolean,
 ): boolean {
-	return (
-		game.gameKind !== "ohHell" &&
+	const readiness = autoPlayReadiness[game.gameKind]
+	if (readiness === undefined || privateView.gameKind !== game.gameKind) {
+		return false
+	}
+	return readiness(
+		game as never,
+		privateView as never,
+		playerId,
+		presentationReady,
+	)
+}
+
+const autoPlayReadiness = {
+	hearts: (
+		game: Extract<PublicGameView, { gameKind: "hearts" }>,
+		privateView: Extract<PrivatePlayerView, { gameKind: "hearts" }>,
+		playerId: PlayerId,
+		presentationReady: boolean,
+	): boolean =>
 		game.phase === "playing" &&
 		game.currentPlayerId === playerId &&
 		privateView.playerId === playerId &&
 		privateView.playableCardIds.length > 0 &&
-		presentationReady
-	)
-}
+		presentationReady,
+} as unknown as Partial<
+	Record<
+		GameKind,
+		(
+			game: PublicGameView,
+			privateView: PrivatePlayerView,
+			playerId: PlayerId,
+			presentationReady: boolean,
+		) => boolean
+	>
+>

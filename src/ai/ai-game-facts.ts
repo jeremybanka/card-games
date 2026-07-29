@@ -1,4 +1,9 @@
 import type {
+	HeartsPrivatePlayerView,
+	HeartsPublicGameView,
+	GameKind,
+	OhHellPrivatePlayerView,
+	OhHellPublicGameView,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
@@ -15,6 +20,64 @@ export type AiGameContext = {
 	previousPlan: string
 	privateView: PrivatePlayerView
 	publicView: PublicGameView
+}
+
+type AiFactsAdapter<PublicView, PrivateView> = {
+	gameDetails: (
+		context: AiGameContext & {
+			privateView: PrivateView
+			publicView: PublicView
+		},
+	) => string
+	handInstruction: (
+		context: AiGameContext & {
+			privateView: PrivateView
+			publicView: PublicView
+		},
+	) => string
+	title: string
+}
+
+const aiFactsAdapters = {
+	hearts: {
+		gameDetails: (context) =>
+			`hearts ${
+				context.publicView.heartsBroken ? "broken" : "intact"
+			} | pass ${context.publicView.passDirection}`,
+		handInstruction: () => "during passing choose any 3 IDs",
+		title: "Hearts",
+	} satisfies AiFactsAdapter<HeartsPublicGameView, HeartsPrivatePlayerView>,
+	ohHell: {
+		gameDetails: (context) => {
+			const me = context.publicView.players.find(
+				(player) => player.id === context.playerId,
+			)
+			return `trump ${context.publicView.trumpSuit ?? "none"} | bid ${
+				me?.bid ?? "pending"
+			} | tricks ${me?.tricksWon ?? 0}`
+		},
+		handInstruction: (context) =>
+			context.publicView.phase === "bidding"
+				? `legal bids: ${context.privateView.legalBids.join(", ")}`
+				: "during passing choose any 3 IDs",
+		title: "Oh Hell",
+	} satisfies AiFactsAdapter<OhHellPublicGameView, OhHellPrivatePlayerView>,
+} satisfies {
+	[Kind in GameKind]: AiFactsAdapter<
+		Extract<PublicGameView, { gameKind: Kind }>,
+		Extract<PrivatePlayerView, { gameKind: Kind }>
+	>
+}
+
+function aiFactsAdapter(
+	context: AiGameContext,
+): AiFactsAdapter<PublicGameView, PrivatePlayerView> {
+	if (context.privateView.gameKind !== context.publicView.gameKind) {
+		throw new Error("AI public and private views describe different games.")
+	}
+	return aiFactsAdapters[
+		context.publicView.gameKind
+	] as unknown as AiFactsAdapter<PublicGameView, PrivatePlayerView>
 }
 
 const suitCodes: Record<Suit, string> = {
@@ -117,6 +180,7 @@ function renderMemoryLedger(
 }
 
 export function renderAiGameFacts(context: AiGameContext): string {
+	const adapter = aiFactsAdapter(context)
 	const me = context.publicView.players.find(
 		(player) => player.id === context.playerId,
 	)
@@ -145,17 +209,10 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		context.memoryLedger.length === 0
 			? ["- none"]
 			: context.memoryLedger.map((entry) => renderMemoryLedger(context, entry))
-	const gameDetails =
-		context.publicView.gameKind === "ohHell"
-			? `trump ${context.publicView.trumpSuit ?? "none"} | bid ${
-					me?.bid ?? "pending"
-				} | tricks ${me?.tricksWon ?? 0}`
-			: `hearts ${
-					context.publicView.heartsBroken ? "broken" : "intact"
-				} | pass ${context.publicView.passDirection}`
+	const gameDetails = adapter.gameDetails(context)
 
 	return [
-		`# ${context.publicView.gameKind === "ohHell" ? "Oh Hell" : "Hearts"} facts (cards: T/J/Q/K/A; suits: C/D/H/S)`,
+		`# ${adapter.title} facts (cards: T/J/Q/K/A; suits: C/D/H/S)`,
 		`Table ${context.publicView.roomCode} | you ${playerAlias(
 			context,
 			context.playerId,
@@ -174,15 +231,7 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		"## Completed tricks (public, Tn>winner: plays in order)",
 		...renderCompletedTricks(context),
 		"",
-		`## Hand (${
-			context.publicView.phase === "bidding"
-				? `legal bids: ${
-						context.privateView.gameKind === "ohHell"
-							? context.privateView.legalBids.join(", ")
-							: ""
-					}`
-				: "during passing choose any 3 IDs"
-		})`,
+		`## Hand (${adapter.handInstruction(context)})`,
 		...hand,
 		"",
 		"## Plan",
