@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Lead hearts ascending; P0 has one lower heart then spades.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::3b587e7d-5ef0-4390-a59c-5521409f9b49"
-	},
-	"observation": "P0 must follow with remaining 6H."
-}

@@ -1,17 +1,34 @@
 import type {
-	CardId,
 	GameKind,
 	PassDirection,
 	PlayerId,
 	VisibleCard,
 } from "../game/game-types.ts"
 
+type AiCardRank =
+	| "2"
+	| "3"
+	| "4"
+	| "5"
+	| "6"
+	| "7"
+	| "8"
+	| "9"
+	| "T"
+	| "J"
+	| "Q"
+	| "K"
+	| "A"
+type AiCardSuit = "C" | "D" | "H" | "S"
+
+export type AiCardValue = `${AiCardRank}${AiCardSuit}`
+
 export type HeartsAiNextAction =
-	| { action: "passCards"; cardIds: CardId[] }
-	| { action: "playCard"; cardId: CardId }
+	| { action: "passCards"; cards: AiCardValue[] }
+	| { action: "playCard"; card: AiCardValue }
 
 export type OhHellAiNextAction =
-	| { action: "playCard"; cardId: CardId }
+	| { action: "playCard"; card: AiCardValue }
 	| { action: "submitBid"; bid: number }
 
 export type AiNextActionByGame = {

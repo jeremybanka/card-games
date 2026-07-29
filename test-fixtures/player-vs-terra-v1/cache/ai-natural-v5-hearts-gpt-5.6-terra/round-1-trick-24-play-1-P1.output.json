@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead hearts ascending; P0 void hearts and will shed spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QH"
+	},
+	"observation": "P0 has only passed high spades left."
+}

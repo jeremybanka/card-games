@@ -1,8 +1,8 @@
 import { ArkErrors, type } from "arktype"
 import type { JSONSchema7 } from "ai"
 
-import { cardIdType } from "../game/game-actions.ts"
 import type { VisibleCard } from "../game/game-types.ts"
+import { aiCardValue, cardIdForAiValue } from "./ai-card-value.ts"
 import type { AiGameStrategy } from "./ai-game-strategy.ts"
 import type { AiGameContextFor } from "./ai-game-facts.ts"
 import type { AiTurnDecisionFor, OhHellAiNextAction } from "./ai-types.ts"
@@ -11,7 +11,7 @@ const ohHellAiTurnDecisionType = type({
 	currentPlan: "string",
 	nextAction: type({
 		action: "'playCard'",
-		cardId: cardIdType,
+		card: "string",
 	}).or({
 		action: "'submitBid'",
 		bid: "number.integer >= 0",
@@ -29,9 +29,9 @@ const ohHellAiTurnDecisionJsonSchema: JSONSchema7 = {
 					additionalProperties: false,
 					properties: {
 						action: { enum: ["playCard"], type: "string" },
-						cardId: { pattern: "^card::", type: "string" },
+						card: { pattern: "^(?:[2-9TJQKA])[CDHS]$", type: "string" },
 					},
-					required: ["action", "cardId"],
+					required: ["action", "card"],
 					type: "object",
 				},
 				{
@@ -88,7 +88,7 @@ function chooseOhHellPlay(
 			: cardStrength(left) - cardStrength(right),
 	)[0]
 	if (selected === undefined) throw new Error("The AI has no legal card.")
-	return { action: "playCard", cardId: selected.id }
+	return { action: "playCard", card: aiCardValue(selected) }
 }
 
 function fallbackOhHellDecision(
@@ -118,19 +118,22 @@ function isLegalOhHellAction(
 			context.privateView.legalBids.includes(action.bid)
 		)
 	}
+	const selected = context.privateView.cards.find(
+		(card) => aiCardValue(card) === action.card,
+	)
 	return (
 		context.publicView.phase === "playing" &&
-		context.privateView.playableCardIds.includes(action.cardId)
+		selected !== undefined &&
+		context.privateView.playableCardIds.includes(selected.id)
 	)
 }
 
 const commonPrompt = [
-	"Choose exactly one legal next action using an opaque card ID from the supplied hand.",
+	"Choose exactly one legal next action using a literal card value from the supplied hand.",
 	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
-	"Card values uniquely identify deck cards, so history omits opaque IDs without losing strategic identity.",
 	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
-	"For play, copy exactly the card:: ID inside brackets on a hand row labeled LEGAL; do not include brackets or the label.",
-	"Keep observation and plan terse; refer to cards by compact code and never repeat opaque IDs outside nextAction.",
+	"For play, return exactly one listed legal card value.",
+	"Keep observation and plan terse.",
 ]
 
 export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
@@ -150,11 +153,15 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 				}
 	},
 	privateViewForStrategy: (view) => view,
-	submitAction: (socket, action) => {
+	submitAction: (socket, action, privateView) => {
 		switch (action.action) {
 			case "playCard":
 				return new Promise((resolve) => {
-					socket.emit("playCard", action.cardId, resolve)
+					socket.emit(
+						"playCard",
+						cardIdForAiValue(privateView.cards, action.card),
+						resolve,
+					)
 				})
 			case "submitBid":
 				return new Promise((resolve) => {

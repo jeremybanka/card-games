@@ -1,0 +1,3 @@
+[
+	"Hearts, round 1, trick 5. Hearts are intact. You are P1, playing 2 of 2.\n\nPlayers:\nP0, Player: score 0, round points 0, 21 cards.\nP1 (you), Terra AI 1: score 0, round points 0, 22 cards.\n\nYour hand: 8C, 9C, KC, AC, 6D, 8D, 9D, JD, QD, KD, AD, 3S, 7S, TS, 7H, 8H, 9H, TH, JH, QH, KH, AH.\nLegal plays: 8C, 9C, KC, AC. Choose one legal card value.\n\nCurrent trick:\nP0 QC\n\nCompleted play:\n1. P0 2C, P1 3C. P1 won.\n2. P1 5C, P0 4C. P1 won.\n3. P1 6C, P0 7C. P0 won.\n4. P0 JC, P1 TC. P0 won.\n\nPass across:\nGave P0 QS, KS, AS.\nReceived AC, AD, KH from P0.\n\nCurrent plan:\nLose club tricks under P0; retain low clubs and avoid control."
+]

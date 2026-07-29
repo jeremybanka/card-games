@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead low hearts; P0’s remaining hearts are lower, then shed on spade leads.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7H"
+	},
+	"observation": "P0 is void C/D and holds high passed spades; our hearts are 7-A."
+}

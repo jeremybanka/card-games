@@ -1,6 +1,7 @@
 {
-	"cacheKey": "hearts-compact-v2-gpt-5.6-terra",
+	"cacheKey": "ai-natural-v5-hearts-gpt-5.6-terra",
 	"cacheOutputCount": 27,
+	"fixtureFormat": "direct-prompt-v5",
 	"finalScores": {
 		"Player": 26,
 		"Terra AI 1": 0
@@ -10,6 +11,8 @@
 	"outcome": "Terra captured every scoring card and shot the moon, so its raw 26 points became 0 while Player received 26.",
 	"roomCode": "ZVHB",
 	"seed": "player-vs-terra-browser-v1",
+	"sourceCacheKey": "hearts-compact-v2-gpt-5.6-terra",
+	"sourceNote": "Prompts were deterministically re-rendered from the original recorded contexts. Model plans and observations are unchanged; opaque card IDs in model actions were translated to their literal private card values.",
 	"terraId": "user::a3e10227-a65a-4666-8db1-f511c8a8c567",
 	"tricks": {
 		"Player": 3,

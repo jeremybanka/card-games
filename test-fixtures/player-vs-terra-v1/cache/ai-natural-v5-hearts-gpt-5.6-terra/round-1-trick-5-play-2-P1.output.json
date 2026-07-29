@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Duck clubs under P0; preserve 8C as lowest exit.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9C"
+	},
+	"observation": "P0's QC covers; 9C safely loses."
+}

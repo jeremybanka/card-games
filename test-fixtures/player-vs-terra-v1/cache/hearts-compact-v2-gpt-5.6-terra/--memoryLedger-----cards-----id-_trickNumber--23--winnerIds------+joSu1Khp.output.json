@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Lead hearts ascending; P0 void hearts and will shed spades.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::0b63599f-ee5c-429d-b57f-5240500ad5d1"
-	},
-	"observation": "P0 has only passed high spades left."
-}

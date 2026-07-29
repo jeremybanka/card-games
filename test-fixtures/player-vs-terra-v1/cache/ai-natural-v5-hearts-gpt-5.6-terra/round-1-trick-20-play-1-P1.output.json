@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead hearts; P0’s hearts are lower and will become void, then may shed high spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8H"
+	},
+	"observation": "P0 has passed QS/KS/AS and only lower hearts remain."
+}

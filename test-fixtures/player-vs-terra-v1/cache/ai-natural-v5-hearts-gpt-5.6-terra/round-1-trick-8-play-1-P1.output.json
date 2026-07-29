@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead 9D to force P0's TD and shed control; preserve clubs until hearts open.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9D"
+	},
+	"observation": "P0's remaining diamonds are 4D 5D 7D TD; 9D loses to TD."
+}

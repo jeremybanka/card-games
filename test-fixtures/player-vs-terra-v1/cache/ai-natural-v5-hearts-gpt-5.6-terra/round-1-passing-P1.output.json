@@ -1,0 +1,12 @@
+{
+	"currentPlan": "Shed top spades; keep control in long clubs/diamonds.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"QS",
+			"KS",
+			"AS"
+		]
+	},
+	"observation": "Pass across; QSA/KS/AS are primary liabilities."
+}

@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Shed top spades; keep control in long clubs/diamonds.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::4b07220a-2e34-4405-b5ed-cd8790234765"
-	},
-	"observation": "Follow 2C with 3C; retains club control."
-}

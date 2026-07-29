@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead low clubs; avoid control and shed spades when safely covered.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5C"
+	},
+	"observation": "Lead 5C; hearts remain closed."
+}

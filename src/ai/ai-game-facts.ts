@@ -17,6 +17,7 @@ import {
 	assertMatchingGameKinds,
 	registeredGameAdapter,
 } from "../game/game-registry.ts"
+import { aiCardValue } from "./ai-card-value.ts"
 import type { AiMemoryLedgerEntry, AiTurnObservation } from "./ai-types.ts"
 
 type CommonAiGameContext = {
@@ -57,7 +58,10 @@ const aiFactsAdapters = {
 			`hearts ${
 				context.publicView.heartsBroken ? "broken" : "intact"
 			} | pass ${context.publicView.passDirection}`,
-		handInstruction: () => "during passing choose any 3 IDs",
+		handInstruction: (context) =>
+			context.publicView.phase === "passing"
+				? "choose exactly three card values"
+				: "choose one listed legal card value",
 		title: "Hearts",
 	} satisfies AiFactsAdapter<HeartsPublicGameView, HeartsPrivatePlayerView>,
 	ohHell: {
@@ -72,7 +76,7 @@ const aiFactsAdapters = {
 		handInstruction: (context) =>
 			context.publicView.phase === "bidding"
 				? `legal bids: ${context.privateView.legalBids.join(", ")}`
-				: "during play choose one card ID from a hand row labeled LEGAL",
+				: "choose one listed legal card value",
 		title: "Oh Hell",
 	} satisfies AiFactsAdapter<OhHellPublicGameView, OhHellPrivatePlayerView>,
 } satisfies {
@@ -120,7 +124,7 @@ function rankCode(rank: Rank): string {
 }
 
 export function renderVisibleCard(card: VisibleCard): string {
-	return `${rankCode(card.rank)}${suitCodes[card.suit]} [${card.id}]`
+	return aiCardValue(card)
 }
 
 function renderLedgerCard(card: VisibleCard): string {
@@ -194,7 +198,131 @@ function renderMemoryLedger(
 			)}: ${cards}`
 }
 
-export function renderAiGameFacts(context: AiGameContext): string {
+function playLine(
+	context: AiGameContext,
+	trick: {
+		plays: { card: VisibleCard; playerId: PlayerId }[]
+		winnerId: PlayerId
+	},
+	index: number,
+): string {
+	const plays = trick.plays
+		.map(
+			(play) =>
+				`${playerAlias(context, play.playerId)} ${renderLedgerCard(play.card)}`,
+		)
+		.join(", ")
+	return `${index + 1}. ${plays}. ${playerAlias(context, trick.winnerId)} won.`
+}
+
+function knownVoids(context: AiGameContextFor<"hearts">): string[] {
+	const voids = new Map<PlayerId, Set<Suit>>()
+	const remember = (
+		plays: { card: VisibleCard; playerId: PlayerId }[],
+	): void => {
+		const leadSuit = plays[0]?.card.suit
+		if (leadSuit === undefined) return
+		for (const play of plays.slice(1)) {
+			if (play.card.suit === leadSuit) continue
+			const playerVoids = voids.get(play.playerId) ?? new Set<Suit>()
+			playerVoids.add(leadSuit)
+			voids.set(play.playerId, playerVoids)
+		}
+	}
+	for (const trick of context.publicView.completedTricks) remember(trick.plays)
+	remember(context.publicView.currentTrick)
+	return context.publicView.players.flatMap((player) => {
+		const suits = [...(voids.get(player.id) ?? [])]
+		return suits.length === 0
+			? []
+			: `${playerAlias(context, player.id)} is void in ${suits.join(", ")}.`
+	})
+}
+
+function renderHeartsFacts(context: AiGameContextFor<"hearts">): string {
+	const me = playerAlias(context, context.playerId)
+	const playerCount = context.publicView.players.length
+	const playPosition = context.publicView.currentTrick.length + 1
+	const phaseLine =
+		context.publicView.phase === "passing"
+			? `Hearts, round ${context.publicView.roundNumber}. Pass ${context.publicView.passDirection}. You are ${me}.`
+			: `Hearts, round ${context.publicView.roundNumber}, trick ${
+					context.publicView.trickNumber + 1
+				}. Hearts are ${
+					context.publicView.heartsBroken ? "broken" : "intact"
+				}. You are ${me}, playing ${playPosition} of ${playerCount}.`
+	const players = context.publicView.players.map(
+		(player) =>
+			`${playerAlias(context, player.id)}${
+				player.id === context.playerId ? " (you)" : ""
+			}, ${player.name}: score ${player.score}, round points ${
+				player.roundPoints
+			}, ${player.handCardIds.length} cards.`,
+	)
+	const hand = context.privateView.cards.map(aiCardValue).join(", ") || "empty"
+	const legal = context.privateView.cards
+		.filter((card) => context.privateView.playableCardIds.includes(card.id))
+		.map(aiCardValue)
+		.join(", ")
+	const currentTrick =
+		context.publicView.currentTrick.length === 0
+			? "You lead."
+			: context.publicView.currentTrick
+					.map(
+						(play) =>
+							`${playerAlias(context, play.playerId)} ${aiCardValue(play.card)}`,
+					)
+					.join(", ")
+	const completed =
+		context.publicView.completedTricks.length === 0
+			? ["None."]
+			: context.publicView.completedTricks.map((trick, index) =>
+					playLine(context, trick, index),
+				)
+	const passMemory =
+		context.memoryLedger.length === 0
+			? ["None."]
+			: context.memoryLedger.map((entry) => {
+					const cards = entry.cards.map(aiCardValue).join(", ")
+					return entry.kind === "cardsPassed"
+						? `Gave ${playerAlias(context, entry.recipientId)} ${cards}.`
+						: `Received ${cards} from ${playerAlias(context, entry.senderId)}.`
+				})
+	const voids = knownVoids(context)
+	const instruction =
+		context.publicView.phase === "passing"
+			? "Choose exactly three different card values from your hand."
+			: `Legal plays: ${legal}. Choose one legal card value.`
+
+	return [
+		phaseLine,
+		"",
+		"Players:",
+		...players,
+		"",
+		`Your hand: ${hand}.`,
+		instruction,
+		"",
+		...(context.publicView.phase === "playing"
+			? [
+					"Current trick:",
+					currentTrick,
+					"",
+					"Completed play:",
+					...completed,
+					"",
+				]
+			: []),
+		`Pass ${context.publicView.passDirection}:`,
+		...passMemory,
+		...(voids.length === 0 ? [] : ["", "Known voids:", ...voids]),
+		"",
+		"Current plan:",
+		context.previousPlan || "None.",
+	].join("\n")
+}
+
+function renderLegacyGameFacts(context: AiGameContext): string {
 	const adapter = aiFactsAdapter(context)
 	const me = context.publicView.players.find(
 		(player) => player.id === context.playerId,
@@ -260,4 +388,15 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		"",
 		"Information boundary: exact values appear only in your hand/pass memory and public tricks; opponent hands expose counts only. Deck values are unique, so compact card codes preserve card identity after IDs are omitted from history.",
 	].join("\n")
+}
+
+export function renderAiGameFacts(context: AiGameContext): string {
+	assertMatchingGameKinds(
+		context.privateView,
+		context.publicView,
+		"AI public and private views describe different games.",
+	)
+	return context.publicView.gameKind === "hearts"
+		? renderHeartsFacts(context as AiGameContextFor<"hearts">)
+		: renderLegacyGameFacts(context)
 }

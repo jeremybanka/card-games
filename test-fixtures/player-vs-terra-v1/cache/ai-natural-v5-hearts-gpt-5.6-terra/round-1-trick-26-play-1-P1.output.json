@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead AH; P0 discards last spade.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AH"
+	},
+	"observation": "P0 is void hearts with one spade left."
+}

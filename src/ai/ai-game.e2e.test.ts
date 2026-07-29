@@ -1,5 +1,12 @@
 import { createServer } from "node:http"
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises"
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	readdir,
+	rm,
+	writeFile,
+} from "node:fs/promises"
 import type { AddressInfo } from "node:net"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -64,7 +71,7 @@ const invariantSeed = "sol-vs-three-luna-v1"
 const liveInvariantSeed = "sol-vs-three-luna-live-v1"
 const liveRecordingName =
 	process.env.AI_GAME_RECORDING_NAME?.trim() ||
-	"sol-vs-three-luna-live-v4-compact-ledger"
+	"sol-vs-three-luna-live-v5-natural-prompt"
 const bots = [
 	{
 		id: "user::00000000-0000-4000-8000-000000000001",
@@ -146,20 +153,19 @@ type BotTableOptions = {
 }
 
 type LiveDecisionRecord = {
-	context: AiGameContext
 	decision: AiTurnDecision
 	modelId: AiModelId
 	playerId: PlayerId
-	renderedFacts: string
+	prompt: string
 	sequence: number
 	source: "cache" | "fallback" | "model"
 }
 
 type LiveFallbackRecord = {
-	context: AiGameContext
 	error: { message: string; name: string } | string | null
 	generated: unknown
 	modelId: AiModelId
+	prompt: string
 	reason: AiFallbackReason
 	sequence: number
 }
@@ -460,10 +466,10 @@ function createLiveGeneratorFactory(
 		const generate = createOpenAiTurnGenerator(bot.modelId, apiKey, {
 			onFallback: (details) => {
 				fallbacks.push({
-					context: structuredClone(details.context),
 					error: serializedError(details.error),
 					generated: details.generated,
 					modelId: bot.modelId,
+					prompt: renderAiGameFacts(details.context),
 					reason: details.reason,
 					sequence: decisions.length + 1,
 				})
@@ -482,11 +488,10 @@ function createLiveGeneratorFactory(
 			const fallbackCount = fallbacks.length
 			const decision = await generate(context)
 			decisions.push({
-				context: structuredClone(context),
 				decision,
 				modelId: bot.modelId,
 				playerId: bot.id,
-				renderedFacts: renderAiGameFacts(context),
+				prompt: renderAiGameFacts(context),
 				sequence: decisions.length + 1,
 				source:
 					fallbacks.length > fallbackCount
@@ -520,6 +525,16 @@ describe("four-bot deterministic realtime game", () => {
 			expect(recorded.generatorCalls).toBe(56)
 			expect(recorded.cacheOutputCount).toBe(56)
 			expect(recorded.transcript).toHaveLength(56)
+			const inputFiles = (await readdir(cacheDirectory, { recursive: true }))
+				.filter((file) => file.endsWith(".input.json"))
+				.map((file) => join(cacheDirectory, file))
+			expect(inputFiles).toHaveLength(56)
+			for (const inputFile of inputFiles) {
+				const input = JSON.parse(await readFile(inputFile, "utf8"))
+				expect(input).toEqual([expect.stringContaining("Your hand:")])
+				expect(JSON.stringify(input)).not.toContain("privateView")
+				expect(JSON.stringify(input)).not.toContain("card::")
+			}
 			expect(
 				recorded.generatorContexts
 					.filter((context) => context.publicView.phase === "playing")

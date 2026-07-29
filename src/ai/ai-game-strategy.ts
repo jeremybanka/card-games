@@ -35,6 +35,7 @@ export type AiGameStrategy<Kind extends GameKind> = {
 	submitAction: (
 		socket: AiActionSocket,
 		action: AiNextActionFor<Kind>,
+		privateView: AiGameContextFor<Kind>["privateView"],
 	) => Promise<ActionResult>
 	systemPrompt: string
 	usesTurnGenerator: (context: AiGameContextFor<Kind>) => boolean

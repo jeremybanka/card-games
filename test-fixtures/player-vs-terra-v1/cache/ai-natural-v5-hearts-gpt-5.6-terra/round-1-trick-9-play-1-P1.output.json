@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead lowest diamond; preserve clubs while P0 is void.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JD"
+	},
+	"observation": "P0’s remaining diamonds are 5D, 7D, TD; JD is a safe forced winner."
+}

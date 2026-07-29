@@ -175,14 +175,14 @@ describe("AI Hearts generators", () => {
 						{
 							properties: {
 								action: { enum: ["passCards"], type: "string" },
-								cardIds: { maxItems: 3, minItems: 3, type: "array" },
+								cards: { maxItems: 3, minItems: 3, type: "array" },
 							},
 							type: "object",
 						},
 						{
 							properties: {
 								action: { enum: ["playCard"], type: "string" },
-								cardId: { type: "string" },
+								card: { type: "string" },
 							},
 							type: "object",
 						},
@@ -228,7 +228,7 @@ describe("AI Hearts generators", () => {
 		).toBe(true)
 	})
 
-	it("renders useful facts without exposing opaque opponent card identities", () => {
+	it("renders natural Hearts facts using literal card values only", () => {
 		const ownCard = card("own-queen", "spades", 12)
 		const facts = renderAiGameFacts(
 			gameContext({
@@ -239,9 +239,12 @@ describe("AI Hearts generators", () => {
 			}),
 		)
 
-		expect(facts).toContain("QS [card::own-queen] — LEGAL")
-		expect(facts).toContain("hand=1")
+		expect(facts).toContain("Your hand: QS.")
+		expect(facts).toContain("Legal plays: QS.")
+		expect(facts).toContain("P0 (you), Terra AI: score 0")
 		expect(facts).not.toContain("card::opaque-opponent-card")
+		expect(facts).not.toContain("card::own-queen")
+		expect(facts).not.toContain("AI:gpt")
 	})
 
 	it("renders exact private transfers and completed public tricks as memory", () => {
@@ -284,9 +287,9 @@ describe("AI Hearts generators", () => {
 
 		const facts = renderAiGameFacts(context)
 
-		expect(facts).toContain("- R1 pass left -> P1: KH")
-		expect(facts).toContain("- R1 receive left <- P1: QH")
-		expect(facts).toContain("- T1>P1: P1 2C")
+		expect(facts).toContain("Gave P1 KH.")
+		expect(facts).toContain("Received QH from P1.")
+		expect(facts).toContain("1. P1 2C. P1 won.")
 		expect(facts).not.toContain("card::passed-king")
 		expect(facts).not.toContain("card::completed-two")
 	})
@@ -312,7 +315,7 @@ describe("AI Hearts generators", () => {
 
 		expect(action).toEqual({
 			action: "passCards",
-			cardIds: ["card::qs", "card::ah", "card::kh"],
+			cards: ["QS", "AH", "KH"],
 		})
 	})
 
@@ -338,7 +341,7 @@ describe("AI Hearts generators", () => {
 
 		expect(chooseFallbackAiAction(context)).toEqual({
 			action: "playCard",
-			cardId: ten.id,
+			card: "TC",
 		})
 	})
 
@@ -356,7 +359,7 @@ describe("AI Hearts generators", () => {
 				currentPlan: "Cheat.",
 				nextAction: {
 					action: "playCard",
-					cardId: "card::not-in-hand",
+					card: "AS",
 				},
 				observation: "I can see hidden cards.",
 			}),
@@ -364,7 +367,7 @@ describe("AI Hearts generators", () => {
 		)
 
 		await expect(generate(context)).resolves.toMatchObject({
-			nextAction: { action: "playCard", cardId: two.id },
+			nextAction: { action: "playCard", card: "2C" },
 		})
 		expect(onFallback).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -372,7 +375,7 @@ describe("AI Hearts generators", () => {
 					currentPlan: "Cheat.",
 					nextAction: {
 						action: "playCard",
-						cardId: "card::not-in-hand",
+						card: "AS",
 					},
 					observation: "I can see hidden cards.",
 				},
@@ -381,7 +384,7 @@ describe("AI Hearts generators", () => {
 		)
 	})
 
-	it("keeps the full game context behind legacy Varmint keys", async () => {
+	it("stores the rendered prompt directly in Varmint input fixtures", async () => {
 		const two = card("two-clubs", "clubs", 2)
 		const leftover = card("leftover", "spades", 12)
 		const context = gameContext(
@@ -408,32 +411,38 @@ describe("AI Hearts generators", () => {
 		)
 		const base = vi.fn(async (_context: AiGameContext) => ({
 			currentPlan: "Lead the required lowest club.",
-			nextAction: { action: "playCard" as const, cardId: two.id },
+			nextAction: { action: "playCard" as const, card: "2C" as const },
 			observation: "The opening lead is forced.",
 		}))
-		const wrapped = wrapAiGeneratorWithVarmint(
-			"unit-test",
-			base,
-			new Squirrel("off"),
-		)
+		const cacheDirectory = await mkdtemp(join(tmpdir(), "wayfarer-prompt-"))
+		try {
+			const wrapped = wrapAiGeneratorWithVarmint(
+				"unit-test",
+				base,
+				new Squirrel("write", cacheDirectory),
+			)
 
-		await expect(wrapped(context)).resolves.toMatchObject({
-			nextAction: { cardId: two.id },
-		})
-		expect(base).toHaveBeenCalledOnce()
-		expect(base).toHaveBeenCalledWith(
-			expect.objectContaining({
-				privateView: expect.objectContaining({
-					awardedLeftoverCard: leftover,
-					gameKind: "hearts",
-				}),
-				publicView: expect.objectContaining({
-					completedTricks: context.publicView.completedTricks,
-					deckCardIds: [leftover.id],
-					gameKind: "hearts",
-				}),
-			}),
-		)
+			await expect(wrapped(context)).resolves.toMatchObject({
+				nextAction: { card: "2C" },
+			})
+			expect(base).toHaveBeenCalledOnce()
+			expect(base).toHaveBeenCalledWith(context)
+			const input = JSON.parse(
+				await readFile(
+					join(
+						cacheDirectory,
+						"unit-test",
+						"round-1-trick-3-play-1-P0.input.json",
+					),
+					"utf8",
+				),
+			)
+			expect(input).toEqual([renderAiGameFacts(context)])
+			expect(JSON.stringify(input)).not.toContain("privateView")
+			expect(JSON.stringify(input)).not.toContain("card::")
+		} finally {
+			await rm(cacheDirectory, { force: true, recursive: true })
+		}
 	})
 })
 
@@ -448,16 +457,15 @@ describe("AI Oh Hell strategy", () => {
 
 		expect(strategy.systemPrompt).toContain("strategic Oh Hell player")
 		expect(strategy.systemPrompt).not.toContain("minimize expected points")
-		expect(facts).toContain(
-			"during play choose one card ID from a hand row labeled LEGAL",
-		)
+		expect(facts).toContain("choose one listed legal card value")
+		expect(facts).not.toContain("card::")
 		expect(facts).not.toContain("during passing")
 		expect(JSON.stringify(strategy.outputSchema)).toContain("submitBid")
 		expect(JSON.stringify(strategy.outputSchema)).not.toContain("passCards")
 		expect(
 			strategy.parseDecision({
 				currentPlan: "Pass.",
-				nextAction: { action: "passCards", cardIds: [low.id] },
+				nextAction: { action: "passCards", cards: ["2C"] },
 				observation: "Cards can be passed.",
 			}).ok,
 		).toBe(false)
@@ -472,11 +480,14 @@ describe("AI Oh Hell strategy", () => {
 			chooseFallbackAiAction(
 				ohHellContext([low, trump], { bid: 1, tricksWon: 0 }),
 			),
-		).toEqual({ action: "playCard", cardId: trump.id })
+		).toEqual({ action: "playCard", card: "AS" })
 		expect(
 			chooseFallbackAiAction(
 				ohHellContext([low, trump], { bid: 1, tricksWon: 1 }),
 			),
-		).toEqual({ action: "playCard", cardId: low.id })
+		).toEqual({ action: "playCard", card: "2C" })
 	})
 })
+import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"

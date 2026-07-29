@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Cash QD, then lead 3S to P0’s known high spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QD"
+	},
+	"observation": "P0’s exposed diamonds are below QD; hearts remain closed."
+}

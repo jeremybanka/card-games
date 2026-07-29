@@ -51,8 +51,8 @@ strategy. Without a key, AI seats remain fully playable through the deterministi
 strategic fallback. `VARMINT_CACHE_MODE` can be set to `read`, `write`, or
 `read-write` when recording or replaying generator results; it defaults to
 `off`. `VARMINT_CACHE_DIRECTORY` overrides the default
-`.varmint/hearts-ai` local cache location. Replay fixtures required by CI belong
-under `test-fixtures/` and must be committed.
+`.varmint/hearts-ai` fixture location. Varmint fixtures are committed so cache
+inputs and model outputs remain reviewable.
 
 Every AI is a separate Socket.IO player. It receives the same public projection
 and one private hand projection through atom.io realtime, stores them in its own
@@ -90,16 +90,16 @@ actions and must not be replayed.
 
 Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
-`.varmint/recordings/sol-vs-three-luna-live-v4-compact-ledger/`. Override the
+`.varmint/recordings/sol-vs-three-luna-live-v5-natural-prompt/`. Override the
 artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves the
-Varmint inputs and outputs plus an `analysis.json` containing rendered facts,
-raw model responses and usage, guarded decisions, fallback records, accepted
-actions, full server state, trick winners, and scores. It then performs a
-cache-only replay and requires the same decisions, actions, and final state
-without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
+prompt strings directly as Varmint inputs and value-based outputs plus an `analysis.json`
+containing prompts, raw model responses and usage, guarded decisions, fallback
+records, accepted actions, full server state, trick winners, and scores. It then
+performs a cache-only replay and requires the same decisions, actions, and final
+state without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
 recorder to stream the same complete local spans exposed by the debug test
-commands. These gitignored recordings are local analysis artifacts; CI does not
-consume them.
+commands. CI only consumes a recording after a test is explicitly wired to
+replay that fixture in strict `read` mode.
 
 The player-versus-Terra Testing Library test replays the browser recording in
 `test-fixtures/player-vs-terra-v1/` with the invariant
@@ -163,6 +163,11 @@ Clients receive two separate atom.io realtime projections:
 Hidden card values are absent from public state, acknowledgements, and room
 events. A private device secret prevents another client from reclaiming a
 publicly visible player ID.
+
+AI prompts and structured model outputs use literal private card values such as
+`QS` and `2H`. The AI's private server adapter resolves a selected value back to
+its current physical card ID before submitting the same authoritative action as
+a human client.
 
 ## Commands
 

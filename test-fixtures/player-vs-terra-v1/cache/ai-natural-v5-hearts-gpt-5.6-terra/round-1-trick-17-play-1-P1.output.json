@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Force P0 discards, then shed hearts under their spade leads.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AC"
+	},
+	"observation": "P0 void C/D; AC forces a discard."
+}

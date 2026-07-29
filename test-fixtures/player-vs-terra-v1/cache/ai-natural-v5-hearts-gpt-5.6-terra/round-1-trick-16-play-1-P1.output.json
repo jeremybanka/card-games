@@ -1,0 +1,8 @@
+{
+	"currentPlan": "P0 is void C/D; force discards with low club, then manage hearts after spades shed.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KC"
+	},
+	"observation": "P0 is void C/D and retains passed high spades."
+}

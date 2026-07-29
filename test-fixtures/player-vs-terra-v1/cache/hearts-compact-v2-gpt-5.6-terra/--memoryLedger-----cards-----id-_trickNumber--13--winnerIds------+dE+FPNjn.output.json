@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Lead KD to force P0’s last diamond; delay heart-breaking winners.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::271d2b29-5af8-4b5a-b16b-c8d49c742770"
-	},
-	"observation": "P0’s only unplayed diamond is TD; hearts remain closed."
-}
