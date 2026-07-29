@@ -1,3 +1,8 @@
+import { createHash } from "node:crypto"
+import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+
 import { Squirrel } from "varmint"
 import { describe, expect, it, vi } from "vitest"
 
@@ -17,7 +22,10 @@ import {
 	type AiGameContextFor,
 } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
-import { wrapAiGeneratorWithVarmint } from "./ai-generator.node.ts"
+import {
+	promptFixtureKey,
+	wrapAiGeneratorWithVarmint,
+} from "./ai-generator.node.ts"
 import { isAiTurnReady } from "./ai-player.node.ts"
 import {
 	chooseFallbackAiAction,
@@ -523,17 +531,28 @@ describe("AI Hearts generators", () => {
 			})
 			expect(base).toHaveBeenCalledOnce()
 			expect(base).toHaveBeenCalledWith(context)
+			const prompt = renderAiGameFacts(context)
+			const inputHash = createHash("sha256")
+				.update(JSON.stringify([prompt], null, "\t"))
+				.digest("hex")
+				.slice(0, 12)
+			expect(promptFixtureKey(context, prompt)).toBe(
+				`round-1-trick-3-play-1-P0--${inputHash}`,
+			)
+			expect(promptFixtureKey(context, `${prompt}\nchanged`)).not.toBe(
+				promptFixtureKey(context, prompt),
+			)
 			const input = JSON.parse(
 				await readFile(
 					join(
 						cacheDirectory,
 						"unit-test",
-						"round-1-trick-3-play-1-P0.input.json",
+						`${promptFixtureKey(context, prompt)}.input.json`,
 					),
 					"utf8",
 				),
 			)
-			expect(input).toEqual([renderAiGameFacts(context)])
+			expect(input).toEqual([prompt])
 			expect(JSON.stringify(input)).not.toContain("privateView")
 			expect(JSON.stringify(input)).not.toContain("card::")
 		} finally {
@@ -582,6 +601,3 @@ describe("AI Oh Hell strategy", () => {
 		).toEqual({ action: "playCard", card: "2C" })
 	})
 })
-import { mkdtemp, readFile, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"

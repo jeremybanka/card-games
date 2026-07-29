@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 import { createOpenAI } from "@ai-sdk/openai"
 import { generateText, jsonSchema, Output } from "ai"
 import type { CacheMode } from "varmint"
@@ -51,16 +53,25 @@ export const aiGeneratorSquirrel = new Squirrel(
 	process.env.VARMINT_CACHE_DIRECTORY?.trim() || ".varmint/hearts-ai",
 )
 
-export function promptFixtureKey(context: AiGameContext): string {
+export function promptFixtureKey(
+	context: AiGameContext,
+	prompt: string,
+): string {
 	const playerIndex = context.publicView.players.findIndex(
 		(player) => player.id === context.playerId,
 	)
 	const player = playerIndex === -1 ? context.playerId : `P${playerIndex}`
-	return context.publicView.phase === "playing"
-		? `round-${context.publicView.roundNumber}-trick-${
-				context.publicView.trickNumber + 1
-			}-play-${context.publicView.currentTrick.length + 1}-${player}`
-		: `round-${context.publicView.roundNumber}-${context.publicView.phase}-${player}`
+	const readableKey =
+		context.publicView.phase === "playing"
+			? `round-${context.publicView.roundNumber}-trick-${
+					context.publicView.trickNumber + 1
+				}-play-${context.publicView.currentTrick.length + 1}-${player}`
+			: `round-${context.publicView.roundNumber}-${context.publicView.phase}-${player}`
+	const inputHash = createHash("sha256")
+		.update(JSON.stringify([prompt], null, "\t"))
+		.digest("hex")
+		.slice(0, 12)
+	return `${readableKey}--${inputHash}`
 }
 
 export function wrapAiGeneratorWithVarmint(
@@ -83,7 +94,7 @@ export function wrapAiGeneratorWithVarmint(
 		const prompt = renderAiGameFacts(context)
 		sourceContexts.set(prompt, context)
 		try {
-			return await wrapped.for(promptFixtureKey(context)).get(prompt)
+			return await wrapped.for(promptFixtureKey(context, prompt)).get(prompt)
 		} finally {
 			sourceContexts.delete(prompt)
 		}
