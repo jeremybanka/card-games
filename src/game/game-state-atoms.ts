@@ -1,8 +1,8 @@
 import { atom, atomFamily, selectorFamily } from "atom.io"
 
 import {
-	EMPTY_PRIVATE_PLAYER_VIEW,
-	EMPTY_PUBLIC_GAME_VIEW,
+	EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
+	EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 	type PlayerId,
 	type PrivatePlayerView,
 	type PublicGameView,
@@ -50,10 +50,10 @@ export const privatePlayerViewProjectionSelectors = selectorFamily<
 
 export const publicGameViewAtom = atom<PublicGameView>({
 	key: "publicGameView",
-	default: EMPTY_PUBLIC_GAME_VIEW,
+	default: EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 })
 
 export const privatePlayerViewAtom = atom<PrivatePlayerView>({
 	key: "privatePlayerView",
-	default: EMPTY_PRIVATE_PLAYER_VIEW,
+	default: EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 })

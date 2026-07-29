@@ -6,8 +6,8 @@ import {
 	isAutoPlayTurnActionable,
 } from "./hearts-auto-play.ts"
 import {
-	EMPTY_PRIVATE_PLAYER_VIEW,
-	EMPTY_PUBLIC_GAME_VIEW,
+	EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
+	EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 	type CardId,
 	type PlayerId,
 	type PrivatePlayerView,
@@ -127,7 +127,7 @@ describe("chooseHeartsAutoPlayCard", () => {
 describe("auto-play turn identity and readiness", () => {
 	const two = card("clubs", 2)
 	const game: PublicGameView = {
-		...EMPTY_PUBLIC_GAME_VIEW,
+		...EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 		currentPlayerId: me,
 		gameKind: "hearts",
 		phase: "playing",
@@ -136,7 +136,7 @@ describe("auto-play turn identity and readiness", () => {
 		trickNumber: 7,
 	}
 	const privateView: PrivatePlayerView = {
-		...EMPTY_PRIVATE_PLAYER_VIEW,
+		...EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 		cards: [two],
 		playableCardIds: [two.id],
 		playerId: me,

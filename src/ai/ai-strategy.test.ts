@@ -2,7 +2,7 @@ import { Squirrel } from "varmint"
 import { describe, expect, it, vi } from "vitest"
 
 import {
-	EMPTY_PRIVATE_PLAYER_VIEW,
+	EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 	type CardId,
 	type HeartsPrivatePlayerView,
 	type HeartsPublicGameView,
@@ -38,7 +38,7 @@ function gameContext(
 	overrides: Partial<HeartsPublicGameView> = {},
 ): AiGameContext {
 	const privateView: HeartsPrivatePlayerView = {
-		...EMPTY_PRIVATE_PLAYER_VIEW,
+		...EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 		...privateOverrides,
 	}
 	const publicView: HeartsPublicGameView = {

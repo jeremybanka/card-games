@@ -249,7 +249,7 @@ export type ServerToClientEvents = {
 	roomClosed: (message: string) => void
 }
 
-export const EMPTY_PUBLIC_GAME_VIEW: HeartsPublicGameView = {
+export const EMPTY_HEARTS_PUBLIC_GAME_VIEW: HeartsPublicGameView = {
 	gameKind: "hearts",
 	completedTricks: [],
 	currentPlayerId: null,
@@ -270,7 +270,7 @@ export const EMPTY_PUBLIC_GAME_VIEW: HeartsPublicGameView = {
 	winnerIds: [],
 }
 
-export const EMPTY_PRIVATE_PLAYER_VIEW: HeartsPrivatePlayerView = {
+export const EMPTY_HEARTS_PRIVATE_PLAYER_VIEW: HeartsPrivatePlayerView = {
 	awardedLeftoverCard: null,
 	cards: [],
 	gameKind: "hearts",
