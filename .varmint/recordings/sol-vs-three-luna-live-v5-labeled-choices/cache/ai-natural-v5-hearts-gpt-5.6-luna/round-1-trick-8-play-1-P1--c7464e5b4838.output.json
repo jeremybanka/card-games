@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low diamonds to shed 8D; preserve TD and keep hearts unexposed.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8D"
+	}
+}

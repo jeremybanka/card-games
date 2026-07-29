@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck this diamond trick to avoid taking the lead; preserve high spades and hearts while hearts remain intact.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2D"
+	}
+}

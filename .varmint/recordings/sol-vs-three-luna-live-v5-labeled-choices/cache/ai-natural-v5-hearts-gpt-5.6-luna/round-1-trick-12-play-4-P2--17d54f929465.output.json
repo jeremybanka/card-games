@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard the lower heart now; retain JH as the final heart.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TH"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard the dangerous high heart now; retain 2H and 3H to avoid winning future heart tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KH"
+	}
+}

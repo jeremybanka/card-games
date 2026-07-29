@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck club leads; seek a safe QS discard under AS/KS and avoid winning heart tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9C"
+	}
+}

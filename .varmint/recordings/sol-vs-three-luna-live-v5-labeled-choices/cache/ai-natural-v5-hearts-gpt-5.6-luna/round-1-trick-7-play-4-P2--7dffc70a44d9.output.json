@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard high diamonds when void; preserve hearts for later control.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QD"
+	}
+}

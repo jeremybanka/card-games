@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead 9H; opponents must follow hearts, and TH should win so you avoid the point.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9H"
+	}
+}

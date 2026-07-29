@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard 3H now; retain 2H for the final trick, avoiding any chance of winning.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3H"
+	}
+}

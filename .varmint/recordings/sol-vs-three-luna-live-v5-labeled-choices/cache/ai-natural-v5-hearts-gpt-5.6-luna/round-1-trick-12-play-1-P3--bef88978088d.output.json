@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead AD to take a zero-point trick, then lead 9H and seek to shed it to a higher heart.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AD"
+	}
+}

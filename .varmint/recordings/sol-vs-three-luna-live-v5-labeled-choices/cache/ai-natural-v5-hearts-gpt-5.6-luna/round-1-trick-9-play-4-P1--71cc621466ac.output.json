@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck the queen and shed the 8H; retain low hearts to avoid taking future tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8H"
+	}
+}

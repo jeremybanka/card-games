@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead JC to shed a club; preserve high spades and hearts while hearts remain intact.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JC"
+	}
+}

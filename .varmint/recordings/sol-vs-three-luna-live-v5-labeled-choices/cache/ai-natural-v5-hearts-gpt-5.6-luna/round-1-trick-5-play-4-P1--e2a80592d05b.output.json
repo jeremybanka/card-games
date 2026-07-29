@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with the lowest spade, avoid taking the trick and preserve higher spades and hearts.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2S"
+	}
+}

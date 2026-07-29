@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with the highest safe card; shed QS when safely covered and avoid heart tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5C"
+	}
+}

@@ -90,7 +90,7 @@ actions and must not be replayed.
 
 Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
-`.varmint/recordings/sol-vs-three-luna-live-v5-natural-prompt/`. Override the
+`.varmint/recordings/sol-vs-three-luna-live-v5-labeled-choices/`. Override the
 artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves prompt
 strings directly as Varmint inputs and value-based outputs plus an
 `analysis.json`. Each fixture filename keeps its readable round/trick/player

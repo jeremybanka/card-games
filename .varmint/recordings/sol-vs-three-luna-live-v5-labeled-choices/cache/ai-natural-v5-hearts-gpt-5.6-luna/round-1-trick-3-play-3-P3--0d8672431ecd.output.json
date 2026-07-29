@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play QC to shed the lower club; avoid winning while clubs remain controlled.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QC"
+	}
+}

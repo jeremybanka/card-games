@@ -71,7 +71,7 @@ const invariantSeed = "sol-vs-three-luna-v1"
 const liveInvariantSeed = "sol-vs-three-luna-live-v1"
 const liveRecordingName =
 	process.env.AI_GAME_RECORDING_NAME?.trim() ||
-	"sol-vs-three-luna-live-v5-natural-prompt"
+	"sol-vs-three-luna-live-v5-labeled-choices"
 const bots = [
 	{
 		id: "user::00000000-0000-4000-8000-000000000001",
@@ -564,7 +564,7 @@ describe("four-bot deterministic realtime game", () => {
 			process.cwd(),
 			".varmint",
 			"recordings",
-			"sol-vs-three-luna-live-v5-natural-prompt",
+			"sol-vs-three-luna-live-v5-labeled-choices",
 			"cache",
 		)
 		const decisions: LiveDecisionRecord[] = []
@@ -589,7 +589,7 @@ describe("four-bot deterministic realtime game", () => {
 		expect(replayed.cacheOutputCount).toBe(56)
 		expect(
 			replayed.finalState.players.map((player) => player.roundPoints),
-		).toEqual([12, 0, 14, 0])
+		).toEqual([4, 0, 3, 19])
 	}, 20_000)
 
 	const liveIt = process.env.RECORD_LIVE_AI_GAME === "1" ? it : it.skip

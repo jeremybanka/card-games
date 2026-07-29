@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the lowest heart to avoid winning the trick and retain higher hearts as control.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4H"
+	}
+}

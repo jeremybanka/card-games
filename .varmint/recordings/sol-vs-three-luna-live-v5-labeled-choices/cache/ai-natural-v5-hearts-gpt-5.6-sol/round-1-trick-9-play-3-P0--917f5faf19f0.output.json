@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Use P1's known KH to cover QH; avoid leads and unload QS safely.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QH"
+	}
+}

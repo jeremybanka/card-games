@@ -1,0 +1,11 @@
+{
+	"currentPlan": "Void hearts; shed dangerous spades early and avoid taking tricks.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"AS",
+			"KH",
+			"2H"
+		]
+	}
+}

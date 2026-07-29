@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with the lowest heart; avoid taking the trick and retain 9H.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5H"
+	}
+}

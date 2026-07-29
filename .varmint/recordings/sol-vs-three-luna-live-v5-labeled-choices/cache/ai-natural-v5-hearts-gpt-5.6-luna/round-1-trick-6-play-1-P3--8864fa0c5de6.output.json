@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low spades to shed control; avoid hearts while they remain intact.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}
