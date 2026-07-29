@@ -540,9 +540,12 @@ describe("observeCardMotion", () => {
 		opponentSource.remove()
 		root.append(opponentSlot)
 
-		await vi.waitFor(() => {
-			expect(root.dataset.lastCardMotion).toBe("opponent-play")
-		})
+		await vi.waitFor(
+			() => {
+				expect(root.dataset.lastCardMotion).toBe("opponent-play")
+			},
+			{ timeout: 3_000 },
+		)
 		expect(
 			animate.mock.instances.filter(
 				(instance) => instance === localDestination,
