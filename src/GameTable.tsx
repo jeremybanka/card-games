@@ -18,9 +18,9 @@ import {
 	draggedCardTransform,
 	dragTranslationFromPointer,
 	handCardLayout,
-	passSelectionAfterDrop,
 	readableCardHorizontalCorrection,
 } from "./card-hand-layout.ts"
+import { heartsPassSelectionAfterDrop } from "./hearts-pass-layout.ts"
 import {
 	cardMotionCompleteEvent,
 	capturePendingCardMotion,
@@ -1218,7 +1218,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			pendingCardFocus.current = cardId
 			setPassSelection((current) => {
 				const inPassZone = current.includes(cardId)
-				return passSelectionAfterDrop(
+				return heartsPassSelectionAfterDrop(
 					current,
 					cardId,
 					inPassZone ? "pass" : "hand",
@@ -1660,7 +1660,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 									}).length
 								: undefined
 						setPassSelection((current) =>
-							passSelectionAfterDrop(
+							heartsPassSelectionAfterDrop(
 								current,
 								cardId,
 								originZone,
