@@ -259,6 +259,73 @@ function ohHellBiddingContext(
 	}
 }
 
+function ohHellPlayingContext(cards: VisibleCard[]): AiGameContextFor<"ohHell"> {
+	const context = ohHellBiddingContext(cards, {})
+	const queenSpade = card("queen-spade", "spades", 12)
+	const aceDiamond = card("ace-diamond", "diamonds", 14)
+	const threeDiamond = card("three-diamond-played", "diamonds", 3)
+	const sevenDiamond = card("seven-diamond", "diamonds", 7)
+	context.previousPlan =
+		"Bid 1. Preserve AS for a reliable trump trick; after reaching the bid, shed KC and avoid taking extras."
+	context.privateView.legalBids = []
+	context.privateView.playableCardIds = cards
+		.filter((entry) => entry.suit === "spades")
+		.map((entry) => entry.id)
+	context.publicView.bidsSubmitted = 3
+	context.publicView.completedTricks = [
+		{
+			leftoverAward: null,
+			plays: [
+				{ card: aceDiamond, playerId: humanPlayerId },
+				{ card: threeDiamond, playerId: aiPlayerId },
+				{ card: sevenDiamond, playerId: opponentPlayerId },
+			],
+			winnerId: humanPlayerId,
+		},
+	]
+	context.publicView.currentTrick = [
+		{ card: queenSpade, playerId: humanPlayerId },
+	]
+	context.publicView.phase = "playing"
+	const player0 = context.publicView.players[0]
+	const player1 = context.publicView.players[1]
+	const player2 = context.publicView.players[2]
+	if (player0 === undefined || player1 === undefined || player2 === undefined) {
+		throw new Error("The Oh Hell play fixture requires three players.")
+	}
+	context.publicView.players[0] = {
+		...player0,
+		bid: 1,
+		handCardIds: [
+			"card::opaque-human-1",
+			"card::opaque-human-2",
+			"card::opaque-human-3",
+		],
+		tricksWon: 1,
+	}
+	context.publicView.players[1] = {
+		...player1,
+		bid: 1,
+		tricksWon: 0,
+	}
+	context.publicView.players[2] = {
+		...player2,
+		bid: 2,
+		handCardIds: [
+			"card::opaque-opponent-1",
+			"card::opaque-opponent-2",
+			"card::opaque-opponent-3",
+		],
+		tricksWon: 0,
+	}
+	context.publicView.roundHandSize = 4
+	context.publicView.statusMessage = "Terra AI plays."
+	context.publicView.trickLeaderId = humanPlayerId
+	context.publicView.trickNumber = 1
+	context.publicView.trumpSuit = "spades"
+	return context
+}
+
 describe("AI Hearts generators", () => {
 	it("uses an OpenAI-compatible structured-output schema", () => {
 		const strategy = aiGameStrategy("hearts")
@@ -689,7 +756,7 @@ describe("AI Oh Hell strategy", () => {
 
 		expect(strategy.systemPrompt).toContain("strategic Oh Hell player")
 		expect(strategy.systemPrompt).not.toContain("minimize expected points")
-		expect(facts).toContain("choose one listed legal card value")
+		expect(facts).toContain("Choose one legal card value")
 		expect(facts).not.toContain("card::")
 		expect(facts).not.toContain("during passing")
 		expect(JSON.stringify(strategy.outputSchema)).toContain("submitBid")
@@ -777,5 +844,77 @@ Choose your bid.`)
 			"There are 5 tricks. As dealer, your bid may not make the table's total bids equal 5.",
 		)
 		expect(facts).toContain("Legal bids: 0, 1, 3, 4, 5.")
+	})
+
+	it("renders target-aware tactical meaning for every legal play", () => {
+		const ace = card("ace-spade", "spades", 14)
+		const nine = card("nine-spade", "spades", 9)
+		const king = card("king-club", "clubs", 13)
+		const facts = renderAiGameFacts(ohHellPlayingContext([ace, nine, king]))
+
+		expect(facts).toBe(`Oh Hell, round 2 of 5, trick 2 of 4. Trump is spades.
+You are P1, playing 2nd of 3. 3 tricks remain, including this one.
+
+Targets:
+- P0: bid 1, won 1 — on target; needs 0 more. 3 cards.
+- P1 (you): bid 1, won 0 — needs exactly 1. 3 cards.
+- P2: bid 2, won 0 — needs exactly 2. 3 cards.
+
+Scores: P0 10, P1 12, P2 3.
+
+Current trick:
+P0 led QS. P0 is currently winning with QS. P2 plays after you.
+
+Your hand: AS, 9S, KC.
+Legal plays:
+- AS (overtrumps QS; unbeatable; would reach your bid exactly)
+- 9S (ducks QS; cannot win)
+
+Completed play:
+1. P0 AD, P1 3D, P2 7D. P0 won.
+
+Current plan:
+Bid 1. Preserve AS for a reliable trump trick; after reaching the bid, shed KC and avoid taking extras.
+
+Choose one legal card value.`)
+		expect(facts).not.toContain("card::")
+		expect(facts).not.toContain("connected")
+		expect(facts).not.toContain("Private pass")
+	})
+
+	it("labels ruffs and exposes voids learned from public play", () => {
+		const lowHeart = card("low-heart", "hearts", 2)
+		const trump = card("ten-spade", "spades", 10)
+		const context = ohHellPlayingContext([lowHeart, trump])
+		context.privateView.playableCardIds = [lowHeart.id, trump.id]
+		context.publicView.currentTrick = [
+			{ card: card("king-club-led", "clubs", 13), playerId: humanPlayerId },
+		]
+		context.publicView.completedTricks = [
+			{
+				leftoverAward: null,
+				plays: [
+					{
+						card: card("eight-club-played", "clubs", 8),
+						playerId: humanPlayerId,
+					},
+					{
+						card: card("three-club-played", "clubs", 3),
+						playerId: aiPlayerId,
+					},
+					{
+						card: card("four-heart-played", "hearts", 4),
+						playerId: opponentPlayerId,
+					},
+				],
+				winnerId: humanPlayerId,
+			},
+		]
+
+		const facts = renderAiGameFacts(context)
+
+		expect(facts).toContain("TS (ruffs KC; currently winning; 1 player remains)")
+		expect(facts).toContain("2H (discards; cannot win)")
+		expect(facts).toContain("P2 is void in clubs.")
 	})
 })

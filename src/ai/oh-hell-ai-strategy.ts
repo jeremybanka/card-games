@@ -121,8 +121,10 @@ function isLegalOhHellAction(
 
 const commonPrompt = [
 	"Choose exactly one legal next action.",
-	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
+	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S.",
 	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
+	"For play, treat each parenthesized legal-play label as authoritative tactical fact.",
+	"Use completed tricks and known voids as exact public memory.",
 	"For play, return exactly one listed legal card value.",
 	"Keep the plan terse.",
 ]

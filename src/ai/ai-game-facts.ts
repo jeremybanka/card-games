@@ -472,6 +472,222 @@ function renderOhHellBiddingFacts(
 	].join("\n")
 }
 
+function ohHellTrickWinner(
+	context: AiGameContextFor<"ohHell">,
+	plays: { card: VisibleCard; playerId: PlayerId }[],
+): { card: VisibleCard; playerId: PlayerId } | undefined {
+	const first = plays[0]
+	if (first === undefined) return undefined
+	const leadSuit = first.card.suit
+	return plays.slice(1).reduce((winner, play) => {
+		const cardIsTrump = play.card.suit === context.publicView.trumpSuit
+		const winnerIsTrump = winner.card.suit === context.publicView.trumpSuit
+		if (cardIsTrump !== winnerIsTrump) return cardIsTrump ? play : winner
+		if (play.card.suit !== winner.card.suit) {
+			return play.card.suit === leadSuit ? play : winner
+		}
+		return play.card.rank > winner.card.rank ? play : winner
+	}, first)
+}
+
+function ohHellTargetStatus(bid: number, tricksWon: number): string {
+	const tricksNeeded = bid - tricksWon
+	if (tricksNeeded > 0) return `needs exactly ${tricksNeeded}`
+	if (tricksNeeded === 0) return "on target; needs 0 more"
+	return `over target by ${-tricksNeeded}`
+}
+
+function ohHellWinningConsequence(
+	context: AiGameContextFor<"ohHell">,
+): string {
+	const me = context.publicView.players.find(
+		(player) => player.id === context.playerId,
+	)
+	if (me?.bid === null || me?.bid === undefined) return "would win this trick"
+	const tricksAfterWinning = me.tricksWon + 1
+	if (tricksAfterWinning === me.bid) return "would reach your bid exactly"
+	if (tricksAfterWinning < me.bid) {
+		return `would still need ${me.bid - tricksAfterWinning}`
+	}
+	return `would exceed your bid by ${tricksAfterWinning - me.bid}`
+}
+
+function ohHellLegalPlayMeaning(
+	context: AiGameContextFor<"ohHell">,
+	card: VisibleCard,
+): string {
+	const trick = context.publicView.currentTrick
+	if (trick.length === 0) {
+		return card.suit === context.publicView.trumpSuit
+			? "leads trump"
+			: `leads ${card.suit}`
+	}
+	const currentWinner = ohHellTrickWinner(context, trick)
+	if (currentWinner === undefined) return "plays"
+	const candidate = { card, playerId: context.playerId }
+	const winnerAfterPlay = ohHellTrickWinner(context, [...trick, candidate])
+	if (winnerAfterPlay !== candidate) {
+		const leadSuit = trick[0]?.card.suit
+		if (
+			card.suit === context.publicView.trumpSuit &&
+			currentWinner.card.suit === context.publicView.trumpSuit &&
+			leadSuit !== context.publicView.trumpSuit
+		) {
+			return `undertrumps ${aiCardValue(currentWinner.card)}; cannot win`
+		}
+		if (card.suit !== leadSuit) return "discards; cannot win"
+		return `ducks ${aiCardValue(currentWinner.card)}; cannot win`
+	}
+	const leadSuit = trick[0]?.card.suit
+	const cardIsTrump = card.suit === context.publicView.trumpSuit
+	const winnerIsTrump =
+		currentWinner.card.suit === context.publicView.trumpSuit
+	const action =
+		cardIsTrump && !winnerIsTrump && card.suit !== leadSuit
+			? `ruffs ${aiCardValue(currentWinner.card)}`
+			: cardIsTrump && winnerIsTrump
+				? `overtrumps ${aiCardValue(currentWinner.card)}`
+				: `overtakes ${aiCardValue(currentWinner.card)}`
+	const playersRemaining =
+		context.publicView.players.length - (context.publicView.currentTrick.length + 1)
+	const unbeatable =
+		card.suit === context.publicView.trumpSuit && card.rank === 14
+	if (playersRemaining === 0) {
+		return `${action}; takes the trick; ${ohHellWinningConsequence(context)}`
+	}
+	if (unbeatable) {
+		return `${action}; unbeatable; ${ohHellWinningConsequence(context)}`
+	}
+	return `${action}; currently winning; ${playersRemaining} player${
+		playersRemaining === 1 ? "" : "s"
+	} ${playersRemaining === 1 ? "remains" : "remain"}`
+}
+
+function ohHellKnownVoids(context: AiGameContextFor<"ohHell">): string[] {
+	const voids = new Map<PlayerId, Set<Suit>>()
+	const remember = (
+		plays: { card: VisibleCard; playerId: PlayerId }[],
+	): void => {
+		const leadSuit = plays[0]?.card.suit
+		if (leadSuit === undefined) return
+		for (const play of plays.slice(1)) {
+			if (play.card.suit === leadSuit) continue
+			const playerVoids = voids.get(play.playerId) ?? new Set<Suit>()
+			playerVoids.add(leadSuit)
+			voids.set(play.playerId, playerVoids)
+		}
+	}
+	for (const trick of context.publicView.completedTricks) remember(trick.plays)
+	remember(context.publicView.currentTrick)
+	return context.publicView.players.flatMap((player) => {
+		const suits = [...(voids.get(player.id) ?? [])]
+		return suits.length === 0
+			? []
+			: `${playerAlias(context, player.id)} is void in ${suits.join(", ")}.`
+	})
+}
+
+function renderOhHellCurrentTrick(
+	context: AiGameContextFor<"ohHell">,
+): string {
+	const trick = context.publicView.currentTrick
+	if (trick.length === 0) return "You lead."
+	const winner = ohHellTrickWinner(context, trick)
+	const plays = trick
+		.map(
+			(play, index) =>
+				index === 0
+					? `${playerAlias(context, play.playerId)} led ${aiCardValue(play.card)}`
+					: `${playerAlias(context, play.playerId)} played ${aiCardValue(play.card)}`,
+		)
+		.join(". ")
+	const currentWinner =
+		winner === undefined
+			? ""
+			: ` ${playerAlias(context, winner.playerId)} is currently winning with ${aiCardValue(winner.card)}.`
+	const playerIndex = context.publicView.players.findIndex(
+		(player) => player.id === context.playerId,
+	)
+	const playersRemaining =
+		context.publicView.players.length - (context.publicView.currentTrick.length + 1)
+	const laterPlayers = Array.from({ length: playersRemaining }, (_, offset) => {
+		const player =
+			context.publicView.players[
+				(playerIndex + offset + 1) % context.publicView.players.length
+			]
+		return player === undefined ? "unknown" : playerAlias(context, player.id)
+	})
+	const laterPlay =
+		laterPlayers.length === 0
+			? ""
+			: ` ${laterPlayers.join(" and ")} ${
+					laterPlayers.length === 1 ? "plays" : "play"
+				} after you.`
+	return `${plays}.${currentWinner}${laterPlay}`
+}
+
+function renderOhHellPlayingFacts(
+	context: AiGameContextFor<"ohHell">,
+): string {
+	const playerCount = context.publicView.players.length
+	const playPosition = context.publicView.currentTrick.length + 1
+	const tricksRemaining =
+		context.publicView.roundHandSize - context.publicView.completedTricks.length
+	const targets = context.publicView.players.map(
+		(player) =>
+			`- ${playerAlias(context, player.id)}${
+				player.id === context.playerId ? " (you)" : ""
+			}: bid ${player.bid ?? "pending"}, won ${player.tricksWon} — ${
+				player.bid === null
+					? "target pending"
+					: ohHellTargetStatus(player.bid, player.tricksWon)
+			}. ${player.handCardIds.length} cards.`,
+	)
+	const scores = context.publicView.players
+		.map((player) => `${playerAlias(context, player.id)} ${player.score}`)
+		.join(", ")
+	const hand = context.privateView.cards.map(aiCardValue).join(", ") || "empty"
+	const legalPlays = context.privateView.cards
+		.filter((card) => context.privateView.playableCardIds.includes(card.id))
+		.map(
+			(card) =>
+				`- ${aiCardValue(card)} (${ohHellLegalPlayMeaning(context, card)})`,
+		)
+	const completed =
+		context.publicView.completedTricks.length === 0
+			? ["None."]
+			: context.publicView.completedTricks.map((trick, index) =>
+					playLine(context, trick, index),
+				)
+	const voids = ohHellKnownVoids(context)
+
+	return [
+		`Oh Hell, round ${context.publicView.roundNumber} of ${context.publicView.maximumRounds}, trick ${context.publicView.trickNumber + 1} of ${context.publicView.roundHandSize}. Trump is ${context.publicView.trumpSuit ?? "none"}.`,
+		`You are ${playerAlias(context, context.playerId)}, playing ${ordinal(playPosition)} of ${playerCount}. ${tricksRemaining} trick${tricksRemaining === 1 ? "" : "s"} remain, including this one.`,
+		"",
+		"Targets:",
+		...targets,
+		"",
+		`Scores: ${scores}.`,
+		"",
+		"Current trick:",
+		renderOhHellCurrentTrick(context),
+		"",
+		`Your hand: ${hand}.`,
+		"Legal plays:",
+		...legalPlays,
+		"",
+		"Completed play:",
+		...completed,
+		...(voids.length === 0 ? [] : ["", "Known voids:", ...voids]),
+		"",
+		"Current plan:",
+		context.previousPlan || "None.",
+		"",
+		"Choose one legal card value.",
+	].join("\n")
+}
+
 function renderLegacyGameFacts(context: AiGameContext): string {
 	const adapter = aiFactsAdapter(context)
 	const me = context.publicView.players.find(
@@ -541,5 +757,7 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		? renderHeartsFacts(context as AiGameContextFor<"hearts">)
 		: context.publicView.phase === "bidding"
 			? renderOhHellBiddingFacts(context as AiGameContextFor<"ohHell">)
-		: renderLegacyGameFacts(context)
+			: context.publicView.phase === "playing"
+				? renderOhHellPlayingFacts(context as AiGameContextFor<"ohHell">)
+				: renderLegacyGameFacts(context)
 }
