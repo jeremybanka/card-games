@@ -4,7 +4,8 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc --noEmit && vite build",
-		"check": "vp check --no-fmt && tsc --noEmit && eslint . && lasertag check",
+		"check": "pnpm check:agents && vp check --no-fmt && tsc --noEmit && eslint . && lasertag check",
+		"check:agents": "agents validate",
 		"dev": "node scripts/dev-instance.node.ts",
 		"dev:server": "node --env-file-if-exists=.env --watch-path=server --watch-path=src/game --watch-path=src/ai server/main.node.ts",
 		"dev:vite": "vite",
@@ -31,7 +32,7 @@
 		"react-dom": "18.3.1",
 		"socket.io": "4.8.3",
 		"socket.io-client": "4.8.3",
-		"varmint": "0.5.13"
+		"varmint": "0.5.19"
 	},
 	"devDependencies": {
 		"@dprint/json": "0.23.0",
@@ -45,6 +46,7 @@
 		"@types/react-dom": "18.3.7",
 		"@typescript-eslint/parser": "8.65.0",
 		"@typescript-eslint/utils": "8.65.0",
+		"agents.yaml": "0.2.2",
 		"concurrently": "10.0.3",
 		"cspell": "10.0.1",
 		"dprint": "0.55.2",
