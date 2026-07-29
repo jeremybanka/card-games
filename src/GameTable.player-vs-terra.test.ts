@@ -37,8 +37,8 @@ import { createPhysicalCardIds } from "./game/card-domain.ts"
 import {
 	createHeartsGame,
 	joinHeartsGame,
-	playCard,
-	startGame,
+	playHeartsCard,
+	startHeartsGame,
 	submitPass,
 	type HeartsState,
 } from "./game/hearts-engine.ts"
@@ -289,7 +289,7 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 					setState(
 						gameStateAtoms,
 						roomCode,
-						startGame(currentHeartsState(), playerId, dealRandom.next),
+						startHeartsGame(currentHeartsState(), playerId, dealRandom.next),
 					)
 					ack({ ok: true, roomCode })
 				} catch (error) {
@@ -317,7 +317,7 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 					setState(
 						gameStateAtoms,
 						roomCode,
-						playCard(currentHeartsState(), playerId, payload.cardId),
+						playHeartsCard(currentHeartsState(), playerId, payload.cardId),
 					)
 					ack({ ok: true, roomCode })
 				} catch (error) {

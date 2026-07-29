@@ -16,14 +16,14 @@ import { parsePlayCardPayload } from "../src/game/game-actions.ts"
 import { parsePassCardsPayload } from "../src/game/hearts-actions.ts"
 import {
 	createHeartsGame,
-	disconnectPlayer,
+	disconnectHeartsPlayer,
 	type HeartsState,
 	joinHeartsGame,
-	PLAYER_MAXIMUM,
-	playCard,
-	restartGame,
-	startGame,
-	startNextRound,
+	HEARTS_PLAYER_MAXIMUM,
+	playHeartsCard,
+	restartHeartsGame,
+	startHeartsGame,
+	startNextHeartsRound,
 	submitPass,
 } from "../src/game/hearts-engine.ts"
 import type { HeartsClientEvents } from "../src/game/game-types.ts"
@@ -41,12 +41,12 @@ export const heartsGame: GameDefinition<
 				canManageSeats: (state) => state.phase === "lobby",
 				canReviewStrategy: (state) =>
 					state.phase === "roundComplete" || state.phase === "gameComplete",
-				maximumPlayers: PLAYER_MAXIMUM,
+				maximumPlayers: HEARTS_PLAYER_MAXIMUM,
 			}),
 			bindGameEvent(socket, "startGame", (ack) => {
 				acknowledge(ack, "realtime.action.start_game", { playerId }, (span) => {
 					controller.setState(
-						startGame(
+						startHeartsGame(
 							controller.getState(),
 							playerId,
 							controller.resources.dealRandom.next,
@@ -94,7 +94,7 @@ export const heartsGame: GameDefinition<
 						const player = state.players.find(
 							(candidate) => candidate.id === playerId,
 						)
-						controller.setState(playCard(state, playerId, payload.cardId))
+						controller.setState(playHeartsCard(state, playerId, payload.cardId))
 						const nextState = controller.getState()
 						span.event("game.card_played", {
 							card: cardForLog(state, payload.cardId),
@@ -132,7 +132,7 @@ export const heartsGame: GameDefinition<
 					{ playerId },
 					(span) => {
 						controller.setState(
-							startNextRound(
+							startNextHeartsRound(
 								controller.getState(),
 								playerId,
 								controller.resources.dealRandom.next,
@@ -150,7 +150,7 @@ export const heartsGame: GameDefinition<
 					"realtime.action.restart_game",
 					{ playerId },
 					(span) => {
-						controller.setState(restartGame(controller.getState(), playerId))
+						controller.setState(restartHeartsGame(controller.getState(), playerId))
 						span.event("game.restarted", {
 							room: controller.stateSnapshotForLog(),
 						})
@@ -168,7 +168,7 @@ export const heartsGame: GameDefinition<
 			host.name,
 			createPhysicalCardIds(resources.identityRandom.uuid),
 		),
-	disconnectPlayer,
+	disconnectPlayer: disconnectHeartsPlayer,
 	dispose: (resources) => {
 		for (const aiPlayer of resources.aiPlayers.values()) aiPlayer.dispose()
 	},

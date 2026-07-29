@@ -34,8 +34,8 @@ import { createPhysicalCardIds } from "../game/card-domain.ts"
 import {
 	createHeartsGame,
 	joinHeartsGame,
-	playCard,
-	startGame,
+	playHeartsCard,
+	startHeartsGame,
 	submitPass,
 	type HeartsState,
 } from "../game/hearts-engine.ts"
@@ -329,7 +329,7 @@ async function runBotTable(
 				try {
 					const state = currentHeartsState()
 					const payload = parsePlayCardPayload({ cardId })
-					const nextState = playCard(state, playerId, payload.cardId)
+					const nextState = playHeartsCard(state, playerId, payload.cardId)
 					setState(gameStateAtoms, roomCode, nextState)
 					transcript.push({
 						action: "playCard",
@@ -403,7 +403,7 @@ async function runBotTable(
 		setState(
 			gameStateAtoms,
 			roomCode,
-			startGame(currentHeartsState(), bots[0].id, dealRandom.next),
+			startHeartsGame(currentHeartsState(), bots[0].id, dealRandom.next),
 		)
 		const finalState = structuredClone(
 			await waitForRoundComplete(options.timeout),

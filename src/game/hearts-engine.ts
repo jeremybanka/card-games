@@ -34,9 +34,9 @@ import {
 	requireHostAction,
 } from "./trick-taking-domain.ts"
 
-export const PLAYER_MINIMUM = 2
-export const PLAYER_MAXIMUM = 4
-export const GAME_END_SCORE = 100
+export const HEARTS_PLAYER_MINIMUM = 2
+export const HEARTS_PLAYER_MAXIMUM = 4
+export const HEARTS_GAME_END_SCORE = 100
 export const PASS_CARD_COUNT = 3
 
 export type HeartsPlayer = {
@@ -235,27 +235,27 @@ export function joinHeartsGame(
 			new HeartsRuleError("This table already has four players."),
 		inProgressError: () =>
 			new HeartsRuleError("This game is already in progress."),
-		maximumPlayers: PLAYER_MAXIMUM,
-		minimumPlayers: PLAYER_MINIMUM,
+		maximumPlayers: HEARTS_PLAYER_MAXIMUM,
+		minimumPlayers: HEARTS_PLAYER_MINIMUM,
 		waitingStatus: "Invite at least one more player.",
 	})
 }
 
-export function disconnectPlayer(
+export function disconnectHeartsPlayer(
 	state: HeartsState,
 	playerId: PlayerId,
 ): HeartsState {
 	return disconnectTablePlayer(state, playerId)
 }
 
-export function dealRound(
+export function dealHeartsRound(
 	state: HeartsState,
 	random: () => number = secureRandom,
 ): HeartsState {
 	const next = copyGameState(state)
 	if (
-		next.players.length < PLAYER_MINIMUM ||
-		next.players.length > PLAYER_MAXIMUM
+		next.players.length < HEARTS_PLAYER_MINIMUM ||
+		next.players.length > HEARTS_PLAYER_MAXIMUM
 	) {
 		throw new HeartsRuleError("Hearts needs between two and four players.")
 	}
@@ -368,7 +368,7 @@ export function submitPass(
 	return next
 }
 
-export function playableCardIdsFor(
+export function playableHeartsCardIdsFor(
 	state: HeartsState,
 	playerId: PlayerId,
 ): CardId[] {
@@ -447,7 +447,7 @@ function scoreRound(state: HeartsState): void {
 		player.score += roundPoints
 	}
 	const gameEnded = state.players.some(
-		(player) => player.score >= GAME_END_SCORE,
+		(player) => player.score >= HEARTS_GAME_END_SCORE,
 	)
 	if (gameEnded) {
 		const lowestScore = Math.min(...state.players.map((player) => player.score))
@@ -467,7 +467,7 @@ function scoreRound(state: HeartsState): void {
 	state.trickLeaderId = null
 }
 
-export function playCard(
+export function playHeartsCard(
 	state: HeartsState,
 	playerId: PlayerId,
 	cardId: CardId,
@@ -479,7 +479,7 @@ export function playCard(
 			new HeartsRuleError("The round is not ready for play."),
 		notInHandError: () => new HeartsRuleError("That card is not in your hand."),
 		notPlayersTurnError: () => new HeartsRuleError("It is not your turn."),
-		playableCardIds: playableCardIdsFor,
+		playableCardIds: playableHeartsCardIdsFor,
 		playerError: () => new HeartsRuleError("That player is not at the table."),
 	})
 	if (cardValue(next, cardId).suit === "hearts") next.heartsBroken = true
@@ -518,7 +518,7 @@ export function playCard(
 	return next
 }
 
-export function restartGame(state: HeartsState, hostId: PlayerId): HeartsState {
+export function restartHeartsGame(state: HeartsState, hostId: PlayerId): HeartsState {
 	if (state.hostId !== hostId)
 		throw new HeartsRuleError("Only the host can restart the game.")
 	const next = copyGameState(state)
@@ -546,7 +546,7 @@ export function restartGame(state: HeartsState, hostId: PlayerId): HeartsState {
 	return next
 }
 
-export function startGame(
+export function startHeartsGame(
 	state: HeartsState,
 	hostId: PlayerId,
 	random: () => number = secureRandom,
@@ -558,10 +558,10 @@ export function startGame(
 		() => new HeartsRuleError("Only the host can start the game."),
 		() => new HeartsRuleError("The game has already started."),
 	)
-	return dealRound(state, random)
+	return dealHeartsRound(state, random)
 }
 
-export function startNextRound(
+export function startNextHeartsRound(
 	state: HeartsState,
 	hostId: PlayerId,
 	random: () => number = secureRandom,
@@ -573,7 +573,7 @@ export function startNextRound(
 		() => new HeartsRuleError("Only the host can deal the next round."),
 		() => new HeartsRuleError("The current round is not complete."),
 	)
-	return dealRound(state, random)
+	return dealHeartsRound(state, random)
 }
 
 function publicTrick(state: HeartsState): TrickPlay[] {
@@ -582,7 +582,7 @@ function publicTrick(state: HeartsState): TrickPlay[] {
 	)
 }
 
-export function toPublicGameView(state: HeartsState): HeartsPublicGameView {
+export function toHeartsPublicGameView(state: HeartsState): HeartsPublicGameView {
 	return {
 		completedTricks: state.completedTricks.map((trick) => ({
 			leftoverAward:
@@ -618,7 +618,7 @@ export function toPublicGameView(state: HeartsState): HeartsPublicGameView {
 	}
 }
 
-export function toPrivatePlayerView(
+export function toHeartsPrivatePlayerView(
 	state: HeartsState,
 	playerId: PlayerId,
 ): HeartsPrivatePlayerView {
@@ -668,7 +668,7 @@ export function toPrivatePlayerView(
 						senderId: passSender.id,
 					},
 		passSubmitted: player.passSelection !== null,
-		playableCardIds: playableCardIdsFor(state, playerId),
+		playableCardIds: playableHeartsCardIdsFor(state, playerId),
 		playerId,
 	}
 }

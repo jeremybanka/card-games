@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest"
 
 import {
 	createHeartsGame,
-	dealRound,
+	dealHeartsRound,
 	joinHeartsGame,
-	playableCardIdsFor,
-	playCard,
-	startGame,
+	playableHeartsCardIdsFor,
+	playHeartsCard,
+	startHeartsGame,
 	submitPass,
-	toPrivatePlayerView,
-	toPublicGameView,
+	toHeartsPrivatePlayerView,
+	toHeartsPublicGameView,
 	type HeartsState,
 } from "./hearts-engine.ts"
 import { createSeededRandom } from "./seeded-random.ts"
@@ -62,8 +62,8 @@ function playRound(state: HeartsState): HeartsState {
 	let safety = 0
 	while (next.phase === "playing") {
 		const playerId = next.currentPlayerId as PlayerId
-		const cardId = playableCardIdsFor(next, playerId)[0] as CardId
-		next = playCard(next, playerId, cardId)
+		const cardId = playableHeartsCardIdsFor(next, playerId)[0] as CardId
+		next = playHeartsCard(next, playerId, cardId)
 		safety += 1
 		if (safety > 60) throw new Error("Round did not terminate.")
 	}
@@ -107,13 +107,13 @@ function completeFixtureTrick(
 	next.trickLeaderId = playerIds[0]
 	next.phase = "playing"
 
-	return playCard(next, playerIds[2], trickCardIds[2] as CardId)
+	return playHeartsCard(next, playerIds[2], trickCardIds[2] as CardId)
 }
 
 describe("Hearts dealing and visibility", () => {
 	for (const playerCount of [2, 3, 4] as const) {
 		it(`deals an even, playable deck to ${playerCount} players`, () => {
-			const state = startGame(
+			const state = startHeartsGame(
 				lobby(playerCount),
 				playerIds[0],
 				seededRandom(playerCount),
@@ -124,17 +124,17 @@ describe("Hearts dealing and visibility", () => {
 				Array.from({ length: playerCount }, () => expectedHandSize),
 			)
 			expect(Object.keys(state.cardValues)).toHaveLength(52)
-			expect(toPublicGameView(state).deckCardIds).toHaveLength(
+			expect(toHeartsPublicGameView(state).deckCardIds).toHaveLength(
 				playerCount === 3 ? 1 : 0,
 			)
 		})
 	}
 
 	it("keeps hidden values out of public state and other private hands", () => {
-		const state = startGame(lobby(4), playerIds[0], seededRandom(42))
-		const publicView = toPublicGameView(state)
-		const firstPrivateView = toPrivatePlayerView(state, playerIds[0])
-		const secondPrivateView = toPrivatePlayerView(state, playerIds[1])
+		const state = startHeartsGame(lobby(4), playerIds[0], seededRandom(42))
+		const publicView = toHeartsPublicGameView(state)
+		const firstPrivateView = toHeartsPrivatePlayerView(state, playerIds[0])
+		const secondPrivateView = toHeartsPrivatePlayerView(state, playerIds[1])
 
 		expect(publicView.gameKind).toBe("hearts")
 		expect("trumpSuit" in publicView).toBe(false)
@@ -152,7 +152,7 @@ describe("Hearts dealing and visibility", () => {
 	})
 
 	it("withholds the opening leader until every pass is complete", () => {
-		let state = startGame(
+		let state = startHeartsGame(
 			lobby(4),
 			playerIds[0],
 			seededRandom(PASSING_LEADER_PRIVACY_SEED),
@@ -165,7 +165,7 @@ describe("Hearts dealing and visibility", () => {
 		)
 		expect(lowestClubHolder).toBeDefined()
 
-		const passingView = toPublicGameView(state)
+		const passingView = toHeartsPublicGameView(state)
 		expect(state.phase).toBe("passing")
 		expect(state.currentPlayerId).toBeNull()
 		expect(state.trickLeaderId).toBeNull()
@@ -203,7 +203,7 @@ describe("Hearts dealing and visibility", () => {
 		expect(state.phase).toBe("playing")
 		expect(state.currentPlayerId).toBe(expectedLeader.id)
 		expect(state.trickLeaderId).toBe(expectedLeader.id)
-		expect(toPublicGameView(state)).toMatchObject({
+		expect(toHeartsPublicGameView(state)).toMatchObject({
 			currentPlayerId: expectedLeader.id,
 			statusMessage: `${expectedLeader.name} leads the lowest club.`,
 			trickLeaderId: expectedLeader.id,
@@ -213,13 +213,13 @@ describe("Hearts dealing and visibility", () => {
 	it("publishes the opening leader immediately on a hold round", () => {
 		const readyForHold = lobby(4)
 		readyForHold.roundNumber = 3
-		const state = dealRound(readyForHold, seededRandom(HOLD_ROUND_LEADER_SEED))
+		const state = dealHeartsRound(readyForHold, seededRandom(HOLD_ROUND_LEADER_SEED))
 
 		expect(state.phase).toBe("playing")
 		expect(state.passDirection).toBe("hold")
 		expect(state.currentPlayerId).not.toBeNull()
 		expect(state.trickLeaderId).toBe(state.currentPlayerId)
-		expect(toPublicGameView(state).currentPlayerId).toBe(state.currentPlayerId)
+		expect(toHeartsPublicGameView(state).currentPlayerId).toBe(state.currentPlayerId)
 	})
 
 	it.each([
@@ -232,7 +232,7 @@ describe("Hearts dealing and visibility", () => {
 	] as const)(
 		"projects the %s-player %s pass receipt only to each recipient",
 		(playerCount, direction) => {
-			let state = startGame(
+			let state = startHeartsGame(
 				lobby(playerCount),
 				playerIds[0],
 				seededRandom(7_100 + playerCount),
@@ -250,7 +250,7 @@ describe("Hearts dealing and visibility", () => {
 				)
 			}
 
-			const publicJson = JSON.stringify(toPublicGameView(state))
+			const publicJson = JSON.stringify(toHeartsPublicGameView(state))
 			expect(publicJson).not.toContain("passReceipt")
 			expect(publicJson).not.toContain('"rank"')
 			for (const [recipientIndex, recipient] of state.players.entries()) {
@@ -265,7 +265,7 @@ describe("Hearts dealing and visibility", () => {
 									: 1
 					return (senderIndex + offset) % playerCount === recipientIndex
 				})
-				const receipt = toPrivatePlayerView(state, recipient.id).passReceipt
+				const receipt = toHeartsPrivatePlayerView(state, recipient.id).passReceipt
 				expect(receipt?.senderId).toBe(sender?.id)
 				expect(receipt?.roundNumber).toBe(state.roundNumber)
 				expect(receipt?.cards.map((card) => card.id)).toEqual(
@@ -275,7 +275,7 @@ describe("Hearts dealing and visibility", () => {
 					(candidate) => candidate.id !== recipient.id,
 				)) {
 					expect(
-						toPrivatePlayerView(state, other.id).cards.some((card) =>
+						toHeartsPrivatePlayerView(state, other.id).cards.some((card) =>
 							receipt?.cards.some(
 								(receivedCard) => receivedCard.id === card.id,
 							),
@@ -287,15 +287,15 @@ describe("Hearts dealing and visibility", () => {
 	)
 
 	it("does not create a receipt for a hold round", () => {
-		const state = startGame(lobby(4), playerIds[0], seededRandom(74))
+		const state = startHeartsGame(lobby(4), playerIds[0], seededRandom(74))
 		state.passDirection = "hold"
 		state.phase = "playing"
-		expect(toPrivatePlayerView(state, playerIds[0]).passReceipt).toBeNull()
+		expect(toHeartsPrivatePlayerView(state, playerIds[0]).passReceipt).toBeNull()
 	})
 
 	it("scrambles card-value relationships on every deal", () => {
-		const first = dealRound(lobby(4), seededRandom(1))
-		const second = dealRound(first, seededRandom(2))
+		const first = dealHeartsRound(lobby(4), seededRandom(1))
+		const second = dealHeartsRound(first, seededRandom(2))
 		const correlationsChanged = first.physicalCardIds.filter((cardId) => {
 			const before = first.cardValues[cardId]
 			const after = second.cardValues[cardId]
@@ -306,17 +306,17 @@ describe("Hearts dealing and visibility", () => {
 
 	it("publishes values only after a completed trick makes them public", () => {
 		let state = resolvePassing(
-			startGame(lobby(4), playerIds[0], seededRandom(43)),
+			startHeartsGame(lobby(4), playerIds[0], seededRandom(43)),
 		)
 		const cardsPlayed: CardId[] = []
 		for (let play = 0; play < 4; play += 1) {
 			const playerId = state.currentPlayerId as PlayerId
-			const cardId = playableCardIdsFor(state, playerId)[0] as CardId
+			const cardId = playableHeartsCardIdsFor(state, playerId)[0] as CardId
 			cardsPlayed.push(cardId)
-			state = playCard(state, playerId, cardId)
+			state = playHeartsCard(state, playerId, cardId)
 		}
 
-		const publicView = toPublicGameView(state)
+		const publicView = toHeartsPublicGameView(state)
 		expect(publicView.completedTricks).toHaveLength(1)
 		expect(
 			publicView.completedTricks[0]?.plays.map((play) => play.card.id),
@@ -331,7 +331,7 @@ describe("Hearts dealing and visibility", () => {
 	})
 
 	it("keeps the three-player leftover pending through zero-point tricks", () => {
-		const dealt = startGame(
+		const dealt = startHeartsGame(
 			lobby(3),
 			playerIds[0],
 			seededRandom(KITTY_RULE_SEED),
@@ -343,7 +343,7 @@ describe("Hearts dealing and visibility", () => {
 			{ rank: 3, suit: "clubs" },
 			{ rank: 7, suit: "clubs" },
 		])
-		const publicView = toPublicGameView(afterZeroPointTrick)
+		const publicView = toHeartsPublicGameView(afterZeroPointTrick)
 
 		expect(afterZeroPointTrick.completedTricks[0]?.leftoverAward).toBeNull()
 		expect(afterZeroPointTrick.leftoverCardId).toBe(leftoverCardId)
@@ -351,13 +351,13 @@ describe("Hearts dealing and visibility", () => {
 		expect(publicView.deckCardIds).toEqual([leftoverCardId])
 		for (const playerId of playerIds.slice(0, 3)) {
 			expect(
-				toPrivatePlayerView(afterZeroPointTrick, playerId).awardedLeftoverCard,
+				toHeartsPrivatePlayerView(afterZeroPointTrick, playerId).awardedLeftoverCard,
 			).toBeNull()
 		}
 	})
 
 	it("awards the leftover once on the first heart-containing trick", () => {
-		const dealt = startGame(
+		const dealt = startHeartsGame(
 			lobby(3),
 			playerIds[0],
 			seededRandom(KITTY_RULE_SEED),
@@ -385,7 +385,7 @@ describe("Hearts dealing and visibility", () => {
 		})
 		expect(afterHeartTrick.players[0]?.taken).toContain(leftoverCardId)
 		expect(afterHeartTrick.leftoverCardId).toBeNull()
-		expect(toPublicGameView(afterHeartTrick).deckCardIds).toEqual([])
+		expect(toHeartsPublicGameView(afterHeartTrick).deckCardIds).toEqual([])
 		expect(afterLaterPointTrick.completedTricks[2]?.leftoverAward).toBeNull()
 		expect(
 			afterLaterPointTrick.players[0]?.taken.filter(
@@ -395,7 +395,7 @@ describe("Hearts dealing and visibility", () => {
 	})
 
 	it("awards the leftover on a queen-of-spades trick without hearts", () => {
-		const dealt = startGame(
+		const dealt = startHeartsGame(
 			lobby(3),
 			playerIds[0],
 			seededRandom(KITTY_RULE_SEED),
@@ -414,7 +414,7 @@ describe("Hearts dealing and visibility", () => {
 	})
 
 	it("scores the leftover value independently of the triggering point card", () => {
-		const dealt = startGame(
+		const dealt = startHeartsGame(
 			lobby(3),
 			playerIds[0],
 			seededRandom(KITTY_RULE_SEED),
@@ -436,7 +436,7 @@ describe("Hearts dealing and visibility", () => {
 	})
 
 	it("reveals a later awarded leftover value only to its recipient", () => {
-		const dealt = startGame(
+		const dealt = startHeartsGame(
 			lobby(3),
 			playerIds[0],
 			seededRandom(POINT_LEFTOVER_SEED),
@@ -463,7 +463,7 @@ describe("Hearts dealing and visibility", () => {
 			.slice(0, 3)
 			.filter((playerId) => playerId !== recipient)
 		const publicAward =
-			toPublicGameView(complete).completedTricks[1]?.leftoverAward
+			toHeartsPublicGameView(complete).completedTricks[1]?.leftoverAward
 
 		expect(publicAward).toEqual({
 			cardId: leftoverCardId,
@@ -472,7 +472,7 @@ describe("Hearts dealing and visibility", () => {
 		expect(publicAward).not.toHaveProperty("rank")
 		expect(publicAward).not.toHaveProperty("suit")
 		expect(
-			toPrivatePlayerView(complete, recipient).awardedLeftoverCard,
+			toHeartsPrivatePlayerView(complete, recipient).awardedLeftoverCard,
 		).toEqual({
 			id: leftoverCardId,
 			rank: 12,
@@ -480,7 +480,7 @@ describe("Hearts dealing and visibility", () => {
 		})
 		for (const playerId of nonRecipients) {
 			expect(
-				toPrivatePlayerView(complete, playerId).awardedLeftoverCard,
+				toHeartsPrivatePlayerView(complete, playerId).awardedLeftoverCard,
 			).toBeNull()
 		}
 	})
@@ -489,10 +489,10 @@ describe("Hearts dealing and visibility", () => {
 describe("Hearts rules", () => {
 	it("requires the lowest club to lead the first trick", () => {
 		const state = resolvePassing(
-			startGame(lobby(4), playerIds[0], seededRandom(9)),
+			startHeartsGame(lobby(4), playerIds[0], seededRandom(9)),
 		)
 		const playerId = state.currentPlayerId as PlayerId
-		const playable = playableCardIdsFor(state, playerId)
+		const playable = playableHeartsCardIdsFor(state, playerId)
 		expect(playable).toHaveLength(1)
 		const card = state.cardValues[playable[0] as CardId]
 		expect(card?.suit).toBe("clubs")
@@ -509,11 +509,11 @@ describe("Hearts rules", () => {
 		let checked = false
 		for (let seed = 1; seed < 30 && !checked; seed += 1) {
 			let state = resolvePassing(
-				startGame(lobby(4), playerIds[0], seededRandom(seed)),
+				startHeartsGame(lobby(4), playerIds[0], seededRandom(seed)),
 			)
 			const leader = state.currentPlayerId as PlayerId
-			const leadCard = playableCardIdsFor(state, leader)[0] as CardId
-			state = playCard(state, leader, leadCard)
+			const leadCard = playableHeartsCardIdsFor(state, leader)[0] as CardId
+			state = playHeartsCard(state, leader, leadCard)
 			const follower = state.currentPlayerId as PlayerId
 			const followerState = state.players.find(
 				(player) => player.id === follower,
@@ -523,7 +523,7 @@ describe("Hearts rules", () => {
 					(cardId) => state.cardValues[cardId]?.suit === "clubs",
 				) ?? []
 			if (clubs.length === 0) continue
-			expect(playableCardIdsFor(state, follower)).toEqual(clubs)
+			expect(playableHeartsCardIdsFor(state, follower)).toEqual(clubs)
 			checked = true
 		}
 		expect(checked).toBe(true)
@@ -531,7 +531,7 @@ describe("Hearts rules", () => {
 
 	for (const playerCount of [2, 3, 4] as const) {
 		it(`plays a complete ${playerCount}-player round end to end`, () => {
-			const initial = startGame(
+			const initial = startHeartsGame(
 				lobby(playerCount),
 				playerIds[0],
 				seededRandom(100 + playerCount),
@@ -552,7 +552,7 @@ describe("Hearts rules", () => {
 
 	it("scores shooting the moon and ends the game at 100 points", () => {
 		const state = resolvePassing(
-			startGame(lobby(4), playerIds[0], seededRandom(77)),
+			startHeartsGame(lobby(4), playerIds[0], seededRandom(77)),
 		)
 		const pointCards = Object.entries(state.cardValues)
 			.filter(
@@ -586,7 +586,7 @@ describe("Hearts rules", () => {
 		state.trickNumber = 12
 		state.heartsBroken = true
 
-		const complete = playCard(state, playerIds[3], closingCards[3]!)
+		const complete = playHeartsCard(state, playerIds[3], closingCards[3]!)
 
 		expect(complete.phase).toBe("gameComplete")
 		expect(complete.players.map((player) => player.roundPoints)).toEqual([

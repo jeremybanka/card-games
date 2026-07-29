@@ -1,9 +1,9 @@
 import {
 	createHeartsGame,
-	PLAYER_MAXIMUM,
-	PLAYER_MINIMUM,
-	toPrivatePlayerView,
-	toPublicGameView,
+	HEARTS_PLAYER_MAXIMUM,
+	HEARTS_PLAYER_MINIMUM,
+	toHeartsPrivatePlayerView,
+	toHeartsPublicGameView,
 	type HeartsState,
 } from "./hearts-engine.ts"
 import { registeredGameAdapter } from "./game-registry.ts"
@@ -59,10 +59,10 @@ export const gameCatalog = defineGameCatalog({
 		createInitialState: createHeartsGame,
 		kind: "hearts",
 		label: "Hearts",
-		maximumPlayers: PLAYER_MAXIMUM,
-		minimumPlayers: PLAYER_MINIMUM,
-		privateView: toPrivatePlayerView,
-		publicView: toPublicGameView,
+		maximumPlayers: HEARTS_PLAYER_MAXIMUM,
+		minimumPlayers: HEARTS_PLAYER_MINIMUM,
+		privateView: toHeartsPrivatePlayerView,
+		publicView: toHeartsPublicGameView,
 	} satisfies GameCatalogEntry<
 		"hearts",
 		HeartsState,
