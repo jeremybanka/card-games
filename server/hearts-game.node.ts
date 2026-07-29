@@ -2,7 +2,7 @@ import { bindAiSeatActions } from "./ai-seat-actions.node.ts"
 import {
 	bindGameEvent,
 	combineDisposers,
-	type Game,
+	type GameDefinition,
 } from "./game-controller.node.ts"
 import {
 	cardForLog,
@@ -25,20 +25,12 @@ import {
 	startGame,
 	startNextRound,
 	submitPass,
-	toPrivatePlayerView,
-	toPublicGameView,
 } from "../src/game/hearts-engine.ts"
-import type {
-	HeartsClientEvents,
-	HeartsPrivatePlayerView,
-	HeartsPublicGameView,
-} from "../src/game/game-types.ts"
+import type { HeartsClientEvents } from "../src/game/game-types.ts"
 
-export const heartsGame: Game<
+export const heartsGame: GameDefinition<
 	"hearts",
 	HeartsState,
-	HeartsPublicGameView,
-	HeartsPrivatePlayerView,
 	HeartsClientEvents,
 	WayfarerGameResources
 > = {
@@ -182,8 +174,6 @@ export const heartsGame: Game<
 	},
 	isVacant: (state) => state.players.length === 0,
 	kind: "hearts",
-	privateView: toPrivatePlayerView,
-	publicView: toPublicGameView,
 	stateSnapshotForLog: heartsStateSnapshotForLog,
 	stateSummaryForLog: heartsStateSummaryForLog,
 }

@@ -1,13 +1,11 @@
-import type { AiModelId } from "../src/ai/ai-models.ts"
-import type { ActionAck, PlayerId } from "../src/game/game-types.ts"
+import type {
+	ActionAck,
+	PlayerController,
+	PlayerId,
+} from "../src/game/game-types.ts"
 import type { ActiveSpan } from "../src/observability/span-logger.node.ts"
 
 export type Dispose = () => void
-
-export type PlayerController = {
-	aiModel: AiModelId | null
-	kind: "ai" | "human"
-}
 
 export type GameEventSocket<Events extends object> = {
 	off<Event extends Extract<keyof Events, string>>(
@@ -34,19 +32,11 @@ export type GameActionAcknowledger = (
 export type GameDefinition<
 	Kind extends string,
 	State,
-	PublicView,
-	PrivateView,
 	Actions extends object,
 	Resources,
 > = {
 	bindActions: (
-		context: GameActionBindingContext<
-			State,
-			PublicView,
-			PrivateView,
-			Actions,
-			Resources
-		>,
+		context: GameActionBindingContext<State, Actions, Resources>,
 	) => Dispose
 	connectPlayer: (
 		state: State,
@@ -65,75 +55,24 @@ export type GameDefinition<
 	dispose: (resources: Resources) => void
 	isVacant: (state: State) => boolean
 	kind: Kind
-	privateView: (state: State, playerId: PlayerId) => PrivateView
-	publicView: (state: State) => PublicView
 	stateSnapshotForLog: (state: State) => unknown
 	stateSummaryForLog: (state: State) => unknown
 }
-
-export type Game<
-	Kind extends string,
-	State,
-	PublicView,
-	PrivateView,
-	Actions extends object,
-	Resources,
-> = GameDefinition<Kind, State, PublicView, PrivateView, Actions, Resources>
-
-export type GameKindOf<Game> =
-	Game extends GameDefinition<
-		infer Kind,
-		infer _State,
-		infer _PublicView,
-		infer _PrivateView,
-		infer _Actions,
-		infer _Resources
-	>
-		? Kind
-		: never
 
 export type GameStateOf<Game> =
 	Game extends GameDefinition<
 		infer _Kind,
 		infer State,
-		infer _PublicView,
-		infer _PrivateView,
 		infer _Actions,
 		infer _Resources
 	>
 		? State
 		: never
 
-export type GamePublicViewOf<Game> =
-	Game extends GameDefinition<
-		infer _Kind,
-		infer _State,
-		infer PublicView,
-		infer _PrivateView,
-		infer _Actions,
-		infer _Resources
-	>
-		? PublicView
-		: never
-
-export type GamePrivateViewOf<Game> =
-	Game extends GameDefinition<
-		infer _Kind,
-		infer _State,
-		infer _PublicView,
-		infer PrivateView,
-		infer _Actions,
-		infer _Resources
-	>
-		? PrivateView
-		: never
-
 export type GameActionsOf<Game> =
 	Game extends GameDefinition<
 		infer _Kind,
 		infer _State,
-		infer _PublicView,
-		infer _PrivateView,
 		infer Actions,
 		infer _Resources
 	>
@@ -144,8 +83,6 @@ export type GameResourcesOf<Game> =
 	Game extends GameDefinition<
 		infer _Kind,
 		infer _State,
-		infer _PublicView,
-		infer _PrivateView,
 		infer _Actions,
 		infer Resources
 	>
@@ -165,9 +102,6 @@ export type GameController<Game> = {
 	) => void
 	disconnectPlayer: (playerId: PlayerId) => void
 	dispose: () => void
-	game: Game
-	getPrivateView: (playerId: PlayerId) => GamePrivateViewOf<Game>
-	getPublicView: () => GamePublicViewOf<Game>
 	getState: () => GameStateOf<Game>
 	isVacant: () => boolean
 	resources: GameResourcesOf<Game>
@@ -179,15 +113,11 @@ export type GameController<Game> = {
 
 export type GameActionBindingContext<
 	State,
-	PublicView,
-	PrivateView,
 	Actions extends object,
 	Resources,
 > = {
 	acknowledge: GameActionAcknowledger
-	controller: GameController<
-		GameDefinition<string, State, PublicView, PrivateView, Actions, Resources>
-	>
+	controller: GameController<GameDefinition<string, State, Actions, Resources>>
 	playerId: PlayerId
 	socket: GameEventSocket<Actions>
 }
@@ -200,27 +130,16 @@ export type GameStateStore<State> = {
 export function createGameController<
 	const Kind extends string,
 	State,
-	PublicView,
-	PrivateView,
 	Actions extends object,
 	Resources,
 >(
-	game: GameDefinition<
-		Kind,
-		State,
-		PublicView,
-		PrivateView,
-		Actions,
-		Resources
-	>,
+	game: GameDefinition<Kind, State, Actions, Resources>,
 	roomCode: string,
 	resources: Resources,
 	store: GameStateStore<State>,
-): GameController<
-	GameDefinition<Kind, State, PublicView, PrivateView, Actions, Resources>
-> {
+): GameController<GameDefinition<Kind, State, Actions, Resources>> {
 	const controller: GameController<
-		GameDefinition<Kind, State, PublicView, PrivateView, Actions, Resources>
+		GameDefinition<Kind, State, Actions, Resources>
 	> = {
 		bindActions: (socket, playerId, acknowledge) =>
 			game.bindActions({
@@ -242,9 +161,6 @@ export function createGameController<
 			store.set(game.disconnectPlayer(store.get(), playerId))
 		},
 		dispose: () => game.dispose(resources),
-		game,
-		getPrivateView: (playerId) => game.privateView(store.get(), playerId),
-		getPublicView: () => game.publicView(store.get()),
 		getState: store.get,
 		isVacant: () => game.isVacant(store.get()),
 		resources,

@@ -77,7 +77,6 @@ export type OhHellState = {
 
 export class OhHellRuleError extends Error {}
 
-const copy = (state: OhHellState): OhHellState => copyGameState(state)
 function playerIndex(state: OhHellState, id: PlayerId): number {
 	return sharedPlayerIndex(
 		state,
@@ -207,7 +206,7 @@ export function dealOhHellRound(
 	state: OhHellState,
 	random: () => number = secureRandom,
 ): OhHellState {
-	const next = copy(state)
+	const next = copyGameState(state)
 	if (next.players.length < 3 || next.players.length > 4)
 		throw new OhHellRuleError("Oh Hell needs three or four players.")
 	if (next.players.some((player) => !player.connected))
@@ -274,7 +273,7 @@ export function submitOhHellBid(
 	id: PlayerId,
 	bid: number,
 ): OhHellState {
-	const next = copy(state)
+	const next = copyGameState(state)
 	if (next.phase !== "bidding")
 		throw new OhHellRuleError("Bidding is not open.")
 	if (next.currentPlayerId !== id)

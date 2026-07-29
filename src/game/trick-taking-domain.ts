@@ -1,16 +1,11 @@
-import type { AiModelId } from "../ai/ai-models.ts"
 import type {
 	CardId,
+	PlayerController,
 	PlayerId,
 	PublicPlayerView,
 	TrickPlay,
 	VisibleCard,
 } from "./game-types.ts"
-
-export type PlayerController = {
-	aiModel: AiModelId | null
-	kind: "ai" | "human"
-}
 
 export type TrickTakingPlayer = PlayerController & {
 	connected: boolean

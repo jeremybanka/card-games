@@ -83,10 +83,6 @@ export type HeartsState = {
 
 export class HeartsRuleError extends Error {}
 
-function copyState(state: HeartsState): HeartsState {
-	return copyGameState(state)
-}
-
 function cardValue(state: HeartsState, cardId: CardId): CardValue {
 	return sharedCardValue(
 		state,
@@ -256,7 +252,7 @@ export function dealRound(
 	state: HeartsState,
 	random: () => number = secureRandom,
 ): HeartsState {
-	const next = copyState(state)
+	const next = copyGameState(state)
 	if (
 		next.players.length < PLAYER_MINIMUM ||
 		next.players.length > PLAYER_MAXIMUM
@@ -321,7 +317,7 @@ export function submitPass(
 	playerId: PlayerId,
 	cardIds: readonly CardId[],
 ): HeartsState {
-	const next = copyState(state)
+	const next = copyGameState(state)
 	if (next.phase !== "passing") {
 		throw new HeartsRuleError("Cards are not being passed right now.")
 	}
@@ -525,7 +521,7 @@ export function playCard(
 export function restartGame(state: HeartsState, hostId: PlayerId): HeartsState {
 	if (state.hostId !== hostId)
 		throw new HeartsRuleError("Only the host can restart the game.")
-	const next = copyState(state)
+	const next = copyGameState(state)
 	next.phase = "lobby"
 	next.roundNumber = 0
 	next.cardValues = {}

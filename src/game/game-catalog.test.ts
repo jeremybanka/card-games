@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest"
 
 import {
 	gameCatalog,
-	gameKinds,
 	isGameKind,
 	parseGameKind,
 	privatePlayerView,
 	publicGameView,
 } from "./game-catalog.ts"
+import { GAME_KINDS } from "./game-kinds.ts"
 import type { CardId, PlayerId } from "./game-types.ts"
 
 const hostId = "user::catalog-host" satisfies PlayerId
@@ -18,11 +18,11 @@ const physicalCardIds = Array.from(
 
 describe("game catalog", () => {
 	it("registers every supported game exactly once", () => {
-		expect(Object.keys(gameCatalog)).toEqual(gameKinds)
-		expect(new Set(gameKinds).size).toBe(gameKinds.length)
+		expect(Object.keys(gameCatalog)).toEqual(GAME_KINDS)
+		expect(new Set(GAME_KINDS).size).toBe(GAME_KINDS.length)
 	})
 
-	it.each(gameKinds)(
+	it.each(GAME_KINDS)(
 		"dispatches %s public and private projections through its registration",
 		(kind) => {
 			const game = gameCatalog[kind]

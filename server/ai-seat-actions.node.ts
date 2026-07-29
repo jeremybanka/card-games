@@ -37,14 +37,10 @@ function strategyTextForReview(text: string): string {
 
 export function bindAiSeatActions<
 	State extends AiSeatState,
-	PublicView,
-	PrivateView,
 	Actions extends AiSeatClientEvents,
 >(
 	context: GameActionBindingContext<
 		State,
-		PublicView,
-		PrivateView,
 		Actions,
 		WayfarerGameResources
 	>,

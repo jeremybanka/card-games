@@ -7,6 +7,11 @@ export type Suit = "clubs" | "diamonds" | "spades" | "hearts"
 export type Rank = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14
 export type CardId = `card::${string}`
 export type PlayerId = `user::${string}`
+
+export type PlayerController = {
+	aiModel: AiModelId | null
+	kind: "ai" | "human"
+}
 export type CardValue = {
 	rank: Rank
 	suit: Suit
@@ -44,7 +49,6 @@ export type OhHellPhase =
 	| "roundComplete"
 	| "gameComplete"
 
-export type GamePhase = HeartsPhase | OhHellPhase
 export type PassDirection = "left" | "right" | "across" | "hold"
 
 type CommonPublicPlayerView = {

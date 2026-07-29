@@ -2,7 +2,7 @@ import { bindAiSeatActions } from "./ai-seat-actions.node.ts"
 import {
 	bindGameEvent,
 	combineDisposers,
-	type Game,
+	type GameDefinition,
 } from "./game-controller.node.ts"
 import {
 	cardForLog,
@@ -13,11 +13,7 @@ import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
 
 import { createPhysicalCardIds } from "../src/game/card-domain.ts"
 import { parsePlayCardPayload } from "../src/game/game-actions.ts"
-import type {
-	OhHellClientEvents,
-	OhHellPrivatePlayerView,
-	OhHellPublicGameView,
-} from "../src/game/game-types.ts"
+import type { OhHellClientEvents } from "../src/game/game-types.ts"
 import {
 	createOhHellGame,
 	disconnectOhHellPlayer,
@@ -29,15 +25,11 @@ import {
 	startNextOhHellRound,
 	startOhHellGame,
 	submitOhHellBid,
-	toOhHellPrivatePlayerView,
-	toOhHellPublicGameView,
 } from "../src/game/oh-hell-engine.ts"
 
-export const ohHellGame: Game<
+export const ohHellGame: GameDefinition<
 	"ohHell",
 	OhHellState,
-	OhHellPublicGameView,
-	OhHellPrivatePlayerView,
 	OhHellClientEvents,
 	WayfarerGameResources
 > = {
@@ -168,8 +160,6 @@ export const ohHellGame: Game<
 	},
 	isVacant: (state) => state.players.length === 0,
 	kind: "ohHell",
-	privateView: toOhHellPrivatePlayerView,
-	publicView: toOhHellPublicGameView,
 	stateSnapshotForLog: ohHellStateSnapshotForLog,
 	stateSummaryForLog: ohHellStateSummaryForLog,
 }

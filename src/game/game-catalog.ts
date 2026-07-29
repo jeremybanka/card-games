@@ -6,7 +6,6 @@ import {
 	toPublicGameView,
 	type HeartsState,
 } from "./hearts-engine.ts"
-import { GAME_KINDS } from "./game-kinds.ts"
 import type { GameState } from "./game-state.ts"
 import type {
 	CardId,
@@ -84,8 +83,6 @@ export const gameCatalog = defineGameCatalog({
 		OhHellPrivatePlayerView
 	>,
 } as const)
-
-export const gameKinds: readonly GameKind[] = GAME_KINDS
 
 export function isGameKind(input: unknown): input is GameKind {
 	return typeof input === "string" && Object.hasOwn(gameCatalog, input)

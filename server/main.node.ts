@@ -30,6 +30,7 @@ import type {
 	ActionAck,
 	ClientToServerEvents,
 	GameKind,
+	PlayerController,
 	PlayerId,
 	ServerToClientEvents,
 } from "../src/game/game-types.ts"
@@ -47,7 +48,6 @@ import {
 	type GameDefinition,
 	type GameEventSocket,
 	type GameStateStore,
-	type PlayerController,
 } from "./game-controller.node.ts"
 import { heartsGame } from "./hearts-game.node.ts"
 import { ohHellGame } from "./oh-hell-game.node.ts"
@@ -351,18 +351,9 @@ function createWayfarerGameResources(roomCode: string): WayfarerGameResources {
 function createRoomFactory<
 	const Kind extends GameKind,
 	State extends GameState & { gameKind: Kind },
-	PublicView,
-	PrivateView,
 	Actions extends object,
 >(
-	game: GameDefinition<
-		Kind,
-		State,
-		PublicView,
-		PrivateView,
-		Actions,
-		WayfarerGameResources
-	>,
+	game: GameDefinition<Kind, State, Actions, WayfarerGameResources>,
 ): (roomCode: string, hostId: PlayerId, hostName: string) => StoredRoom {
 	return (roomCode, hostId, hostName) => {
 		const resources = createWayfarerGameResources(roomCode)

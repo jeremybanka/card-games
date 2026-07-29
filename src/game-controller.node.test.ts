@@ -9,7 +9,7 @@ import {
 	bindGameEvent,
 	createGameController,
 	type GameActionsOf,
-	type Game,
+	type GameDefinition,
 	type GameEventSocket,
 } from "../server/game-controller.node.ts"
 
@@ -26,11 +26,9 @@ type SummonerResources = {
 	summonLimit: number
 }
 
-const summonersGame: Game<
+const summonersGame: GameDefinition<
 	"summoners",
 	SummonerState,
-	{ summonCount: number },
-	{ summons: string[] },
 	SummonEvents,
 	SummonerResources
 > = {
@@ -57,8 +55,6 @@ const summonersGame: Game<
 	dispose: () => {},
 	isVacant: (state) => state.connectedPlayerIds.length === 0,
 	kind: "summoners",
-	privateView: (state) => ({ summons: [...state.summons] }),
-	publicView: (state) => ({ summonCount: state.summons.length }),
 	stateSnapshotForLog: (state) => state,
 	stateSummaryForLog: (state) => ({ summonCount: state.summons.length }),
 }
@@ -118,10 +114,7 @@ describe("generic game controller", () => {
 
 		listeners.get("summon")?.("moss golem")
 		listeners.get("summon")?.("ember fox")
-		expect(controller.getPublicView()).toEqual({ summonCount: 1 })
-		expect(controller.getPrivateView("user::host")).toEqual({
-			summons: ["moss golem"],
-		})
+		expect(controller.getState().summons).toEqual(["moss golem"])
 
 		dispose()
 		expect(listeners.size).toBe(0)

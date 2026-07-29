@@ -18,7 +18,8 @@ import {
 } from "./connection-status.ts"
 import { GameTable } from "./GameTable.tsx"
 import { gameSocket } from "./game-socket.ts"
-import { gameCatalog, gameKinds, isGameKind } from "./game/game-catalog.ts"
+import { gameCatalog, isGameKind } from "./game/game-catalog.ts"
+import { GAME_KINDS } from "./game/game-kinds.ts"
 import css from "./AppShell.module.css"
 
 export function AppShell(): VNode {
@@ -104,7 +105,7 @@ export function AppShell(): VNode {
 									}
 								}}
 							>
-								{gameKinds.map((kind) => (
+								{GAME_KINDS.map((kind) => (
 									<option key={kind} value={kind}>
 										{gameCatalog[kind].label}
 									</option>
