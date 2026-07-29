@@ -150,7 +150,9 @@ export const heartsGame: GameDefinition<
 					"realtime.action.restart_game",
 					{ playerId },
 					(span) => {
-						controller.setState(restartHeartsGame(controller.getState(), playerId))
+						controller.setState(
+							restartHeartsGame(controller.getState(), playerId),
+						)
 						span.event("game.restarted", {
 							room: controller.stateSnapshotForLog(),
 						})

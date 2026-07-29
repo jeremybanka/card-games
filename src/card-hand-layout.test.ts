@@ -89,12 +89,12 @@ describe("card hand layout", () => {
 
 	it("does not change pass cards without a valid destination", () => {
 		const selection = ["card-a", "card-b"]
-		expect(heartsPassSelectionAfterDrop(selection, "card-c", "hand", null)).toEqual(
-			selection,
-		)
-		expect(heartsPassSelectionAfterDrop(selection, "card-a", "pass", null)).toEqual(
-			selection,
-		)
+		expect(
+			heartsPassSelectionAfterDrop(selection, "card-c", "hand", null),
+		).toEqual(selection)
+		expect(
+			heartsPassSelectionAfterDrop(selection, "card-a", "pass", null),
+		).toEqual(selection)
 	})
 
 	it("moves cards between the hand and the explicit pass destination", () => {
@@ -105,18 +105,23 @@ describe("card hand layout", () => {
 			heartsPassSelectionAfterDrop(["card-a"], "card-b", "hand", "pass", 0),
 		).toEqual(["card-b", "card-a"])
 		expect(
-			heartsPassSelectionAfterDrop(["card-a", "card-b"], "card-a", "pass", "hand"),
+			heartsPassSelectionAfterDrop(
+				["card-a", "card-b"],
+				"card-a",
+				"pass",
+				"hand",
+			),
 		).toEqual(["card-b"])
 	})
 
 	it("caps and reorders the pass destination without changing card identity", () => {
 		const full = ["card-a", "card-b", "card-c"]
-		expect(heartsPassSelectionAfterDrop(full, "card-d", "hand", "pass")).toEqual(full)
-		expect(heartsPassSelectionAfterDrop(full, "card-c", "pass", "pass", 0)).toEqual([
-			"card-c",
-			"card-a",
-			"card-b",
-		])
+		expect(
+			heartsPassSelectionAfterDrop(full, "card-d", "hand", "pass"),
+		).toEqual(full)
+		expect(
+			heartsPassSelectionAfterDrop(full, "card-c", "pass", "pass", 0),
+		).toEqual(["card-c", "card-a", "card-b"])
 	})
 
 	it("promotes an upward pick into a card drag", () => {

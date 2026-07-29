@@ -35,16 +35,16 @@ export type AiTurnObservation = {
 	turnKey: string
 }
 
-export type HeartsPassMemoryEntry =
-	| {
-			cards: VisibleCard[]
-			direction: PassDirection
-			kind: "cardsPassed"
-			recipientId: PlayerId
-			roundNumber: number
-	  }
+export type HeartsPassMemoryEntry = {
+	cards: VisibleCard[]
+	direction: PassDirection
+	kind: "cardsPassed"
+	recipientId: PlayerId
+	roundNumber: number
+}
 
-export type AiMemoryLedgerEntry = HeartsPassMemoryEntry
+export type AiMemoryLedgerEntry =
+	| HeartsPassMemoryEntry
 	| {
 			cards: VisibleCard[]
 			direction: PassDirection

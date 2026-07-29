@@ -518,7 +518,10 @@ export function playHeartsCard(
 	return next
 }
 
-export function restartHeartsGame(state: HeartsState, hostId: PlayerId): HeartsState {
+export function restartHeartsGame(
+	state: HeartsState,
+	hostId: PlayerId,
+): HeartsState {
 	if (state.hostId !== hostId)
 		throw new HeartsRuleError("Only the host can restart the game.")
 	const next = copyGameState(state)
@@ -582,7 +585,9 @@ function publicTrick(state: HeartsState): TrickPlay[] {
 	)
 }
 
-export function toHeartsPublicGameView(state: HeartsState): HeartsPublicGameView {
+export function toHeartsPublicGameView(
+	state: HeartsState,
+): HeartsPublicGameView {
 	return {
 		completedTricks: state.completedTricks.map((trick) => ({
 			leftoverAward:

@@ -213,13 +213,18 @@ describe("Hearts dealing and visibility", () => {
 	it("publishes the opening leader immediately on a hold round", () => {
 		const readyForHold = lobby(4)
 		readyForHold.roundNumber = 3
-		const state = dealHeartsRound(readyForHold, seededRandom(HOLD_ROUND_LEADER_SEED))
+		const state = dealHeartsRound(
+			readyForHold,
+			seededRandom(HOLD_ROUND_LEADER_SEED),
+		)
 
 		expect(state.phase).toBe("playing")
 		expect(state.passDirection).toBe("hold")
 		expect(state.currentPlayerId).not.toBeNull()
 		expect(state.trickLeaderId).toBe(state.currentPlayerId)
-		expect(toHeartsPublicGameView(state).currentPlayerId).toBe(state.currentPlayerId)
+		expect(toHeartsPublicGameView(state).currentPlayerId).toBe(
+			state.currentPlayerId,
+		)
 	})
 
 	it.each([
@@ -265,7 +270,10 @@ describe("Hearts dealing and visibility", () => {
 									: 1
 					return (senderIndex + offset) % playerCount === recipientIndex
 				})
-				const receipt = toHeartsPrivatePlayerView(state, recipient.id).passReceipt
+				const receipt = toHeartsPrivatePlayerView(
+					state,
+					recipient.id,
+				).passReceipt
 				expect(receipt?.senderId).toBe(sender?.id)
 				expect(receipt?.roundNumber).toBe(state.roundNumber)
 				expect(receipt?.cards.map((card) => card.id)).toEqual(
@@ -290,7 +298,9 @@ describe("Hearts dealing and visibility", () => {
 		const state = startHeartsGame(lobby(4), playerIds[0], seededRandom(74))
 		state.passDirection = "hold"
 		state.phase = "playing"
-		expect(toHeartsPrivatePlayerView(state, playerIds[0]).passReceipt).toBeNull()
+		expect(
+			toHeartsPrivatePlayerView(state, playerIds[0]).passReceipt,
+		).toBeNull()
 	})
 
 	it("scrambles card-value relationships on every deal", () => {
@@ -351,7 +361,8 @@ describe("Hearts dealing and visibility", () => {
 		expect(publicView.deckCardIds).toEqual([leftoverCardId])
 		for (const playerId of playerIds.slice(0, 3)) {
 			expect(
-				toHeartsPrivatePlayerView(afterZeroPointTrick, playerId).awardedLeftoverCard,
+				toHeartsPrivatePlayerView(afterZeroPointTrick, playerId)
+					.awardedLeftoverCard,
 			).toBeNull()
 		}
 	})

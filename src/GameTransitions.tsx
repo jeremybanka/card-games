@@ -20,7 +20,8 @@ const transitionRules = {
 		showsLeftoverAward: true,
 	},
 	ohHell: {
-		ruleText: "Highest trump wins; otherwise highest card in the led suit wins.",
+		ruleText:
+			"Highest trump wins; otherwise highest card in the led suit wins.",
 		showsLeftoverAward: false,
 	},
 } as const satisfies Record<
