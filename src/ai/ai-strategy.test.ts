@@ -37,6 +37,8 @@ const aiPlayerId =
 	"user::00000000-0000-4000-8000-0000000000a1" satisfies PlayerId
 const humanPlayerId =
 	"user::00000000-0000-4000-8000-0000000000b2" satisfies PlayerId
+const opponentPlayerId =
+	"user::00000000-0000-4000-8000-0000000000c3" satisfies PlayerId
 
 function card(
 	id: string,
@@ -172,6 +174,88 @@ function ohHellContext(
 		previousPlan: "",
 		privateView,
 		publicView,
+	}
+}
+
+function ohHellBiddingContext(
+	cards: VisibleCard[],
+	options: {
+		dealerId?: PlayerId
+		legalBids?: number[]
+	},
+): AiGameContextFor<"ohHell"> {
+	const dealerId = options.dealerId ?? opponentPlayerId
+	return {
+		memoryLedger: [],
+		playerId: aiPlayerId,
+		previousPlan: "",
+		privateView: {
+			cards,
+			gameKind: "ohHell",
+			legalBids: options.legalBids ?? [0, 1, 2, 3, 4],
+			playableCardIds: [],
+			playerId: aiPlayerId,
+		},
+		publicView: {
+			bidPlayerId: aiPlayerId,
+			bidsSubmitted: dealerId === aiPlayerId ? 2 : 1,
+			completedTricks: [],
+			currentPlayerId: aiPlayerId,
+			currentTrick: [],
+			dealerId,
+			deckCardIds: [],
+			gameKind: "ohHell",
+			hostId: humanPlayerId,
+			lastTrickWinnerId: null,
+			maximumRounds: 5,
+			phase: "bidding",
+			players: [
+				{
+					aiModel: null,
+					bid: 1,
+					connected: true,
+					handCardIds: ["card::opaque-human-card"],
+					id: humanPlayerId,
+					kind: "human",
+					name: "Ada",
+					roundPoints: 0,
+					score: 10,
+					tricksWon: 0,
+				},
+				{
+					aiModel: "gpt-5.6-terra",
+					bid: null,
+					connected: true,
+					handCardIds: cards.map((entry) => entry.id),
+					id: aiPlayerId,
+					kind: "ai",
+					name: "Terra AI",
+					roundPoints: 0,
+					score: 12,
+					tricksWon: 0,
+				},
+				{
+					aiModel: "gpt-5.6-terra",
+					bid: dealerId === aiPlayerId ? 2 : null,
+					connected: true,
+					handCardIds: ["card::opaque-opponent-card"],
+					id: opponentPlayerId,
+					kind: "ai",
+					name: "Terra AI 2",
+					roundPoints: 0,
+					score: 3,
+					tricksWon: 0,
+				},
+			],
+			roomCode: "WIND",
+			roundHandSize: cards.length,
+			roundNumber: 2,
+			statusMessage: "Terra AI to bid.",
+			trickLeaderId: null,
+			trickNumber: 0,
+			trumpSuit: "hearts",
+			winnerIds: [],
+		},
 	}
 }
 
@@ -632,5 +716,66 @@ describe("AI Oh Hell strategy", () => {
 				ohHellContext([low, trump], { bid: 1, tricksWon: 1 }),
 			),
 		).toEqual({ action: "playCard", card: "2C" })
+	})
+
+	it("renders a compact strategic bidding prompt and uses the model", () => {
+		const ace = card("ace-heart", "hearts", 14)
+		const nine = card("nine-heart", "hearts", 9)
+		const king = card("king-club", "clubs", 13)
+		const three = card("three-diamond", "diamonds", 3)
+		const context = ohHellBiddingContext([ace, nine, king, three], {})
+		const facts = renderAiGameFacts(context)
+		const strategy = aiGameStrategy("ohHell")
+
+		expect(facts).toBe(`Oh Hell, round 2 of 5. 4 cards each. Trump is hearts.
+
+You are P1, bidding 2nd of 3. P2 is the dealer and bids last. P0 leads the first trick.
+
+Scores:
+- P0: 10
+- P1 (you): 12
+- P2: 3
+
+Bids so far:
+- P0: 1
+- P1 (you): pending
+- P2: pending
+
+Your hand: AH, 9H, KC, 3D.
+
+Legal bids: 0, 1, 2, 3, 4.
+Choose your bid.`)
+		expect(facts).not.toContain("card::")
+		expect(facts).not.toContain("Current trick")
+		expect(facts).not.toContain("connected")
+		expect(strategy.systemPrompt).toContain(
+			"Making your bid scores 10 plus the number of tricks won.",
+		)
+		expect(strategy.systemPrompt).toContain(
+			"Avoid counting the same source of strength twice.",
+		)
+		expect(strategy.usesTurnGenerator(context)).toBe(true)
+	})
+
+	it("explains the dealer's bid constraint using the supplied legal bids", () => {
+		const context = ohHellBiddingContext(
+			[
+				card("queen-spade", "spades", 12),
+				card("eight-spade", "spades", 8),
+				card("ace-diamond", "diamonds", 14),
+				card("seven-diamond", "diamonds", 7),
+				card("four-club", "clubs", 4),
+			],
+			{ dealerId: aiPlayerId, legalBids: [0, 1, 3, 4, 5] },
+		)
+		const facts = renderAiGameFacts(context)
+
+		expect(facts).toContain(
+			"You are P1, bidding 3rd of 3. P1 is the dealer and bids last.",
+		)
+		expect(facts).toContain(
+			"There are 5 tricks. As dealer, your bid may not make the table's total bids equal 5.",
+		)
+		expect(facts).toContain("Legal bids: 0, 1, 3, 4, 5.")
 	})
 })

@@ -120,7 +120,7 @@ function isLegalOhHellAction(
 }
 
 const commonPrompt = [
-	"Choose exactly one legal next action using a literal card value from the supplied hand.",
+	"Choose exactly one legal next action.",
 	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
 	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
 	"For play, return exactly one listed legal card value.",
@@ -162,9 +162,12 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 	},
 	systemPrompt: [
 		"You are a strategic Oh Hell player seated at a private multiplayer table.",
-		"Success means: bid and win exactly the predicted number of tricks, obey turn order and follow-suit rules, account for trump, and return a concise reusable plan.",
-		"For bidding, return one number listed among the legal bids.",
+		"Maximize total score by predicting and then winning exactly your bid.",
+		"Making your bid scores 10 plus the number of tricks won. Missing your bid scores only the number of tricks won.",
+		"Trump beats every non-trump card. Otherwise, the highest card of the led suit wins. Players must follow suit when able.",
+		"For bidding, estimate how many tricks the hand can reliably take. Account for trump strength, high cards, suit length, void potential, bidding position, and opponents' visible bids. Avoid counting the same source of strength twice.",
+		"For bidding, return one number listed among the legal bids and a short plan that can guide subsequent play.",
 		...commonPrompt,
 	].join("\n"),
-	usesTurnGenerator: (context) => context.publicView.phase !== "bidding",
+	usesTurnGenerator: () => true,
 }

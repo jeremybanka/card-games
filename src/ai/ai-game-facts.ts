@@ -394,6 +394,84 @@ function renderHeartsFacts(context: AiGameContextFor<"hearts">): string {
 	].join("\n")
 }
 
+function ordinal(value: number): string {
+	const remainder100 = value % 100
+	if (remainder100 >= 11 && remainder100 <= 13) return `${value}th`
+	switch (value % 10) {
+		case 1:
+			return `${value}st`
+		case 2:
+			return `${value}nd`
+		case 3:
+			return `${value}rd`
+		default:
+			return `${value}th`
+	}
+}
+
+function renderOhHellBiddingFacts(
+	context: AiGameContextFor<"ohHell">,
+): string {
+	const playerCount = context.publicView.players.length
+	const dealerIndex = context.publicView.players.findIndex(
+		(player) => player.id === context.publicView.dealerId,
+	)
+	const openingLeader =
+		dealerIndex === -1
+			? undefined
+			: context.publicView.players[(dealerIndex + 1) % playerCount]
+	const dealer =
+		dealerIndex === -1 ? undefined : context.publicView.players[dealerIndex]
+	const me = playerAlias(context, context.playerId)
+	const biddingPosition = context.publicView.bidsSubmitted + 1
+	const hand = context.privateView.cards.map(aiCardValue).join(", ") || "empty"
+	const scores = context.publicView.players.map(
+		(player) =>
+			`- ${playerAlias(context, player.id)}${
+				player.id === context.playerId ? " (you)" : ""
+			}: ${player.score}`,
+	)
+	const bids = context.publicView.players.map(
+		(player) =>
+			`- ${playerAlias(context, player.id)}${
+				player.id === context.playerId ? " (you)" : ""
+			}: ${player.bid ?? "pending"}`,
+	)
+	const dealerConstraint =
+		context.publicView.dealerId === context.playerId
+			? [
+					"",
+					`There are ${context.publicView.roundHandSize} tricks. As dealer, your bid may not make the table's total bids equal ${context.publicView.roundHandSize}.`,
+				]
+			: []
+
+	return [
+		`Oh Hell, round ${context.publicView.roundNumber} of ${context.publicView.maximumRounds}. ${context.publicView.roundHandSize} cards each. Trump is ${context.publicView.trumpSuit ?? "none"}.`,
+		"",
+		`You are ${me}, bidding ${ordinal(biddingPosition)} of ${playerCount}. ${
+			dealer === undefined
+				? "The dealer is unknown."
+				: `${playerAlias(context, dealer.id)} is the dealer and bids last.`
+		} ${
+			openingLeader === undefined
+				? "The opening leader is unknown."
+				: `${playerAlias(context, openingLeader.id)} leads the first trick.`
+		}`,
+		"",
+		"Scores:",
+		...scores,
+		"",
+		"Bids so far:",
+		...bids,
+		"",
+		`Your hand: ${hand}.`,
+		...dealerConstraint,
+		"",
+		`Legal bids: ${context.privateView.legalBids.join(", ")}.`,
+		"Choose your bid.",
+	].join("\n")
+}
+
 function renderLegacyGameFacts(context: AiGameContext): string {
 	const adapter = aiFactsAdapter(context)
 	const me = context.publicView.players.find(
@@ -461,5 +539,7 @@ export function renderAiGameFacts(context: AiGameContext): string {
 	)
 	return context.publicView.gameKind === "hearts"
 		? renderHeartsFacts(context as AiGameContextFor<"hearts">)
+		: context.publicView.phase === "bidding"
+			? renderOhHellBiddingFacts(context as AiGameContextFor<"ohHell">)
 		: renderLegacyGameFacts(context)
 }
