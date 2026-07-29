@@ -43,10 +43,10 @@ import {
 } from "./game/hearts-auto-play.ts"
 import { gameCatalog } from "./game/game-catalog.ts"
 import {
-	gameTableAdapter,
+	trickTakingTableAdapter,
 	passingTableAdapter,
 	supportsTableAutoPlay,
-} from "./game/game-table-adapter.ts"
+} from "./game/trick-taking-table-adapter.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
@@ -420,7 +420,7 @@ function TrickCenter({
 						? "Your play"
 						: game.statusMessage}
 				</strong>
-				<span>{gameTableAdapter(game).trickDetail(game)}</span>
+				<span>{trickTakingTableAdapter(game).trickDetail(game)}</span>
 			</trick-heading>
 			<trick-slots>
 				{game.players.map((player, index) => {
@@ -544,7 +544,7 @@ function ScoreSheet({
 			</score-heading>
 			<ol>
 				{[...game.players]
-					.sort(gameTableAdapter(game).compareScores)
+					.sort(trickTakingTableAdapter(game).compareScores)
 					.map((player) => (
 						<li
 							data-reviewable={player.kind === "ai" || undefined}
@@ -583,7 +583,7 @@ function ScoreSheet({
 									/>
 								)}
 							</score-identity>
-							<small>{gameTableAdapter(game).scoreDetail(player)}</small>
+							<small>{trickTakingTableAdapter(game).scoreDetail(player)}</small>
 							<strong>{player.score}</strong>
 						</li>
 					))}
@@ -1078,7 +1078,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			(index) => game.players[index] as PublicPlayerView,
 		)
 	}, [game.players, mySeatIndex])
-	const tableAdapter = gameTableAdapter(game)
+	const tableAdapter = trickTakingTableAdapter(game)
 	const passRecipient =
 		passingTableAdapter(game)?.recipient(game, mySeatIndex) ?? null
 

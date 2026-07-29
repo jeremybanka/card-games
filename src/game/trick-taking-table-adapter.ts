@@ -18,7 +18,7 @@ type PublicGameViewFor<Kind extends GameKind> = Extract<
 	{ gameKind: Kind }
 >
 
-type GameTableAdapter<View extends PublicGameView> = {
+type TrickTakingTableAdapter<View extends PublicGameView> = {
 	compareScores: (left: PublicPlayerView, right: PublicPlayerView) => number
 	headerStatus: (view: View, passRecipientName: string | null) => string
 	lobbyDescription: (view: View) => string
@@ -70,7 +70,7 @@ const gameTableAdapters = {
 			`Trick ${Math.min(view.trickNumber + 1, 26)}${
 				view.heartsBroken ? " · hearts broken" : ""
 			}`,
-	} satisfies GameTableAdapter<HeartsPublicGameView>,
+	} satisfies TrickTakingTableAdapter<HeartsPublicGameView>,
 	ohHell: {
 		compareScores: (left, right) => right.score - left.score,
 		headerStatus: (view) =>
@@ -85,9 +85,9 @@ const gameTableAdapters = {
 			`Trick ${Math.min(view.trickNumber + 1, view.roundHandSize)} · ${
 				view.trumpSuit ?? "no"
 			} trump`,
-	} satisfies GameTableAdapter<OhHellPublicGameView>,
+	} satisfies TrickTakingTableAdapter<OhHellPublicGameView>,
 } as const satisfies {
-	[Kind in GameKind]: GameTableAdapter<PublicGameViewFor<Kind>>
+	[Kind in GameKind]: TrickTakingTableAdapter<PublicGameViewFor<Kind>>
 }
 
 const passingTableAdapters = {
@@ -110,10 +110,10 @@ const passingTableAdapters = {
 
 const autoPlayTableGames = new Set<GameKind>(["hearts"])
 
-export function gameTableAdapter(
+export function trickTakingTableAdapter(
 	view: PublicGameView,
-): GameTableAdapter<PublicGameView> {
-	return registeredGameAdapter<GameTableAdapter<PublicGameView>>(
+): TrickTakingTableAdapter<PublicGameView> {
+	return registeredGameAdapter<TrickTakingTableAdapter<PublicGameView>>(
 		view.gameKind,
 		gameTableAdapters,
 	)
