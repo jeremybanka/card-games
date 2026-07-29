@@ -1,4 +1,8 @@
 import type { AiGameContext } from "./ai-game-facts.ts"
+import {
+	assertMatchingGameKinds,
+	registeredGameAdapter,
+} from "../game/game-registry.ts"
 import type {
 	GameKind,
 	HeartsPrivatePlayerView,
@@ -72,12 +76,14 @@ export function legacyCompatibleCacheViews(context: AiGameContext): {
 	privateView: AiGameContext["privateView"]
 	publicView: AiGameContext["publicView"]
 } {
-	if (context.privateView.gameKind !== context.publicView.gameKind) {
-		throw new Error("AI public and private views describe different games.")
-	}
-	const adapter = legacyCacheAdapters[
-		context.publicView.gameKind
-	] as unknown as LegacyCacheAdapter<PublicGameView, PrivatePlayerView>
+	assertMatchingGameKinds(
+		context.privateView,
+		context.publicView,
+		"AI public and private views describe different games.",
+	)
+	const adapter = registeredGameAdapter<
+		LegacyCacheAdapter<PublicGameView, PrivatePlayerView>
+	>(context.publicView.gameKind, legacyCacheAdapters)
 	return {
 		privateView: adapter.privateView(
 			context.privateView,

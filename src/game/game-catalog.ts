@@ -6,6 +6,7 @@ import {
 	toPublicGameView,
 	type HeartsState,
 } from "./hearts-engine.ts"
+import { registeredGameAdapter } from "./game-registry.ts"
 import type { GameState } from "./game-state.ts"
 import type {
 	CardId,
@@ -94,9 +95,9 @@ export function parseGameKind(input: unknown): GameKind {
 }
 
 export function publicGameView(state: GameState): PublicGameView {
-	const game = gameCatalog[state.gameKind] as unknown as {
+	const game = registeredGameAdapter<{
 		publicView: (state: GameState) => PublicGameView
-	}
+	}>(state.gameKind, gameCatalog)
 	return game.publicView(state)
 }
 
@@ -104,8 +105,8 @@ export function privatePlayerView(
 	state: GameState,
 	playerId: PlayerId,
 ): PrivatePlayerView {
-	const game = gameCatalog[state.gameKind] as unknown as {
+	const game = registeredGameAdapter<{
 		privateView: (state: GameState, playerId: PlayerId) => PrivatePlayerView
-	}
+	}>(state.gameKind, gameCatalog)
 	return game.privateView(state, playerId)
 }

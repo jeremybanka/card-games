@@ -11,6 +11,10 @@ import type {
 	Suit,
 	VisibleCard,
 } from "../game/game-types.ts"
+import {
+	assertMatchingGameKinds,
+	registeredGameAdapter,
+} from "../game/game-registry.ts"
 import type { AiMemoryLedgerEntry, AiTurnObservation } from "./ai-types.ts"
 
 export type AiGameContext = {
@@ -72,12 +76,14 @@ const aiFactsAdapters = {
 function aiFactsAdapter(
 	context: AiGameContext,
 ): AiFactsAdapter<PublicGameView, PrivatePlayerView> {
-	if (context.privateView.gameKind !== context.publicView.gameKind) {
-		throw new Error("AI public and private views describe different games.")
-	}
-	return aiFactsAdapters[
-		context.publicView.gameKind
-	] as unknown as AiFactsAdapter<PublicGameView, PrivatePlayerView>
+	assertMatchingGameKinds(
+		context.privateView,
+		context.publicView,
+		"AI public and private views describe different games.",
+	)
+	return registeredGameAdapter<
+		AiFactsAdapter<PublicGameView, PrivatePlayerView>
+	>(context.publicView.gameKind, aiFactsAdapters)
 }
 
 const suitCodes: Record<Suit, string> = {

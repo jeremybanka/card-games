@@ -9,6 +9,7 @@ import type {
 	VisibleCard,
 } from "./game-types.ts"
 import { heartsPointRisk } from "./hearts-card-strategy.ts"
+import { matchingGameKinds, registeredGameCapability } from "./game-registry.ts"
 
 const SUIT_ORDER: Record<Suit, number> = {
 	clubs: 0,
@@ -110,17 +111,21 @@ export function isAutoPlayTurnActionable(
 	playerId: PlayerId,
 	presentationReady: boolean,
 ): boolean {
-	const readiness = autoPlayReadiness[game.gameKind]
-	if (readiness === undefined || privateView.gameKind !== game.gameKind) {
-		return false
-	}
-	return readiness(
-		game as never,
-		privateView as never,
-		playerId,
-		presentationReady,
+	const readiness = registeredGameCapability<AutoPlayReadiness>(
+		game.gameKind,
+		autoPlayReadiness,
 	)
+	if (readiness === null) return false
+	if (!matchingGameKinds(privateView, game)) return false
+	return readiness(game, privateView, playerId, presentationReady)
 }
+
+type AutoPlayReadiness = (
+	game: PublicGameView,
+	privateView: PrivatePlayerView,
+	playerId: PlayerId,
+	presentationReady: boolean,
+) => boolean
 
 const autoPlayReadiness = {
 	hearts: (
@@ -134,14 +139,4 @@ const autoPlayReadiness = {
 		privateView.playerId === playerId &&
 		privateView.playableCardIds.length > 0 &&
 		presentationReady,
-} as unknown as Partial<
-	Record<
-		GameKind,
-		(
-			game: PublicGameView,
-			privateView: PrivatePlayerView,
-			playerId: PlayerId,
-			presentationReady: boolean,
-		) => boolean
-	>
->
+} satisfies Partial<Record<GameKind, unknown>>

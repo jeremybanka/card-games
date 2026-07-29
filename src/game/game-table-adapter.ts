@@ -1,4 +1,8 @@
 import { gameCatalog } from "./game-catalog.ts"
+import {
+	registeredGameAdapter,
+	registeredGameCapability,
+} from "./game-registry.ts"
 import { passRecipientSeatIndex } from "./seat-order.ts"
 import type {
 	GameKind,
@@ -102,22 +106,26 @@ const passingTableAdapters = {
 			)
 		},
 	} satisfies PassingTableAdapter<HeartsPublicGameView>,
-} as unknown as Partial<Record<GameKind, PassingTableAdapter<PublicGameView>>>
+} satisfies Partial<Record<GameKind, unknown>>
 
 const autoPlayTableGames = new Set<GameKind>(["hearts"])
 
 export function gameTableAdapter(
 	view: PublicGameView,
 ): GameTableAdapter<PublicGameView> {
-	return gameTableAdapters[
-		view.gameKind
-	] as unknown as GameTableAdapter<PublicGameView>
+	return registeredGameAdapter<GameTableAdapter<PublicGameView>>(
+		view.gameKind,
+		gameTableAdapters,
+	)
 }
 
 export function passingTableAdapter(
 	view: PublicGameView,
 ): PassingTableAdapter<PublicGameView> | null {
-	return passingTableAdapters[view.gameKind] ?? null
+	return registeredGameCapability<PassingTableAdapter<PublicGameView>>(
+		view.gameKind,
+		passingTableAdapters,
+	)
 }
 
 export function supportsTableAutoPlay(view: PublicGameView): boolean {

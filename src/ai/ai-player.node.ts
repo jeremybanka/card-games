@@ -9,6 +9,11 @@ import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
 } from "../game/game-state-atoms.ts"
+import {
+	matchingGameKinds,
+	registeredGameAdapter,
+	registeredGameCapability,
+} from "../game/game-registry.ts"
 import type {
 	ActionResult,
 	AiStrategyReviewAction,
@@ -118,17 +123,14 @@ const passMemoryAdapters = {
 			},
 		}
 	},
-} as unknown as Partial<
-	Record<
-		PublicGameView["gameKind"],
-		(
-			game: PublicGameView,
-			privateView: PrivatePlayerView,
-			cardIds: CardId[],
-			playerId: PlayerId,
-		) => { entry: AiMemoryLedgerEntry; pendingPass: PendingPass }
-	>
->
+} satisfies Partial<Record<PublicGameView["gameKind"], unknown>>
+
+type PassMemoryAdapter = (
+	game: PublicGameView,
+	privateView: PrivatePlayerView,
+	cardIds: CardId[],
+	playerId: PlayerId,
+) => { entry: AiMemoryLedgerEntry; pendingPass: PendingPass }
 
 function submitAiAction(
 	socket: AiSocket,
@@ -154,15 +156,19 @@ export function isAiTurnReady(
 	privateView: PrivatePlayerView,
 ): boolean {
 	if (privateView.playerId !== playerId) return false
-	if (privateView.gameKind !== game.gameKind) {
-		return false
-	}
-	return aiTurnReadiness[game.gameKind](
-		playerId,
-		game as never,
-		privateView as never,
+	if (!matchingGameKinds(privateView, game)) return false
+	const readiness = registeredGameAdapter<AiTurnReadiness>(
+		game.gameKind,
+		aiTurnReadiness,
 	)
+	return readiness(playerId, game, privateView)
 }
+
+type AiTurnReadiness = (
+	playerId: PlayerId,
+	game: PublicGameView,
+	privateView: PrivatePlayerView,
+) => boolean
 
 const aiTurnReadiness = {
 	hearts: (
@@ -185,10 +191,7 @@ const aiTurnReadiness = {
 			: game.phase === "playing" &&
 				game.currentPlayerId === playerId &&
 				privateView.playableCardIds.length > 0,
-} satisfies Record<
-	PublicGameView["gameKind"],
-	(playerId: PlayerId, game: never, privateView: never) => boolean
->
+} satisfies Record<PublicGameView["gameKind"], unknown>
 
 async function createAiPlayerRuntime(
 	options: CreateAiPlayerOptions,
@@ -365,10 +368,13 @@ async function createAiPlayerRuntime(
 
 					const result = await submitAiAction(socket, decision.nextAction)
 					if (result.ok && decision.nextAction.action === "passCards") {
-						const passMemory = passMemoryAdapters[gameAtStart.gameKind]
+						const passMemory = registeredGameCapability<PassMemoryAdapter>(
+							gameAtStart.gameKind,
+							passMemoryAdapters,
+						)
 						if (
-							passMemory === undefined ||
-							privateViewAtStart.gameKind !== gameAtStart.gameKind
+							passMemory === null ||
+							!matchingGameKinds(privateViewAtStart, gameAtStart)
 						) {
 							throw new Error(
 								`${gameAtStart.gameKind} does not support AI card-pass memory.`,

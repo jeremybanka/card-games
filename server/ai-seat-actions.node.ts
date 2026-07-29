@@ -39,11 +39,7 @@ export function bindAiSeatActions<
 	State extends AiSeatState,
 	Actions extends AiSeatClientEvents,
 >(
-	context: GameActionBindingContext<
-		State,
-		Actions,
-		WayfarerGameResources
-	>,
+	context: GameActionBindingContext<State, Actions, WayfarerGameResources>,
 	options: AiSeatActionOptions<State>,
 ): () => void {
 	const { acknowledge, controller, playerId, socket } = context
