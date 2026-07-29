@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with a low club; preserve the ace to control a later club trick and avoid taking the lead now.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7C"
-	}
-}

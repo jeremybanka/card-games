@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck diamonds; discard QS safely under P1's known AS, and avoid taking heart tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3D"
-	}
-}

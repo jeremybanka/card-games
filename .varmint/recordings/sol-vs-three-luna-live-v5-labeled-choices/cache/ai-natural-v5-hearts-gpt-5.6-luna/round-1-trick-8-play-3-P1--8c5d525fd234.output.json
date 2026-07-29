@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck the spade trick with 3S; preserve AS and avoid taking points while hearts remain intact.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3S"
+	}
+}

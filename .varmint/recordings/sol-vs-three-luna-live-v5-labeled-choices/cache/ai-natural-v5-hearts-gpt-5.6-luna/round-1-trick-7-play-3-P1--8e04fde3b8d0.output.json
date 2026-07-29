@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play AS to win this zero-point trick; next lead a low diamond, keeping hearts unexposed.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AS"
-	}
-}

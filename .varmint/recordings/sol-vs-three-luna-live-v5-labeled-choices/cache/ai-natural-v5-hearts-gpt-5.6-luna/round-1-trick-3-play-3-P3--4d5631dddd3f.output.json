@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play QC under AC; avoid points and preserve diamonds, spades, and hearts for later.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QC"
+	}
+}

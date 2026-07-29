@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead the low spade; preserve high diamonds and avoid hearts until broken.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "4S"
-	}
-}

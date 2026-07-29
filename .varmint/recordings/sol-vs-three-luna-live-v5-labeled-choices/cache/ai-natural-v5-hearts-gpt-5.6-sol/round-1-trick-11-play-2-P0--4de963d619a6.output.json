@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Safely dump AH now; use JD or 7S to avoid later tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AH"
-	}
-}

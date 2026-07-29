@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Forced final play: take the 3-point heart trick; no further cards remain.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "JH"
-	}
-}

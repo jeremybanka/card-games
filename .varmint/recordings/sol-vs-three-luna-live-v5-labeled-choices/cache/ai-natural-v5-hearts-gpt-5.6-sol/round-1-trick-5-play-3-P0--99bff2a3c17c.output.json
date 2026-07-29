@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck this spade trick; later unload QS under P1's known AS and avoid heart leads.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5S"
-	}
-}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with the highest safe spade; unload QS under P1's known AS and avoid taking heart tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "8S"
-	}
-}

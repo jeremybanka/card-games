@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play the lowest legal heart; 7H ducks the trick and avoids points.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7H"
+	}
+}

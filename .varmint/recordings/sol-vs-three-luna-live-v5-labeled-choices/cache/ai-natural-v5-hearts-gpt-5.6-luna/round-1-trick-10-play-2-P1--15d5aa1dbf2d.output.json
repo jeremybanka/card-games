@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard the zero-point TD; retain low hearts and avoid winning future tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TD"
-	}
-}

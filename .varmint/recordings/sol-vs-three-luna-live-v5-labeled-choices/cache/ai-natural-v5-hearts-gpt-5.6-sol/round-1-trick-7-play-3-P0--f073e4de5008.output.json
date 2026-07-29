@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck spades; track AS with P1, avoid taking hearts, and shed AH safely.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5S"
+	}
+}

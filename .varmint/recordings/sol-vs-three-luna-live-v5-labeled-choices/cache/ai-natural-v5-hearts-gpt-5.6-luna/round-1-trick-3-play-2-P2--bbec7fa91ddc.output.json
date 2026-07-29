@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play the forced AC; after winning, lead a low diamond to avoid exposing hearts and shed safely.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AC"
-	}
-}

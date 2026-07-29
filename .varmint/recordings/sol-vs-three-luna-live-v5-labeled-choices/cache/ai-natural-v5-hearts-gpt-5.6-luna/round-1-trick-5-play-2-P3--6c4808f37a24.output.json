@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Follow spades with the lowest card; play 6S to minimize control and avoid winning if possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6S"
-	}
-}

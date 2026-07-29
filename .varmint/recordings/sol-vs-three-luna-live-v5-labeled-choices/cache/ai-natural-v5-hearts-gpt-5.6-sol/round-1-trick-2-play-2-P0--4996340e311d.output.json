@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck club leads when possible; shed QS only under a higher spade and avoid taking hearts.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3C"
-	}
-}

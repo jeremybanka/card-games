@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play 2H to duck under 9H; P3 wins the final trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "2H"
-	}
-}

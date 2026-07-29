@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead QH; the 10-point queen is unavoidable as the final heart.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QH"
+	}
+}

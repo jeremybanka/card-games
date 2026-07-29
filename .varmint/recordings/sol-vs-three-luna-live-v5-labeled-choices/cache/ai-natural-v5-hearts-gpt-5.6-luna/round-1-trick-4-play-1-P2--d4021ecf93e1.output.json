@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead a low non-point card; preserve high diamonds and avoid leading hearts until broken.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5D"
-	}
-}

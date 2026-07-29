@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play the lower club to minimize taking the trick; keep high spades and hearts as control while hearts remain intact.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TC"
-	}
-}

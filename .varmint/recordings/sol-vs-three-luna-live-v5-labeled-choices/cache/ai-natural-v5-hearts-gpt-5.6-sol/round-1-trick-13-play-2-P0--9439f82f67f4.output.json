@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard 7S under the heart lead; it cannot win.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7S"
-	}
-}

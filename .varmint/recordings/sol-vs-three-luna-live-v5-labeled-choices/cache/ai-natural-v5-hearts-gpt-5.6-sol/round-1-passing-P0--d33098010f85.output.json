@@ -1,0 +1,11 @@
+{
+	"currentPlan": "Shed dangerous honors; stay low and avoid taking point tricks.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"AS",
+			"KH",
+			"JD"
+		]
+	}
+}

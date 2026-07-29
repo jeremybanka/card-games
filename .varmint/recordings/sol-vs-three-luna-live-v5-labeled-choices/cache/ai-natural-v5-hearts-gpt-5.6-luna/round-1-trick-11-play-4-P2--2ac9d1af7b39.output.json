@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard the lowest heart now; retain higher hearts as control for later.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7H"
-	}
-}

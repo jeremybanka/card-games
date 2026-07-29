@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard 9D while following suit; preserve hearts for later control.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "9D"
-	}
-}

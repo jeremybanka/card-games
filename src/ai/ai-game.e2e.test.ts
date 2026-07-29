@@ -381,6 +381,7 @@ async function runBotTable(
 				options.createGenerator?.(bot, squirrel) ??
 				wrapAiGeneratorWithVarmint(
 					`e2e-${bot.modelId}-${bot.id}`,
+					bot.modelId,
 					async (context) => {
 						generatorCalls += 1
 						generatorContexts.push(structuredClone(context))
@@ -589,7 +590,7 @@ describe("four-bot deterministic realtime game", () => {
 		expect(replayed.cacheOutputCount).toBe(56)
 		expect(
 			replayed.finalState.players.map((player) => player.roundPoints),
-		).toEqual([4, 0, 3, 19])
+		).toEqual([0, 4, 13, 9])
 	}, 20_000)
 
 	const liveIt = process.env.RECORD_LIVE_AI_GAME === "1" ? it : it.skip

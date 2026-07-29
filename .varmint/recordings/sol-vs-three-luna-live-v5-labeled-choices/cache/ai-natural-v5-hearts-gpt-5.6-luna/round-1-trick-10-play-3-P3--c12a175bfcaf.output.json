@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play AD to win the trick, then lead a low heart if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AD"
+	}
+}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with 3S to avoid taking the trick and preserve AS and hearts.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3S"
-	}
-}

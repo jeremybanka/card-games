@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Dump AH now; retain 2H for a safer low-heart play and duck with 9C/7S.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AH"
+	}
+}

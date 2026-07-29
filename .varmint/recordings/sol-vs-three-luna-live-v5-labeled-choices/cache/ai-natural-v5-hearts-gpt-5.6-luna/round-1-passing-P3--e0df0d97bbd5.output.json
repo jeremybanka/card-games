@@ -1,0 +1,11 @@
+{
+	"currentPlan": "Pass the dangerous queen of spades and ace of hearts, plus the king of clubs to reduce early trick-taking risk.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"QS",
+			"AH",
+			"KC"
+		]
+	}
+}

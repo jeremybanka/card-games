@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto"
 
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText, jsonSchema, Output } from "ai"
+import { generateText, jsonSchema, type JSONSchema7, Output } from "ai"
 import type { CacheMode } from "varmint"
 import { Squirrel } from "varmint"
 
+import type { GameKind } from "../game/game-types.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
@@ -36,6 +37,47 @@ export type OpenAiTurnGeneratorOptions = {
 	squirrel?: Squirrel
 }
 
+export type AiGenerationContract = {
+	modelId: AiModelId
+	output: {
+		description: string
+		name: string
+		schema: JSONSchema7
+	}
+	prompt: string
+	providerOptions: {
+		openai: {
+			reasoningEffort: "none" | "minimal" | "low" | "medium" | "high" | "xhigh"
+			textVerbosity: "low" | "medium" | "high"
+		}
+	}
+	system: string
+}
+
+export function aiGenerationContract(
+	gameKind: GameKind,
+	modelId: AiModelId,
+	prompt: string,
+): AiGenerationContract {
+	const strategy = aiGameStrategy(gameKind)
+	return {
+		modelId,
+		output: {
+			description: strategy.outputDescription,
+			name: strategy.outputName,
+			schema: strategy.outputSchema,
+		},
+		prompt,
+		providerOptions: {
+			openai: {
+				reasoningEffort: "low",
+				textVerbosity: "low",
+			},
+		},
+		system: strategy.systemPrompt,
+	}
+}
+
 function cacheMode(): CacheMode {
 	const configured = process.env.VARMINT_CACHE_MODE
 	if (
@@ -55,7 +97,7 @@ export const aiGeneratorSquirrel = new Squirrel(
 
 export function promptFixtureKey(
 	context: AiGameContext,
-	prompt: string,
+	contract: AiGenerationContract,
 ): string {
 	const playerIndex = context.publicView.players.findIndex(
 		(player) => player.id === context.playerId,
@@ -68,7 +110,7 @@ export function promptFixtureKey(
 				}-play-${context.publicView.currentTrick.length + 1}-${player}`
 			: `round-${context.publicView.roundNumber}-${context.publicView.phase}-${player}`
 	const inputHash = createHash("sha256")
-		.update(JSON.stringify([prompt], null, "\t"))
+		.update(JSON.stringify(contract))
 		.digest("hex")
 		.slice(0, 12)
 	return `${readableKey}--${inputHash}`
@@ -76,6 +118,7 @@ export function promptFixtureKey(
 
 export function wrapAiGeneratorWithVarmint(
 	key: string,
+	modelId: AiModelId,
 	generate: AiTurnGenerator,
 	squirrel: Squirrel = aiGeneratorSquirrel,
 ): AiTurnGenerator {
@@ -92,9 +135,14 @@ export function wrapAiGeneratorWithVarmint(
 	)
 	return async (context) => {
 		const prompt = renderAiGameFacts(context)
+		const contract = aiGenerationContract(
+			context.publicView.gameKind,
+			modelId,
+			prompt,
+		)
 		sourceContexts.set(prompt, context)
 		try {
-			return await wrapped.for(promptFixtureKey(context, prompt)).get(prompt)
+			return await wrapped.for(promptFixtureKey(context, contract)).get(prompt)
 		} finally {
 			sourceContexts.delete(prompt)
 		}
@@ -143,27 +191,21 @@ export function createOpenAiTurnGenerator(
 			async (span) => {
 				const gameKind = context.publicView.gameKind
 				const prompt = renderAiGameFacts(context)
-				const strategy = aiGameStrategy(gameKind)
-				const systemPrompt = strategy.systemPrompt
+				const contract = aiGenerationContract(gameKind, modelId, prompt)
 				span.event("ai.prompt.rendered", {
 					prompt,
-					systemPrompt,
+					systemPrompt: contract.system,
 				})
 				const result = await generateText({
 					model,
 					output: Output.object({
-						description: strategy.outputDescription,
-						name: strategy.outputName,
-						schema: jsonSchema<AiTurnDecision>(strategy.outputSchema),
+						description: contract.output.description,
+						name: contract.output.name,
+						schema: jsonSchema<AiTurnDecision>(contract.output.schema),
 					}),
-					prompt,
-					providerOptions: {
-						openai: {
-							reasoningEffort: "low",
-							textVerbosity: "low",
-						},
-					},
-					system: systemPrompt,
+					prompt: contract.prompt,
+					providerOptions: contract.providerOptions,
+					system: contract.system,
 				})
 				span.event("ai.openai.response", {
 					finishReason: result.finishReason,
@@ -199,6 +241,7 @@ export function createOpenAiTurnGenerator(
 		if (cached === undefined) {
 			cached = wrapAiGeneratorWithVarmint(
 				`ai-natural-v5-${gameKind}-${modelId}`,
+				modelId,
 				generate,
 				options.squirrel,
 			)

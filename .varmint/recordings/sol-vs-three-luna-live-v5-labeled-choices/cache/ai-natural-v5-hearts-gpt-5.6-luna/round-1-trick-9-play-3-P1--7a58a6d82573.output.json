@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play AS to win this point-free spade trick; next lead TD, preserving hearts and avoiding future heart captures.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AS"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck safely with 5C; preserve 3C for later control and shed dangerous honors when safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5C"
+	}
+}

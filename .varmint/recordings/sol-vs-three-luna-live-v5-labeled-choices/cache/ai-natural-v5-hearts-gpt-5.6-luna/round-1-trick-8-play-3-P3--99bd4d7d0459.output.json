@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck the diamond; avoid winning and leading while hearts are intact.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7D"
-	}
-}

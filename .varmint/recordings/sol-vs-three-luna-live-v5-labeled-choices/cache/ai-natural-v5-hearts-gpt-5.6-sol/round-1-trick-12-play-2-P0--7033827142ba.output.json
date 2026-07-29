@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck the AD with JD; retain 7S for the final trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "JD"
-	}
-}

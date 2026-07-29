@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play low under diamonds to avoid winning; retain high diamonds and all hearts for later.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4D"
+	}
+}

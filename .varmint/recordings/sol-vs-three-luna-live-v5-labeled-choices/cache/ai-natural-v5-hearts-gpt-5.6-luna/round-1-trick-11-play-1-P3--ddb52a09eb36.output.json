@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead the zero-point KC; then shed AD before 9H if possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "KC"
-	}
-}

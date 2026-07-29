@@ -92,17 +92,18 @@ Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
 `.varmint/recordings/sol-vs-three-luna-live-v5-labeled-choices/`. Override the
 artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves prompt
-strings directly as Varmint inputs and value-based outputs plus an
-`analysis.json`. Each fixture filename keeps its readable round/trick/player
-prefix and appends a SHA-256 digest of the exact serialized Varmint input, so
-prompt changes produce new fixture identities. The analysis contains prompts,
-raw model responses and usage, guarded decisions, fallback records, accepted
-actions, full server state, trick winners, and scores. It then
-performs a cache-only replay and requires the same decisions, actions, and final
-state without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
-recorder to stream the same complete local spans exposed by the debug test
-commands. CI replays the checked-in v5 Sol/Luna recording in strict `read` mode,
-requiring all 56 decisions to be cache hits with no model calls or fallbacks.
+strings directly as Varmint inputs and value-based outputs. Each fixture
+filename keeps its readable round/trick/player prefix and appends a SHA-256
+digest of the complete generation contract: model, rendered prompt, system
+prompt, structured-output contract, and provider reasoning settings. The
+recorder also writes an ignored, transient `analysis.json` containing model
+responses, usage, guarded decisions, accepted actions, and full server state
+for local inspection. It then performs a cache-only replay and requires the
+same decisions, actions, and final state without any model responses. Set
+`TEST_LOG_LEVEL=debug` when running the recorder to stream the same complete
+local spans exposed by the debug test commands. CI replays the checked-in v5
+Sol/Luna recording in strict `read` mode, requiring all 56 decisions to be
+cache hits with no model calls or fallbacks.
 
 The player-versus-Terra Testing Library test replays the browser recording in
 `test-fixtures/player-vs-terra-v1/` with the invariant

@@ -12,7 +12,7 @@
 	"roomCode": "ZVHB",
 	"seed": "player-vs-terra-browser-v1",
 	"sourceCacheKey": "hearts-compact-v2-gpt-5.6-terra",
-	"sourceNote": "Prompts were deterministically re-rendered from the original recorded contexts, then annotated with authoritative legal-play meanings. Fixture names retain readable turn labels and append a hash of the exact Varmint input. Model plans are unchanged; obsolete observations were removed, and opaque card IDs in model actions were translated to their literal private card values.",
+  "sourceNote": "Prompts were deterministically re-rendered from the original recorded contexts, then annotated with authoritative legal-play meanings. Fixture names retain readable turn labels and append a hash of the complete model generation contract. Model plans are unchanged; obsolete observations were removed, and opaque card IDs in model actions were translated to their literal private card values.",
 	"terraId": "user::a3e10227-a65a-4666-8db1-f511c8a8c567",
 	"tricks": {
 		"Player": 3,

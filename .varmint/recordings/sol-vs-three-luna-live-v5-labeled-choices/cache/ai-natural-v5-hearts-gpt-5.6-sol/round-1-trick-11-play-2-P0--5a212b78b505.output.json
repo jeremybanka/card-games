@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck under 5H with 2H; retain 9C and 7S to avoid later tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2H"
+	}
+}

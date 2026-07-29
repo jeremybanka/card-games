@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard 7S; it cannot win, so QH remains with P3.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7S"
+	}
+}

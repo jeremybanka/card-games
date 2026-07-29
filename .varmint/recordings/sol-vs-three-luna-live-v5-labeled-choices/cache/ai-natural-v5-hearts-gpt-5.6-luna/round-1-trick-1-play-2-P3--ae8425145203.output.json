@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play the lowest club to avoid taking the trick; preserve higher clubs for later control.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6C"
-	}
-}

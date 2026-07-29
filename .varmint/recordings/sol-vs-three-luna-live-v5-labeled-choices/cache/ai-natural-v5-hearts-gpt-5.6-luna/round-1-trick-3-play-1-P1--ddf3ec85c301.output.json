@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead JC to shed a harmless club and avoid exposing points.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JC"
+	}
+}

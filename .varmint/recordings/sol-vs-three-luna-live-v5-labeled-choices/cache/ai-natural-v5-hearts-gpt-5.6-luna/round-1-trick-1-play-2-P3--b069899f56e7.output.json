@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play the lowest legal club to avoid winning the trick and preserve higher clubs.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6C"
+	}
+}

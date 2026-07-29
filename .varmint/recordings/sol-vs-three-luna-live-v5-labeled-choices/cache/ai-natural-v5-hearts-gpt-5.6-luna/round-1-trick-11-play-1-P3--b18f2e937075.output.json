@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the lowest heart to avoid taking the trick; continue shedding low hearts when possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5H"
+	}
+}

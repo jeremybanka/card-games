@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with the lowest diamond; avoid taking this trick and preserve higher diamonds for later control.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "4D"
-	}
-}

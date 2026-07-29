@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play TS to duck under JS; keep all hearts for later safe discards.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

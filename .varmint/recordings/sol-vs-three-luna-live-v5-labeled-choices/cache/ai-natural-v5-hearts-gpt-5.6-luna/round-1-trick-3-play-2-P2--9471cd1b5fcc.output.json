@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Forced to win with AC; lead a safe non-heart next, preserving hearts while avoiding point-taking.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AC"
+	}
+}

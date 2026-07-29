@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard 9C now; keep 7S for the final heart-led trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9C"
+	}
+}

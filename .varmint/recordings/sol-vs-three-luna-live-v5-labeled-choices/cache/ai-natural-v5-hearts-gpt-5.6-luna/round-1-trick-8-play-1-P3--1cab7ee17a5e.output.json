@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead JS; P0 is known to hold QS and should win, avoiding a costly lead-in.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JS"
+	}
+}

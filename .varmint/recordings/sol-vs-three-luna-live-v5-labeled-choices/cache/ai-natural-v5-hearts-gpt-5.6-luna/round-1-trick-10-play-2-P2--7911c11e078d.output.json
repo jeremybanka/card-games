@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard the highest heart now; keep lower hearts for safer later play.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TH"
+	}
+}

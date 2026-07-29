@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck whenever possible; play the lowest heart to avoid taking points.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4H"
+	}
+}

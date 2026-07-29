@@ -23,6 +23,7 @@ import {
 } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import {
+	aiGenerationContract,
 	promptFixtureKey,
 	wrapAiGeneratorWithVarmint,
 } from "./ai-generator.node.ts"
@@ -489,7 +490,7 @@ describe("AI Hearts generators", () => {
 		)
 	})
 
-	it("stores the rendered prompt directly in Varmint input fixtures", async () => {
+	it("stores only the prompt while hashing the full generation contract", async () => {
 		const two = card("two-clubs", "clubs", 2)
 		const leftover = card("leftover", "spades", 12)
 		const context = gameContext(
@@ -520,8 +521,10 @@ describe("AI Hearts generators", () => {
 		}))
 		const cacheDirectory = await mkdtemp(join(tmpdir(), "wayfarer-prompt-"))
 		try {
+			const modelId = "gpt-5.6-sol"
 			const wrapped = wrapAiGeneratorWithVarmint(
 				"unit-test",
+				modelId,
 				base,
 				new Squirrel("write", cacheDirectory),
 			)
@@ -532,22 +535,52 @@ describe("AI Hearts generators", () => {
 			expect(base).toHaveBeenCalledOnce()
 			expect(base).toHaveBeenCalledWith(context)
 			const prompt = renderAiGameFacts(context)
+			const contract = aiGenerationContract("hearts", modelId, prompt)
 			const inputHash = createHash("sha256")
-				.update(JSON.stringify([prompt], null, "\t"))
+				.update(JSON.stringify(contract))
 				.digest("hex")
 				.slice(0, 12)
-			expect(promptFixtureKey(context, prompt)).toBe(
+			expect(promptFixtureKey(context, contract)).toBe(
 				`round-1-trick-3-play-1-P0--${inputHash}`,
 			)
-			expect(promptFixtureKey(context, `${prompt}\nchanged`)).not.toBe(
-				promptFixtureKey(context, prompt),
-			)
+			expect(
+				promptFixtureKey(
+					context,
+					aiGenerationContract("hearts", modelId, `${prompt}\nchanged`),
+				),
+			).not.toBe(promptFixtureKey(context, contract))
+			expect(
+				promptFixtureKey(context, {
+					...contract,
+					system: `${contract.system}\nChanged.`,
+				}),
+			).not.toBe(promptFixtureKey(context, contract))
+			expect(
+				promptFixtureKey(context, {
+					...contract,
+					output: {
+						...contract.output,
+						description: `${contract.output.description} Changed.`,
+					},
+				}),
+			).not.toBe(promptFixtureKey(context, contract))
+			expect(
+				promptFixtureKey(context, {
+					...contract,
+					providerOptions: {
+						openai: {
+							...contract.providerOptions.openai,
+							reasoningEffort: "medium",
+						},
+					},
+				}),
+			).not.toBe(promptFixtureKey(context, contract))
 			const input = JSON.parse(
 				await readFile(
 					join(
 						cacheDirectory,
 						"unit-test",
-						`${promptFixtureKey(context, prompt)}.input.json`,
+						`${promptFixtureKey(context, contract)}.input.json`,
 					),
 					"utf8",
 				),

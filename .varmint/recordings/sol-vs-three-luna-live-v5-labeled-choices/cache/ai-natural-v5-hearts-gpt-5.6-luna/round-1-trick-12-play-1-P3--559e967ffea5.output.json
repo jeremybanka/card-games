@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the lower heart to minimize the chance of winning; play QH only if forced later.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9H"
+	}
+}

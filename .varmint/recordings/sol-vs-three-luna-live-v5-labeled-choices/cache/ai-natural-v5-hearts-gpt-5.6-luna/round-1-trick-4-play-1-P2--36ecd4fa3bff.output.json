@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low diamond to let P3 capture with a known higher diamond; keep hearts safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5D"
+	}
+}

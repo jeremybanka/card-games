@@ -253,6 +253,7 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 						const squirrel = new Squirrel("read", cacheDirectory)
 						const cachedGenerator = wrapAiGeneratorWithVarmint(
 							terraCacheKey,
+							"gpt-5.6-terra",
 							async (context) => {
 								cacheMisses.push(structuredClone(context))
 								throw new Error("Terra cache miss.")

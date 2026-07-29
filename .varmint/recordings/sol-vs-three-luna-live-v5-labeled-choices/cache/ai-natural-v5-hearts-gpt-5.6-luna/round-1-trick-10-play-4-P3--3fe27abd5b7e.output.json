@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play KS as forced; absorb the 14 points, then shed high-risk cards when possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "KS"
-	}
-}
