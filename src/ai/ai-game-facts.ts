@@ -72,7 +72,7 @@ const aiFactsAdapters = {
 		handInstruction: (context) =>
 			context.publicView.phase === "bidding"
 				? `legal bids: ${context.privateView.legalBids.join(", ")}`
-				: "during passing choose any 3 IDs",
+				: "during play choose one card ID from a hand row labeled LEGAL",
 		title: "Oh Hell",
 	} satisfies AiFactsAdapter<OhHellPublicGameView, OhHellPrivatePlayerView>,
 } satisfies {

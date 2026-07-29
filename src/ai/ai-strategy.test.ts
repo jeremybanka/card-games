@@ -442,9 +442,16 @@ describe("AI Oh Hell strategy", () => {
 		const low = card("low-club", "clubs", 2)
 		const trump = card("ace-spade", "spades", 14)
 		const strategy = aiGameStrategy("ohHell")
+		const facts = renderAiGameFacts(
+			ohHellContext([low, trump], { bid: 1, tricksWon: 0 }),
+		)
 
 		expect(strategy.systemPrompt).toContain("strategic Oh Hell player")
 		expect(strategy.systemPrompt).not.toContain("minimize expected points")
+		expect(facts).toContain(
+			"during play choose one card ID from a hand row labeled LEGAL",
+		)
+		expect(facts).not.toContain("during passing")
 		expect(JSON.stringify(strategy.outputSchema)).toContain("submitBid")
 		expect(JSON.stringify(strategy.outputSchema)).not.toContain("passCards")
 		expect(
