@@ -6,6 +6,8 @@ import type {
 	VisibleCard,
 } from "./game-types.ts"
 
+// Shared only by games built on the standard 52-card French-suited deck.
+
 type CardValueState = {
 	cardValues: Partial<Record<CardId, CardValue>>
 }

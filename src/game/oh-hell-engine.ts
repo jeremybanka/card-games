@@ -7,7 +7,7 @@ import {
 	shuffled,
 	sortedHand,
 	visibleCard,
-} from "./card-domain.ts"
+} from "./standard-deck-domain.ts"
 import type {
 	CardId,
 	CardValue,

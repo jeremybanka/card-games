@@ -11,7 +11,7 @@ import {
 } from "./trick-taking-log.node.ts"
 import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
 
-import { createPhysicalCardIds } from "../src/game/card-domain.ts"
+import { createPhysicalCardIds } from "../src/game/standard-deck-domain.ts"
 import { parsePlayCardPayload } from "../src/game/game-actions.ts"
 import type { OhHellClientEvents } from "../src/game/game-types.ts"
 import {
