@@ -1,44 +1,16 @@
 import type { VNode } from "preact"
 import { useEffect, useRef } from "preact/hooks"
 
+import { rankMark, suitMark } from "./card-mark.ts"
 import type {
 	CompletedTrick,
 	PlayerId,
 	PublicGameView,
-	Suit,
 	VisibleCard,
 } from "./game/game-types.ts"
 import { orderedTrickReviewPlays } from "./game-presentation.ts"
 import css from "./GameTransitions.module.css"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
-
-function suitMark(suit: Suit): string {
-	switch (suit) {
-		case "clubs":
-			return "♣"
-		case "diamonds":
-			return "♦"
-		case "spades":
-			return "♠"
-		case "hearts":
-			return "♥"
-	}
-}
-
-function rankMark(rank: VisibleCard["rank"]): string {
-	switch (rank) {
-		case 11:
-			return "J"
-		case 12:
-			return "Q"
-		case 13:
-			return "K"
-		case 14:
-			return "A"
-		default:
-			return String(rank)
-	}
-}
 
 function TurnBanner({
 	game,

@@ -8,19 +8,13 @@ import type {
 	TrickPlay,
 	VisibleCard,
 } from "./game-types.ts"
+import { heartsPointRisk } from "./hearts-card-strategy.ts"
 
 const SUIT_ORDER: Record<Suit, number> = {
 	clubs: 0,
 	diamonds: 1,
 	spades: 2,
 	hearts: 3,
-}
-
-function pointRisk(card: VisibleCard): number {
-	if (card.suit === "spades" && card.rank === 12) return 100
-	if (card.suit === "hearts") return 40 + card.rank
-	if (card.suit === "spades" && card.rank > 12) return 25 + card.rank
-	return card.rank
 }
 
 function deterministicCardOrder(left: VisibleCard, right: VisibleCard): number {
@@ -59,7 +53,7 @@ export function chooseHeartsAutoPlayCard(
 		return (
 			[...candidates].sort(
 				(left, right) =>
-					pointRisk(left) - pointRisk(right) ||
+					heartsPointRisk(left) - heartsPointRisk(right) ||
 					deterministicCardOrder(left, right),
 			)[0] as VisibleCard
 		).id
@@ -88,7 +82,7 @@ export function chooseHeartsAutoPlayCard(
 	return (
 		[...candidates].sort(
 			(left, right) =>
-				pointRisk(right) - pointRisk(left) ||
+				heartsPointRisk(right) - heartsPointRisk(left) ||
 				deterministicCardOrder(left, right),
 		)[0] as VisibleCard
 	).id

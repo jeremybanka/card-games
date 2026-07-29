@@ -23,6 +23,10 @@ import type {
 	ServerToClientEvents,
 	VisibleCard,
 } from "../game/game-types.ts"
+import {
+	passRecipientSeatIndex,
+	passSenderSeatIndex,
+} from "../game/seat-order.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
@@ -62,19 +66,6 @@ export type CreateAiPlayerOptions = {
 	serverUrl: string
 }
 
-function passSeatOffset(direction: PassDirection, playerCount: number): number {
-	switch (direction) {
-		case "left":
-			return 1
-		case "right":
-			return -1
-		case "across":
-			return playerCount === 4 ? 2 : 1
-		case "hold":
-			return 0
-	}
-}
-
 function passPartnerId(
 	game: HeartsPublicGameView,
 	playerId: PlayerId,
@@ -84,10 +75,18 @@ function passPartnerId(
 	if (playerIndex === -1) {
 		throw new Error("The AI player is not seated at its realtime table.")
 	}
-	const offset = passSeatOffset(game.passDirection, game.players.length)
-	const directedOffset = role === "recipient" ? offset : -offset
 	const partnerIndex =
-		(playerIndex + directedOffset + game.players.length) % game.players.length
+		role === "recipient"
+			? passRecipientSeatIndex(
+					playerIndex,
+					game.players.length,
+					game.passDirection,
+				)
+			: passSenderSeatIndex(
+					playerIndex,
+					game.players.length,
+					game.passDirection,
+				)
 	return (game.players[partnerIndex] as PublicGameView["players"][number]).id
 }
 
@@ -131,21 +130,21 @@ const passMemoryAdapters = {
 	>
 >
 
-function actionResult(
+function submitAiAction(
 	socket: AiSocket,
-	event: "passCards" | "playCard" | "submitBid",
-	payload: CardId | CardId[] | number,
+	action: AiNextAction,
 ): Promise<ActionResult> {
 	return new Promise((resolve) => {
-		if (event === "passCards") {
-			socket.emit("passCards", payload as CardId[], resolve)
-			return
+		switch (action.action) {
+			case "passCards":
+				socket.emit("passCards", action.cardIds, resolve)
+				return
+			case "submitBid":
+				socket.emit("submitBid", action.bid, resolve)
+				return
+			case "playCard":
+				socket.emit("playCard", action.cardId, resolve)
 		}
-		if (event === "submitBid") {
-			socket.emit("submitBid", payload as number, resolve)
-			return
-		}
-		socket.emit("playCard", payload as CardId, resolve)
 	})
 }
 
@@ -364,24 +363,7 @@ async function createAiPlayerRuntime(
 						turnKey,
 					})
 
-					const result =
-						decision.nextAction.action === "passCards"
-							? await actionResult(
-									socket,
-									"passCards",
-									decision.nextAction.cardIds,
-								)
-							: decision.nextAction.action === "submitBid"
-								? await actionResult(
-										socket,
-										"submitBid",
-										decision.nextAction.bid,
-									)
-								: await actionResult(
-										socket,
-										"playCard",
-										decision.nextAction.cardId,
-									)
+					const result = await submitAiAction(socket, decision.nextAction)
 					if (result.ok && decision.nextAction.action === "passCards") {
 						const passMemory = passMemoryAdapters[gameAtStart.gameKind]
 						if (

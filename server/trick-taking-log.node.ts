@@ -1,9 +1,23 @@
 import type { HeartsState } from "../src/game/hearts-engine.ts"
-import type { CardId, CardValue } from "../src/game/game-types.ts"
+import type {
+	CardId,
+	CardValue,
+	PlayerController,
+	PlayerId,
+} from "../src/game/game-types.ts"
 import type { OhHellState } from "../src/game/oh-hell-engine.ts"
 
 type CardValueState = {
 	cardValues: Partial<Record<CardId, CardValue>>
+}
+
+type CommonLoggedPlayer = PlayerController & {
+	connected: boolean
+	hand: CardId[]
+	id: PlayerId
+	name: string
+	roundPoints: number
+	score: number
 }
 
 export function cardForLog(state: CardValueState, cardId: CardId): unknown {
@@ -31,21 +45,27 @@ function commonStateSummaryForLog(
 	}
 }
 
+function commonPlayerSummaryForLog(player: CommonLoggedPlayer) {
+	return {
+		aiModel: player.aiModel,
+		connected: player.connected,
+		handSize: player.hand.length,
+		id: player.id,
+		kind: player.kind,
+		name: player.name,
+		roundPoints: player.roundPoints,
+		score: player.score,
+	}
+}
+
 export function heartsStateSummaryForLog(state: HeartsState): unknown {
 	return {
 		...commonStateSummaryForLog(state),
 		heartsBroken: state.heartsBroken,
 		passDirection: state.passDirection,
 		players: state.players.map((player) => ({
-			aiModel: player.aiModel,
-			connected: player.connected,
-			handSize: player.hand.length,
-			id: player.id,
-			kind: player.kind,
-			name: player.name,
+			...commonPlayerSummaryForLog(player),
 			passSubmitted: player.passSelection !== null,
-			roundPoints: player.roundPoints,
-			score: player.score,
 			takenSize: player.taken.length,
 		})),
 	}
@@ -56,15 +76,8 @@ export function ohHellStateSummaryForLog(state: OhHellState): unknown {
 		...commonStateSummaryForLog(state),
 		trumpSuit: state.trumpSuit,
 		players: state.players.map((player) => ({
-			aiModel: player.aiModel,
+			...commonPlayerSummaryForLog(player),
 			bid: player.bid,
-			connected: player.connected,
-			handSize: player.hand.length,
-			id: player.id,
-			kind: player.kind,
-			name: player.name,
-			roundPoints: player.roundPoints,
-			score: player.score,
 			tricksWon: player.tricksWon,
 		})),
 	}
@@ -77,6 +90,7 @@ function commonStateSnapshotForLog(
 		cardValues: _cardValues,
 		currentTrick,
 		physicalCardIds: _physicalCardIds,
+		players: _players,
 		...table
 	} = state
 	return {

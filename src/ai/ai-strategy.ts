@@ -1,6 +1,6 @@
 import { ArkErrors } from "arktype"
 
-import type { VisibleCard } from "../game/game-types.ts"
+import { heartsPointRisk } from "../game/hearts-card-strategy.ts"
 import type { AiGameContext } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import {
@@ -27,16 +27,9 @@ export type AiGuardObserver = {
 	}) => void
 }
 
-function pointRisk(card: VisibleCard): number {
-	if (card.suit === "spades" && card.rank === 12) return 100
-	if (card.suit === "hearts") return 40 + card.rank
-	if (card.suit === "spades" && card.rank > 12) return 25 + card.rank
-	return card.rank
-}
-
 function choosePass(context: AiGameContext): AiNextAction {
 	const cards = [...context.privateView.cards]
-		.sort((left, right) => pointRisk(right) - pointRisk(left))
+		.sort((left, right) => heartsPointRisk(right) - heartsPointRisk(left))
 		.slice(0, 3)
 	if (cards.length !== 3) {
 		throw new Error("The AI needs exactly three cards before it can pass.")

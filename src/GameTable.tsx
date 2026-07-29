@@ -26,6 +26,7 @@ import {
 	capturePendingCardMotion,
 	useCardMotion,
 } from "./card-motion.ts"
+import { rankMark, suitMark } from "./card-mark.ts"
 import { actionErrorAtom, autoPlayEnabledAtom } from "./client-state.ts"
 import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
@@ -65,7 +66,6 @@ import type {
 	PrivatePlayerView,
 	PublicGameView,
 	PublicPlayerView,
-	Suit,
 	VisibleCard,
 } from "./game/game-types.ts"
 import css from "./GameTable.module.css"
@@ -161,34 +161,6 @@ function handCardAtPoint(
 		}),
 		clientX,
 	)
-}
-
-function suitMark(suit: Suit): string {
-	switch (suit) {
-		case "clubs":
-			return "♣"
-		case "diamonds":
-			return "♦"
-		case "spades":
-			return "♠"
-		case "hearts":
-			return "♥"
-	}
-}
-
-function rankMark(rank: VisibleCard["rank"]): string {
-	switch (rank) {
-		case 11:
-			return "J"
-		case 12:
-			return "Q"
-		case 13:
-			return "K"
-		case 14:
-			return "A"
-		default:
-			return String(rank)
-	}
 }
 
 function handleResult(result: ActionResult): void {

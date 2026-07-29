@@ -57,6 +57,26 @@ export function passRecipientSeatIndex(
 	}
 }
 
+export function passSenderSeatIndex(
+	recipientSeatIndex: number,
+	playerCount: number,
+	direction: PassDirection,
+): number {
+	switch (direction) {
+		case "left":
+			return normalizedSeatIndex(recipientSeatIndex - 1, playerCount)
+		case "right":
+			return normalizedSeatIndex(recipientSeatIndex + 1, playerCount)
+		case "across":
+			return normalizedSeatIndex(
+				recipientSeatIndex - (playerCount === 4 ? 2 : 1),
+				playerCount,
+			)
+		case "hold":
+			return normalizedSeatIndex(recipientSeatIndex, playerCount)
+	}
+}
+
 export function clockwiseSeatPosition(
 	clockwiseOffset: number,
 	playerCount: number,
