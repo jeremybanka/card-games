@@ -1,4 +1,4 @@
-import type { PassDirection } from "./hearts-types.ts"
+import type { PassDirection } from "./game-types.ts"
 
 function assertPlayerCount(playerCount: number): void {
 	if (!Number.isInteger(playerCount) || playerCount < 1) {
@@ -54,6 +54,26 @@ export function passRecipientSeatIndex(
 			)
 		case "hold":
 			return normalizedSeatIndex(senderSeatIndex, playerCount)
+	}
+}
+
+export function passSenderSeatIndex(
+	recipientSeatIndex: number,
+	playerCount: number,
+	direction: PassDirection,
+): number {
+	switch (direction) {
+		case "left":
+			return normalizedSeatIndex(recipientSeatIndex - 1, playerCount)
+		case "right":
+			return normalizedSeatIndex(recipientSeatIndex + 1, playerCount)
+		case "across":
+			return normalizedSeatIndex(
+				recipientSeatIndex - (playerCount === 4 ? 2 : 1),
+				playerCount,
+			)
+		case "hold":
+			return normalizedSeatIndex(recipientSeatIndex, playerCount)
 	}
 }
 

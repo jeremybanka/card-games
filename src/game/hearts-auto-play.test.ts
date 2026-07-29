@@ -6,8 +6,8 @@ import {
 	isAutoPlayTurnActionable,
 } from "./hearts-auto-play.ts"
 import {
-	EMPTY_PRIVATE_PLAYER_VIEW,
-	EMPTY_PUBLIC_GAME_VIEW,
+	EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
+	EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 	type CardId,
 	type PlayerId,
 	type PrivatePlayerView,
@@ -15,7 +15,7 @@ import {
 	type Rank,
 	type Suit,
 	type VisibleCard,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
 
 const me = "user::me" as PlayerId
 const other = "user::other" as PlayerId
@@ -127,7 +127,7 @@ describe("chooseHeartsAutoPlayCard", () => {
 describe("auto-play turn identity and readiness", () => {
 	const two = card("clubs", 2)
 	const game: PublicGameView = {
-		...EMPTY_PUBLIC_GAME_VIEW,
+		...EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 		currentPlayerId: me,
 		gameKind: "hearts",
 		phase: "playing",
@@ -136,7 +136,7 @@ describe("auto-play turn identity and readiness", () => {
 		trickNumber: 7,
 	}
 	const privateView: PrivatePlayerView = {
-		...EMPTY_PRIVATE_PLAYER_VIEW,
+		...EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 		cards: [two],
 		playableCardIds: [two.id],
 		playerId: me,
@@ -163,7 +163,29 @@ describe("auto-play turn identity and readiness", () => {
 		).toBe(false)
 		expect(
 			isAutoPlayTurnActionable(
-				{ ...game, gameKind: "ohHell" },
+				{
+					bidPlayerId: null,
+					bidsSubmitted: 0,
+					completedTricks: [],
+					currentPlayerId: me,
+					currentTrick: [],
+					dealerId: other,
+					deckCardIds: [],
+					gameKind: "ohHell",
+					hostId: me,
+					lastTrickWinnerId: null,
+					maximumRounds: 5,
+					phase: "playing",
+					players: [],
+					roomCode: "WIND",
+					roundHandSize: 2,
+					roundNumber: 2,
+					statusMessage: "Your play.",
+					trickLeaderId: me,
+					trickNumber: 0,
+					trumpSuit: "clubs",
+					winnerIds: [],
+				},
 				privateView,
 				me,
 				true,

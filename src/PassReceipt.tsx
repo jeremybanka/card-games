@@ -1,20 +1,9 @@
 import type { VNode } from "preact"
 import { useEffect, useRef } from "preact/hooks"
 
-import type { VisibleCard } from "./game/hearts-types.ts"
+import { rankMark, suitMark } from "./card-mark.ts"
+import type { VisibleCard } from "./game/game-types.ts"
 import css from "./PassReceipt.module.css"
-
-function suitMark(suit: VisibleCard["suit"]): string {
-	return { clubs: "♣", diamonds: "♦", hearts: "♥", spades: "♠" }[suit]
-}
-
-function rankMark(rank: VisibleCard["rank"]): string {
-	if (rank === 11) return "J"
-	if (rank === 12) return "Q"
-	if (rank === 13) return "K"
-	if (rank === 14) return "A"
-	return String(rank)
-}
 
 export function PassReceipt({
 	cards,

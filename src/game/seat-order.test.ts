@@ -5,6 +5,7 @@ import {
 	clockwiseSeatOffset,
 	clockwiseSeatPosition,
 	passRecipientSeatIndex,
+	passSenderSeatIndex,
 } from "./seat-order.ts"
 
 describe("clockwise seat order", () => {
@@ -39,16 +40,23 @@ describe("pass recipient seat", () => {
 	for (const playerCount of [2, 3, 4]) {
 		for (let sender = 0; sender < playerCount; sender += 1) {
 			it(`resolves every direction for ${playerCount} players from seat ${sender}`, () => {
-				expect(passRecipientSeatIndex(sender, playerCount, "left")).toBe(
-					(sender + 1) % playerCount,
-				)
-				expect(passRecipientSeatIndex(sender, playerCount, "right")).toBe(
-					(sender - 1 + playerCount) % playerCount,
-				)
-				expect(passRecipientSeatIndex(sender, playerCount, "across")).toBe(
-					(sender + (playerCount === 4 ? 2 : 1)) % playerCount,
-				)
-				expect(passRecipientSeatIndex(sender, playerCount, "hold")).toBe(sender)
+				const expectedRecipients = {
+					across: (sender + (playerCount === 4 ? 2 : 1)) % playerCount,
+					hold: sender,
+					left: (sender + 1) % playerCount,
+					right: (sender - 1 + playerCount) % playerCount,
+				} as const
+				for (const direction of ["left", "right", "across", "hold"] as const) {
+					const recipient = passRecipientSeatIndex(
+						sender,
+						playerCount,
+						direction,
+					)
+					expect(recipient).toBe(expectedRecipients[direction])
+					expect(passSenderSeatIndex(recipient, playerCount, direction)).toBe(
+						sender,
+					)
+				}
 			})
 		}
 	}

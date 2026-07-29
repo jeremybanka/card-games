@@ -18,14 +18,15 @@ import {
 	draggedCardTransform,
 	dragTranslationFromPointer,
 	handCardLayout,
-	passSelectionAfterDrop,
 	readableCardHorizontalCorrection,
 } from "./card-hand-layout.ts"
+import { heartsPassSelectionAfterDrop } from "./hearts-pass-layout.ts"
 import {
 	cardMotionCompleteEvent,
 	capturePendingCardMotion,
 	useCardMotion,
 } from "./card-motion.ts"
+import { rankMark, suitMark } from "./card-mark.ts"
 import { actionErrorAtom, autoPlayEnabledAtom } from "./client-state.ts"
 import { DeckRemainder } from "./DeckRemainder.tsx"
 import {
@@ -40,30 +41,33 @@ import {
 	chooseHeartsAutoPlayCard,
 	isAutoPlayTurnActionable,
 } from "./game/hearts-auto-play.ts"
+import { gameCatalog } from "./game/game-catalog.ts"
+import {
+	trickTakingTableAdapter,
+	passingTableAdapter,
+	supportsTableAutoPlay,
+} from "./game/trick-taking-table-adapter.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "./game/hearts-state.ts"
+} from "./game/game-state-atoms.ts"
 import {
 	clockwiseOpponentSeatIndices,
 	clockwiseSeatOffset,
 	clockwiseSeatPosition,
-	passRecipientSeatIndex,
 } from "./game/seat-order.ts"
 import type {
 	ActionResult,
 	AiStrategyReview as AiStrategyReviewData,
 	CardId,
 	CompletedTrick,
-	PassDirection,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
 	PublicPlayerView,
-	Suit,
 	VisibleCard,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import css from "./GameTable.module.css"
 import { GameTransitions } from "./GameTransitions.tsx"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
@@ -157,57 +161,6 @@ function handCardAtPoint(
 		}),
 		clientX,
 	)
-}
-
-function suitMark(suit: Suit): string {
-	switch (suit) {
-		case "clubs":
-			return "♣"
-		case "diamonds":
-			return "♦"
-		case "spades":
-			return "♠"
-		case "hearts":
-			return "♥"
-	}
-}
-
-function rankMark(rank: VisibleCard["rank"]): string {
-	switch (rank) {
-		case 11:
-			return "J"
-		case 12:
-			return "Q"
-		case 13:
-			return "K"
-		case 14:
-			return "A"
-		default:
-			return String(rank)
-	}
-}
-
-function passLabel(direction: PassDirection): string {
-	switch (direction) {
-		case "left":
-			return "Pass left"
-		case "right":
-			return "Pass right"
-		case "across":
-			return "Pass across"
-		case "hold":
-			return "Hold"
-	}
-}
-
-function passActionLabel(
-	direction: PassDirection,
-	recipientName: string | null,
-): string {
-	const directionLabel = passLabel(direction)
-	return recipientName === null
-		? directionLabel
-		: `${directionLabel} to ${recipientName}`
 }
 
 function handleResult(result: ActionResult): void {
@@ -420,7 +373,7 @@ function OpponentZone({
 			</opponent-hand>
 			<TakenStack
 				bid={player.bid}
-				cardIds={player.capturedCardIds}
+				cardIds={player.capturedCardIds ?? []}
 				hiddenCardIds={hiddenCardIds}
 				label={`${player.name}'s captured cards`}
 				playerCount={playerCount}
@@ -467,14 +420,7 @@ function TrickCenter({
 						? "Your play"
 						: game.statusMessage}
 				</strong>
-				<span>
-					Trick {Math.min(game.trickNumber + 1, game.roundHandSize ?? 26)}
-					{game.gameKind === "ohHell"
-						? ` · ${game.trumpSuit ?? "no"} trump`
-						: game.heartsBroken
-							? " · hearts broken"
-							: ""}
-				</span>
+				<span>{trickTakingTableAdapter(game).trickDetail(game)}</span>
 			</trick-heading>
 			<trick-slots>
 				{game.players.map((player, index) => {
@@ -598,11 +544,7 @@ function ScoreSheet({
 			</score-heading>
 			<ol>
 				{[...game.players]
-					.sort((left, right) =>
-						game.gameKind === "ohHell"
-							? right.score - left.score
-							: left.score - right.score,
-					)
+					.sort(trickTakingTableAdapter(game).compareScores)
 					.map((player) => (
 						<li
 							data-reviewable={player.kind === "ai" || undefined}
@@ -641,11 +583,7 @@ function ScoreSheet({
 									/>
 								)}
 							</score-identity>
-							<small>
-								{game.gameKind === "ohHell"
-									? `${player.tricksWon ?? 0}/${player.bid ?? "—"} · +${player.roundPoints}`
-									: `+${player.roundPoints}`}
-							</small>
+							<small>{trickTakingTableAdapter(game).scoreDetail(player)}</small>
 							<strong>{player.score}</strong>
 						</li>
 					))}
@@ -748,7 +686,8 @@ function PlayerZone({
 	const handCards = passing
 		? visibleCards.filter((card) => !passSelection.includes(card.id))
 		: visibleCards
-	const passAction = passActionLabel(game.passDirection, passRecipientName)
+	const passAction =
+		passingTableAdapter(game)?.actionLabel(game, passRecipientName) ?? ""
 	const cardFromHandPointer = (
 		element: HTMLElement,
 		clientX: number,
@@ -786,7 +725,7 @@ function PlayerZone({
 			</player-heading>
 			<TakenStack
 				bid={myPlayer.bid}
-				cardIds={myPlayer.capturedCardIds}
+				cardIds={myPlayer.capturedCardIds ?? []}
 				hiddenCardIds={hiddenCardIds}
 				label="Your captured cards"
 				playerCount={playerCount}
@@ -1139,16 +1078,9 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			(index) => game.players[index] as PublicPlayerView,
 		)
 	}, [game.players, mySeatIndex])
+	const tableAdapter = trickTakingTableAdapter(game)
 	const passRecipient =
-		mySeatIndex === -1 || game.passDirection === "hold"
-			? null
-			: (game.players[
-					passRecipientSeatIndex(
-						mySeatIndex,
-						game.players.length,
-						game.passDirection,
-					)
-				] ?? null)
+		passingTableAdapter(game)?.recipient(game, mySeatIndex) ?? null
 
 	const clearPendingPlay = (requestId: number): void => {
 		if (pendingPlay.current?.requestId !== requestId) return
@@ -1286,7 +1218,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			pendingCardFocus.current = cardId
 			setPassSelection((current) => {
 				const inPassZone = current.includes(cardId)
-				return passSelectionAfterDrop(
+				return heartsPassSelectionAfterDrop(
 					current,
 					cardId,
 					inPassZone ? "pass" : "hand",
@@ -1331,21 +1263,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 						{game.phase === "lobby" ? "TABLE" : `ROUND ${game.roundNumber}`}
 					</small>
 					<strong>
-						{game.gameKind === "ohHell"
-							? game.phase === "lobby"
-								? "OH HELL!"
-								: `${game.trumpSuit ?? "no"} trump`
-							: game.phase === "passing"
-								? passActionLabel(
-										game.passDirection,
-										passRecipient?.name ?? null,
-									)
-								: game.heartsBroken
-									? "♥ broken"
-									: "♥ whole"}
+						{tableAdapter.headerStatus(game, passRecipient?.name ?? null)}
 					</strong>
 				</round-mark>
-				{game.gameKind !== "ohHell" && game.phase !== "lobby" ? (
+				{supportsTableAutoPlay(game) && game.phase !== "lobby" ? (
 					<auto-play-control>
 						<label>
 							<input
@@ -1397,10 +1318,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 					<waiting-room>
 						<small>PASS THE CODE</small>
 						<h2>{game.roomCode}</h2>
-						<p>
-							{game.gameKind === "ohHell" ? "Oh Hell! · " : "Hearts · "}
-							{game.players.length} of 4 players seated
-						</p>
+						<p>{tableAdapter.lobbyDescription(game)}</p>
 						<seated-list>
 							{game.players.map((player) => (
 								<seat-pill
@@ -1474,7 +1392,8 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								<button
 									type="button"
 									disabled={
-										game.players.length < (game.gameKind === "ohHell" ? 3 : 2)
+										game.players.length <
+										gameCatalog[game.gameKind].minimumPlayers
 									}
 									onClick={() => {
 										socket.emit("startGame", handleResult)
@@ -1741,7 +1660,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 									}).length
 								: undefined
 						setPassSelection((current) =>
-							passSelectionAfterDrop(
+							heartsPassSelectionAfterDrop(
 								current,
 								cardId,
 								originZone,

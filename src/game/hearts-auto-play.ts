@@ -1,25 +1,21 @@
 import type {
 	CardId,
+	GameKind,
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
 	Suit,
 	TrickPlay,
 	VisibleCard,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
+import { heartsPointRisk } from "./hearts-card-strategy.ts"
+import { matchingGameKinds, registeredGameCapability } from "./game-registry.ts"
 
 const SUIT_ORDER: Record<Suit, number> = {
 	clubs: 0,
 	diamonds: 1,
 	spades: 2,
 	hearts: 3,
-}
-
-function pointRisk(card: VisibleCard): number {
-	if (card.suit === "spades" && card.rank === 12) return 100
-	if (card.suit === "hearts") return 40 + card.rank
-	if (card.suit === "spades" && card.rank > 12) return 25 + card.rank
-	return card.rank
 }
 
 function deterministicCardOrder(left: VisibleCard, right: VisibleCard): number {
@@ -58,7 +54,7 @@ export function chooseHeartsAutoPlayCard(
 		return (
 			[...candidates].sort(
 				(left, right) =>
-					pointRisk(left) - pointRisk(right) ||
+					heartsPointRisk(left) - heartsPointRisk(right) ||
 					deterministicCardOrder(left, right),
 			)[0] as VisibleCard
 		).id
@@ -87,7 +83,7 @@ export function chooseHeartsAutoPlayCard(
 	return (
 		[...candidates].sort(
 			(left, right) =>
-				pointRisk(right) - pointRisk(left) ||
+				heartsPointRisk(right) - heartsPointRisk(left) ||
 				deterministicCardOrder(left, right),
 		)[0] as VisibleCard
 	).id
@@ -115,12 +111,32 @@ export function isAutoPlayTurnActionable(
 	playerId: PlayerId,
 	presentationReady: boolean,
 ): boolean {
-	return (
-		game.gameKind !== "ohHell" &&
+	const readiness = registeredGameCapability<AutoPlayReadiness>(
+		game.gameKind,
+		autoPlayReadiness,
+	)
+	if (readiness === null) return false
+	if (!matchingGameKinds(privateView, game)) return false
+	return readiness(game, privateView, playerId, presentationReady)
+}
+
+type AutoPlayReadiness = (
+	game: PublicGameView,
+	privateView: PrivatePlayerView,
+	playerId: PlayerId,
+	presentationReady: boolean,
+) => boolean
+
+const autoPlayReadiness = {
+	hearts: (
+		game: Extract<PublicGameView, { gameKind: "hearts" }>,
+		privateView: Extract<PrivatePlayerView, { gameKind: "hearts" }>,
+		playerId: PlayerId,
+		presentationReady: boolean,
+	): boolean =>
 		game.phase === "playing" &&
 		game.currentPlayerId === playerId &&
 		privateView.playerId === playerId &&
 		privateView.playableCardIds.length > 0 &&
-		presentationReady
-	)
-}
+		presentationReady,
+} satisfies Partial<Record<GameKind, unknown>>

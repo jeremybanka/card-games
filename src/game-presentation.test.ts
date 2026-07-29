@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest"
 
 import type {
 	CompletedTrick,
+	HeartsPublicGameView,
 	PlayerId,
-	PublicGameView,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import {
 	capturedTrickCount,
 	completedTrickKey,
@@ -31,12 +31,15 @@ const trick: CompletedTrick = {
 	winnerId: other,
 }
 
-function game(overrides: Partial<PublicGameView> = {}): PublicGameView {
+function game(
+	overrides: Partial<HeartsPublicGameView> = {},
+): HeartsPublicGameView {
 	return {
 		completedTricks: [trick],
 		currentPlayerId: other,
 		currentTrick: [],
 		deckCardIds: [],
+		gameKind: "hearts",
 		heartsBroken: false,
 		hostId: me,
 		lastTrickWinnerId: other,

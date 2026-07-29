@@ -1,5 +1,5 @@
 import { atom, getState, setState } from "atom.io"
-import type { GameKind } from "./game/hearts-types.ts"
+import type { GameKind } from "./game/game-types.ts"
 
 export type RoomSession = {
 	generation: number

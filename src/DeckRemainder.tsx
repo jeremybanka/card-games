@@ -1,6 +1,6 @@
 import type { VNode } from "preact"
 
-import type { CardId } from "./game/hearts-types.ts"
+import type { CardId } from "./game/game-types.ts"
 import css from "./DeckRemainder.module.css"
 
 export function DeckRemainder({

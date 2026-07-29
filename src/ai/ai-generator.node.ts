@@ -4,7 +4,9 @@ import type { CacheMode } from "varmint"
 import { Squirrel } from "varmint"
 
 import { serverLogger } from "../observability/span-logger.node.ts"
-import { renderAiGameFacts } from "./ai-game-facts.ts"
+import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
+import { legacyCompatibleCacheViews } from "./legacy-hearts-cache.ts"
 import type { AiModelId } from "./ai-models.ts"
 import {
 	createGuardedAiTurnGenerator,
@@ -12,7 +14,7 @@ import {
 	type AiGuardObserver,
 	type AiTurnGenerator,
 } from "./ai-strategy.ts"
-import { aiTurnDecisionJsonSchema, type AiTurnDecision } from "./ai-types.ts"
+import type { AiTurnDecision } from "./ai-types.ts"
 
 export type AiModelResponseRecord = {
 	finishReason: string
@@ -55,52 +57,46 @@ export function wrapAiGeneratorWithVarmint(
 	generate: AiTurnGenerator,
 	squirrel: Squirrel = aiGeneratorSquirrel,
 ): AiTurnGenerator {
-	const wrapped = squirrel.add(key, generate)
+	const sourceContexts = new WeakMap<object, AiGameContext>()
+	const wrapped = squirrel.add(
+		key,
+		async (cacheableContext: AiGameContext): Promise<AiTurnDecision> => {
+			const sourceContext = sourceContexts.get(cacheableContext)
+			if (sourceContext === undefined) {
+				throw new Error("The AI cache input lost its source game context.")
+			}
+			return generate(sourceContext)
+		},
+	)
 	return async (context) => {
 		const {
-			awardedLeftoverCard: _awardedLeftoverCard,
-			...cacheablePrivateView
-		} = context.privateView
-		const { deckCardIds: _deckCardIds, ...publicViewWithoutDeck } =
-			context.publicView
-		const cacheablePublicView = {
-			...publicViewWithoutDeck,
-			completedTricks: publicViewWithoutDeck.completedTricks.map(
-				({ leftoverAward: _leftoverAward, ...trick }) => trick,
-			),
-		}
+			privateView: cacheablePrivateView,
+			publicView: cacheablePublicView,
+		} = legacyCompatibleCacheViews(context)
 		const cacheableContext = {
 			...context,
 			privateView: cacheablePrivateView,
 			publicView: cacheablePublicView,
-		} as typeof context
-		return wrapped
-			.for(
-				JSON.stringify({
-					memoryLedger: context.memoryLedger,
-					observations: context.observations,
-					playerId: context.playerId,
-					previousPlan: context.previousPlan,
-					privateView: cacheablePrivateView,
-					publicView: cacheablePublicView,
-				}),
-			)
-			.get(cacheableContext)
+		} as AiGameContext
+		sourceContexts.set(cacheableContext, context)
+		try {
+			return await wrapped
+				.for(
+					JSON.stringify({
+						memoryLedger: context.memoryLedger,
+						observations: context.observations,
+						playerId: context.playerId,
+						previousPlan: context.previousPlan,
+						privateView: cacheablePrivateView,
+						publicView: cacheablePublicView,
+					}),
+				)
+				.get(cacheableContext)
+		} finally {
+			sourceContexts.delete(cacheableContext)
+		}
 	}
 }
-
-const systemPrompt = [
-	"You are a strategic Hearts player seated at a private multiplayer table.",
-	"Choose exactly one legal next action using an opaque card ID from the supplied hand.",
-	"Success means: obey the current phase, follow suit, minimize expected points, track exposed cards, and return a concise observation and reusable plan.",
-	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
-	"Use private pass memory and completed tricks as exact memory. Cards you passed remain known to be with their recipient until publicly played.",
-	"Card values uniquely identify deck cards, so history omits opaque IDs without losing strategic identity.",
-	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
-	"For passing, return exactly three different card IDs from your private hand.",
-	"For play, copy exactly the card:: ID inside brackets on a hand row labeled LEGAL; do not include brackets or the label.",
-	"Keep observation and plan terse; refer to cards by compact code and never repeat opaque IDs outside nextAction.",
-].join("\n")
 
 export function createOpenAiTurnGenerator(
 	modelId: AiModelId,
@@ -142,7 +138,10 @@ export function createOpenAiTurnGenerator(
 				trickNumber: context.publicView.trickNumber,
 			},
 			async (span) => {
+				const gameKind = context.publicView.gameKind
 				const renderedFacts = renderAiGameFacts(context)
+				const strategy = aiGameStrategy(gameKind)
+				const systemPrompt = strategy.systemPrompt
 				span.event("ai.prompt.rendered", {
 					renderedFacts,
 					systemPrompt,
@@ -150,10 +149,9 @@ export function createOpenAiTurnGenerator(
 				const result = await generateText({
 					model,
 					output: Output.object({
-						description:
-							"A legal Hearts action plus a private observation and strategic plan.",
-						name: "hearts_turn_decision",
-						schema: jsonSchema<AiTurnDecision>(aiTurnDecisionJsonSchema),
+						description: strategy.outputDescription,
+						name: strategy.outputName,
+						schema: jsonSchema<AiTurnDecision>(strategy.outputSchema),
 					}),
 					prompt: renderedFacts,
 					providerOptions: {

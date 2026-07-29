@@ -11,7 +11,7 @@ import {
 import type {
 	ClientToServerEvents,
 	ServerToClientEvents,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import { trackConnectionStatus } from "./connection-status.ts"
 import { createRandomUuid } from "./random-uuid.ts"
 

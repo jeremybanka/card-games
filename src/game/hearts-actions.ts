@@ -1,17 +1,13 @@
 import { ArkErrors, type } from "arktype"
 
+import { cardIdType } from "./game-actions.ts"
 import { HeartsRuleError } from "./hearts-engine.ts"
-import type { CardId } from "./hearts-types.ts"
+import type { CardId } from "./game-types.ts"
 
-export const cardIdType = type(/^card::.+/)
 export const passCardIdsType = cardIdType
 	.array()
 	.atLeastLength(3)
 	.atMostLength(3)
-
-export const playCardPayloadType = type({
-	cardId: cardIdType,
-})
 
 export const passCardsPayloadType = type({
 	cardIds: passCardIdsType,
@@ -25,14 +21,6 @@ function actionError(
 		return new HeartsRuleError(`${fallbackMessage} ${result.summary}`)
 	}
 	return new HeartsRuleError(fallbackMessage)
-}
-
-export function parsePlayCardPayload(input: unknown): { cardId: CardId } {
-	const result = playCardPayloadType(input)
-	if (result instanceof ArkErrors) {
-		throw actionError(result, "That card identifier is invalid.")
-	}
-	return { cardId: result.cardId as CardId }
 }
 
 export function parsePassCardsPayload(input: unknown): { cardIds: CardId[] } {

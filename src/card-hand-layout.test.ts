@@ -11,9 +11,9 @@ import {
 	HAND_OUTWARD_CORRIDOR_SLOPE,
 	HAND_SCRUBBING_BAND_TOP,
 	HOVER_VIEWPORT_GUTTER,
-	passSelectionAfterDrop,
 	readableCardHorizontalCorrection,
 } from "./card-hand-layout.ts"
+import { heartsPassSelectionAfterDrop } from "./hearts-pass-layout.ts"
 
 describe("card hand layout", () => {
 	it("keeps a full two-player hand inside a bounded fan", () => {
@@ -89,34 +89,39 @@ describe("card hand layout", () => {
 
 	it("does not change pass cards without a valid destination", () => {
 		const selection = ["card-a", "card-b"]
-		expect(passSelectionAfterDrop(selection, "card-c", "hand", null)).toEqual(
-			selection,
-		)
-		expect(passSelectionAfterDrop(selection, "card-a", "pass", null)).toEqual(
-			selection,
-		)
+		expect(
+			heartsPassSelectionAfterDrop(selection, "card-c", "hand", null),
+		).toEqual(selection)
+		expect(
+			heartsPassSelectionAfterDrop(selection, "card-a", "pass", null),
+		).toEqual(selection)
 	})
 
 	it("moves cards between the hand and the explicit pass destination", () => {
-		expect(passSelectionAfterDrop([], "card-a", "hand", "pass")).toEqual([
+		expect(heartsPassSelectionAfterDrop([], "card-a", "hand", "pass")).toEqual([
 			"card-a",
 		])
 		expect(
-			passSelectionAfterDrop(["card-a"], "card-b", "hand", "pass", 0),
+			heartsPassSelectionAfterDrop(["card-a"], "card-b", "hand", "pass", 0),
 		).toEqual(["card-b", "card-a"])
 		expect(
-			passSelectionAfterDrop(["card-a", "card-b"], "card-a", "pass", "hand"),
+			heartsPassSelectionAfterDrop(
+				["card-a", "card-b"],
+				"card-a",
+				"pass",
+				"hand",
+			),
 		).toEqual(["card-b"])
 	})
 
 	it("caps and reorders the pass destination without changing card identity", () => {
 		const full = ["card-a", "card-b", "card-c"]
-		expect(passSelectionAfterDrop(full, "card-d", "hand", "pass")).toEqual(full)
-		expect(passSelectionAfterDrop(full, "card-c", "pass", "pass", 0)).toEqual([
-			"card-c",
-			"card-a",
-			"card-b",
-		])
+		expect(
+			heartsPassSelectionAfterDrop(full, "card-d", "hand", "pass"),
+		).toEqual(full)
+		expect(
+			heartsPassSelectionAfterDrop(full, "card-c", "pass", "pass", 0),
+		).toEqual(["card-c", "card-a", "card-b"])
 	})
 
 	it("promotes an upward pick into a card drag", () => {

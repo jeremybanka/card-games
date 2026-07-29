@@ -1,44 +1,33 @@
 import type { VNode } from "preact"
 import { useEffect, useRef } from "preact/hooks"
 
+import { rankMark, suitMark } from "./card-mark.ts"
 import type {
 	CompletedTrick,
 	PlayerId,
 	PublicGameView,
-	Suit,
 	VisibleCard,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import { orderedTrickReviewPlays } from "./game-presentation.ts"
+import { registeredGameAdapter } from "./game/game-registry.ts"
+import type { GameKind } from "./game/game-types.ts"
 import css from "./GameTransitions.module.css"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 
-function suitMark(suit: Suit): string {
-	switch (suit) {
-		case "clubs":
-			return "♣"
-		case "diamonds":
-			return "♦"
-		case "spades":
-			return "♠"
-		case "hearts":
-			return "♥"
-	}
-}
-
-function rankMark(rank: VisibleCard["rank"]): string {
-	switch (rank) {
-		case 11:
-			return "J"
-		case 12:
-			return "Q"
-		case 13:
-			return "K"
-		case 14:
-			return "A"
-		default:
-			return String(rank)
-	}
-}
+const transitionRules = {
+	hearts: {
+		ruleText: "Highest card in the led suit wins.",
+		showsLeftoverAward: true,
+	},
+	ohHell: {
+		ruleText:
+			"Highest trump wins; otherwise highest card in the led suit wins.",
+		showsLeftoverAward: false,
+	},
+} as const satisfies Record<
+	GameKind,
+	{ ruleText: string; showsLeftoverAward: boolean }
+>
 
 function TurnBanner({
 	game,
@@ -87,6 +76,10 @@ function TrickReview({
 }): VNode {
 	const continueButton = useRef<HTMLButtonElement>(null)
 	const winner = game.players.find((player) => player.id === trick.winnerId)
+	const rules = registeredGameAdapter<(typeof transitionRules)[GameKind]>(
+		game.gameKind,
+		transitionRules,
+	)
 	const orderedPlays = orderedTrickReviewPlays(trick)
 	const middle = (orderedPlays.length - 1) / 2
 	const title = `${winner?.name ?? "The high card"} takes the trick`
@@ -99,7 +92,7 @@ function TrickReview({
 			<review-heading>
 				<small>TRICK {game.completedTricks.length}</small>
 				<h2>{title}</h2>
-				<span>Highest card in the led suit wins.</span>
+				<span>{rules.ruleText}</span>
 			</review-heading>
 			<review-stack aria-label="Completed trick">
 				{orderedPlays.map((play, index) => {
@@ -154,7 +147,7 @@ function TrickReview({
 					)
 				})}
 			</review-stack>
-			{trick.leftoverAward === null ? null : (
+			{!rules.showsLeftoverAward || trick.leftoverAward === null ? null : (
 				<leftover-award
 					aria-label={`${winner?.name ?? "The trick winner"} receives the leftover card`}
 				>

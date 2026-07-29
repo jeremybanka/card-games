@@ -8,9 +8,13 @@ import { io, type Socket } from "socket.io-client"
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "../game/hearts-state.ts"
+} from "../game/game-state-atoms.ts"
+import {
+	matchingGameKinds,
+	registeredGameAdapter,
+	registeredGameCapability,
+} from "../game/game-registry.ts"
 import type {
-	ActionResult,
 	AiStrategyReviewAction,
 	AiStrategyReviewTurn,
 	CardId,
@@ -19,10 +23,16 @@ import type {
 	PlayerId,
 	PrivatePlayerView,
 	PublicGameView,
+	HeartsPublicGameView,
 	ServerToClientEvents,
 	VisibleCard,
-} from "../game/hearts-types.ts"
+} from "../game/game-types.ts"
+import {
+	passRecipientSeatIndex,
+	passSenderSeatIndex,
+} from "../game/seat-order.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
@@ -33,6 +43,14 @@ import {
 } from "./ai-player-state.node.ts"
 
 type AiSocket = Socket<ServerToClientEvents, ClientToServerEvents>
+
+type PendingPass = {
+	direction: PassDirection
+	handBeforePass: VisibleCard[]
+	passedCards: VisibleCard[]
+	roundNumber: number
+	senderId: PlayerId
+}
 
 export type AiPlayerRuntime = {
 	dispose: () => void
@@ -53,21 +71,8 @@ export type CreateAiPlayerOptions = {
 	serverUrl: string
 }
 
-function passSeatOffset(direction: PassDirection, playerCount: number): number {
-	switch (direction) {
-		case "left":
-			return 1
-		case "right":
-			return -1
-		case "across":
-			return playerCount === 4 ? 2 : 1
-		case "hold":
-			return 0
-	}
-}
-
 function passPartnerId(
-	game: PublicGameView,
+	game: HeartsPublicGameView,
 	playerId: PlayerId,
 	role: "recipient" | "sender",
 ): PlayerId {
@@ -75,30 +80,57 @@ function passPartnerId(
 	if (playerIndex === -1) {
 		throw new Error("The AI player is not seated at its realtime table.")
 	}
-	const offset = passSeatOffset(game.passDirection, game.players.length)
-	const directedOffset = role === "recipient" ? offset : -offset
 	const partnerIndex =
-		(playerIndex + directedOffset + game.players.length) % game.players.length
+		role === "recipient"
+			? passRecipientSeatIndex(
+					playerIndex,
+					game.players.length,
+					game.passDirection,
+				)
+			: passSenderSeatIndex(
+					playerIndex,
+					game.players.length,
+					game.passDirection,
+				)
 	return (game.players[partnerIndex] as PublicGameView["players"][number]).id
 }
 
-function actionResult(
-	socket: AiSocket,
-	event: "passCards" | "playCard" | "submitBid",
-	payload: CardId | CardId[] | number,
-): Promise<ActionResult> {
-	return new Promise((resolve) => {
-		if (event === "passCards") {
-			socket.emit("passCards", payload as CardId[], resolve)
-			return
+const passMemoryAdapters = {
+	hearts: (
+		game: Extract<PublicGameView, { gameKind: "hearts" }>,
+		privateView: Extract<PrivatePlayerView, { gameKind: "hearts" }>,
+		cardIds: CardId[],
+		playerId: PlayerId,
+	): { entry: AiMemoryLedgerEntry; pendingPass: PendingPass } => {
+		const selectedIds = new Set(cardIds)
+		const passedCards = privateView.cards.filter((card) =>
+			selectedIds.has(card.id),
+		)
+		return {
+			entry: {
+				cards: passedCards,
+				direction: game.passDirection,
+				kind: "cardsPassed",
+				recipientId: passPartnerId(game, playerId, "recipient"),
+				roundNumber: game.roundNumber,
+			},
+			pendingPass: {
+				direction: game.passDirection,
+				handBeforePass: privateView.cards,
+				passedCards,
+				roundNumber: game.roundNumber,
+				senderId: passPartnerId(game, playerId, "sender"),
+			},
 		}
-		if (event === "submitBid") {
-			socket.emit("submitBid", payload as number, resolve)
-			return
-		}
-		socket.emit("playCard", payload as CardId, resolve)
-	})
-}
+	},
+} satisfies Partial<Record<PublicGameView["gameKind"], unknown>>
+
+type PassMemoryAdapter = (
+	game: PublicGameView,
+	privateView: PrivatePlayerView,
+	cardIds: CardId[],
+	playerId: PlayerId,
+) => { entry: AiMemoryLedgerEntry; pendingPass: PendingPass }
 
 export function isAiTurnReady(
 	playerId: PlayerId,
@@ -106,21 +138,42 @@ export function isAiTurnReady(
 	privateView: PrivatePlayerView,
 ): boolean {
 	if (privateView.playerId !== playerId) return false
-	if (game.phase === "passing") {
-		return !privateView.passSubmitted && privateView.cards.length >= 3
-	}
-	if (game.phase === "bidding") {
-		return (
-			game.currentPlayerId === playerId &&
-			(privateView.legalBids?.length ?? 0) > 0
-		)
-	}
-	return (
-		game.phase === "playing" &&
-		game.currentPlayerId === playerId &&
-		privateView.playableCardIds.length > 0
+	if (!matchingGameKinds(privateView, game)) return false
+	const readiness = registeredGameAdapter<AiTurnReadiness>(
+		game.gameKind,
+		aiTurnReadiness,
 	)
+	return readiness(playerId, game, privateView)
 }
+
+type AiTurnReadiness = (
+	playerId: PlayerId,
+	game: PublicGameView,
+	privateView: PrivatePlayerView,
+) => boolean
+
+const aiTurnReadiness = {
+	hearts: (
+		playerId: PlayerId,
+		game: Extract<PublicGameView, { gameKind: "hearts" }>,
+		privateView: Extract<PrivatePlayerView, { gameKind: "hearts" }>,
+	): boolean =>
+		game.phase === "passing"
+			? !privateView.passSubmitted && privateView.cards.length >= 3
+			: game.phase === "playing" &&
+				game.currentPlayerId === playerId &&
+				privateView.playableCardIds.length > 0,
+	ohHell: (
+		playerId: PlayerId,
+		game: Extract<PublicGameView, { gameKind: "ohHell" }>,
+		privateView: Extract<PrivatePlayerView, { gameKind: "ohHell" }>,
+	): boolean =>
+		game.phase === "bidding"
+			? game.currentPlayerId === playerId && privateView.legalBids.length > 0
+			: game.phase === "playing" &&
+				game.currentPlayerId === playerId &&
+				privateView.playableCardIds.length > 0,
+} satisfies Record<PublicGameView["gameKind"], unknown>
 
 async function createAiPlayerRuntime(
 	options: CreateAiPlayerOptions,
@@ -149,15 +202,7 @@ async function createAiPlayerRuntime(
 	let lastAttemptedFingerprint = ""
 	let observedRoundNumber = 0
 	let pullDisposers: Array<() => void> = []
-	let pendingPass:
-		| {
-				direction: PassDirection
-				handBeforePass: VisibleCard[]
-				passedCards: VisibleCard[]
-				roundNumber: number
-				senderId: PlayerId
-		  }
-		| undefined
+	let pendingPass: PendingPass | undefined
 
 	const appendMemory = (entry: AiMemoryLedgerEntry): void => {
 		silo.setState(state.aiMemoryLedgerAtom, (ledger) => [...ledger, entry])
@@ -303,47 +348,30 @@ async function createAiPlayerRuntime(
 						turnKey,
 					})
 
-					const result =
-						decision.nextAction.action === "passCards"
-							? await actionResult(
-									socket,
-									"passCards",
-									decision.nextAction.cardIds,
-								)
-							: decision.nextAction.action === "submitBid"
-								? await actionResult(
-										socket,
-										"submitBid",
-										decision.nextAction.bid,
-									)
-								: await actionResult(
-										socket,
-										"playCard",
-										decision.nextAction.cardId,
-									)
+					const result = await aiGameStrategy(
+						gameAtStart.gameKind,
+					).submitAction(socket, decision.nextAction)
 					if (result.ok && decision.nextAction.action === "passCards") {
-						const selectedIds = new Set(decision.nextAction.cardIds)
-						const passedCards = privateViewAtStart.cards.filter((card) =>
-							selectedIds.has(card.id),
+						const passMemory = registeredGameCapability<PassMemoryAdapter>(
+							gameAtStart.gameKind,
+							passMemoryAdapters,
 						)
-						pendingPass = {
-							direction: gameAtStart.passDirection,
-							handBeforePass: privateViewAtStart.cards,
-							passedCards,
-							roundNumber: gameAtStart.roundNumber,
-							senderId: passPartnerId(gameAtStart, options.playerId, "sender"),
+						if (
+							passMemory === null ||
+							!matchingGameKinds(privateViewAtStart, gameAtStart)
+						) {
+							throw new Error(
+								`${gameAtStart.gameKind} does not support AI card-pass memory.`,
+							)
 						}
-						appendMemory({
-							cards: passedCards,
-							direction: gameAtStart.passDirection,
-							kind: "cardsPassed",
-							recipientId: passPartnerId(
-								gameAtStart,
-								options.playerId,
-								"recipient",
-							),
-							roundNumber: gameAtStart.roundNumber,
-						})
+						const capturedPass = passMemory(
+							gameAtStart,
+							privateViewAtStart,
+							decision.nextAction.cardIds,
+							options.playerId,
+						)
+						pendingPass = capturedPass.pendingPass
+						appendMemory(capturedPass.entry)
 						captureReceivedPassCards()
 					}
 					span.event(
@@ -381,8 +409,14 @@ async function createAiPlayerRuntime(
 					])
 				},
 			)
-		} catch {
-			lastAttemptedFingerprint = ""
+		} catch (error) {
+			serverLogger.error("ai.turn.failed", {
+				error,
+				fingerprintId: fingerprintId(fingerprint),
+				modelId: options.modelId,
+				playerId: options.playerId,
+				roomCode: options.roomCode,
+			})
 		} finally {
 			acting = false
 			if (shouldAct()) queueMicrotask(() => void act())

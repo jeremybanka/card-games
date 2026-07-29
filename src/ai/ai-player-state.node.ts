@@ -8,8 +8,10 @@ import type {
 import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
-} from "../game/hearts-state.ts"
-import type { AiStrategyReviewTurn, PlayerId } from "../game/hearts-types.ts"
+} from "../game/game-state-atoms.ts"
+import { correlateGameViews } from "../game/game-registry.ts"
+import type { AiStrategyReviewTurn, PlayerId } from "../game/game-types.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
 import type {
@@ -65,15 +67,26 @@ export function createAiPlayerSiloState(
 	const contextFromState = (get: {
 		<T>(token: RegularAtomToken<T>): T
 	}): AiGameContext => {
-		const strategicPrivateView = { ...get(privatePlayerViewAtom) }
-		Reflect.deleteProperty(strategicPrivateView, "passReceipt")
+		const views = correlateGameViews(
+			get(publicGameViewAtom),
+			get(privatePlayerViewAtom),
+			"AI public and private views describe different games.",
+		)
+		const strategy = aiGameStrategy(views.publicView.gameKind)
+		const strategicPrivateView = strategy.privateViewForStrategy(
+			views.privateView,
+		)
+		const strategicViews = correlateGameViews(
+			views.publicView,
+			strategicPrivateView,
+			"AI strategy changed the private view game kind.",
+		)
 		return {
 			memoryLedger: get(aiMemoryLedgerAtom),
 			observations: get(aiTurnObservationsAtom),
 			playerId,
 			previousPlan: get(aiCurrentPlanAtom),
-			privateView: strategicPrivateView,
-			publicView: get(publicGameViewAtom),
+			...strategicViews,
 		}
 	}
 
@@ -86,9 +99,11 @@ export function createAiPlayerSiloState(
 		get: ({ get }) => {
 			get(aiRenderedGameFactsSelector)
 			const context = contextFromState(get)
-			return context.publicView.phase === "bidding"
-				? fallbackAiDecision(context)
-				: generateTurn(context)
+			return aiGameStrategy(context.publicView.gameKind).usesTurnGenerator(
+				context,
+			)
+				? generateTurn(context)
+				: fallbackAiDecision(context)
 		},
 	})
 	const aiTurnObservationSelector = silo.selector<Loadable<string>>({

@@ -3,7 +3,7 @@ import type {
 	PlayerId,
 	PublicGameView,
 	TrickPlay,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 
 export function capturedTrickCount(
 	capturedCardCount: number,

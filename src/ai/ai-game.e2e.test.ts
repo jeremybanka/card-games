@@ -28,34 +28,32 @@ import {
 	type AiTurnGenerator,
 } from "./ai-strategy.ts"
 import type { AiTurnDecision } from "./ai-types.ts"
-import {
-	parsePassCardsPayload,
-	parsePlayCardPayload,
-} from "../game/hearts-actions.ts"
+import { parsePlayCardPayload } from "../game/game-actions.ts"
+import { parsePassCardsPayload } from "../game/hearts-actions.ts"
+import { createPhysicalCardIds } from "../game/standard-deck-domain.ts"
 import {
 	createHeartsGame,
-	createPhysicalCardIds,
 	joinHeartsGame,
-	playCard,
-	startGame,
+	playHeartsCard,
+	startHeartsGame,
 	submitPass,
 	type HeartsState,
 } from "../game/hearts-engine.ts"
 import { createSeededRandom } from "../game/seeded-random.ts"
 import {
-	heartsStateAtoms,
+	gameStateAtoms,
 	privatePlayerViewAtom,
 	privatePlayerViewProjectionSelectors,
 	publicGameViewAtom,
 	publicGameViewProjectionSelectors,
-} from "../game/hearts-state.ts"
+} from "../game/game-state-atoms.ts"
 import type {
 	ActionAck,
 	CardId,
 	ClientToServerEvents,
 	PlayerId,
 	ServerToClientEvents,
-} from "../game/hearts-types.ts"
+} from "../game/game-types.ts"
 import {
 	type LogLevel,
 	serverLogger,
@@ -190,10 +188,16 @@ function serialPassingGate(
 	}
 }
 
+function currentHeartsState(): HeartsState {
+	const state = getState(gameStateAtoms, roomCode)
+	if (state.gameKind !== "hearts") throw new Error("Expected a Hearts table.")
+	return state
+}
+
 async function waitForRoundComplete(timeout = 10_000): Promise<HeartsState> {
 	const startedAt = Date.now()
 	while (true) {
-		const state = getState(heartsStateAtoms, roomCode)
+		const state = currentHeartsState()
 		if (state.phase === "roundComplete" || state.phase === "gameComplete") {
 			return state
 		}
@@ -231,7 +235,7 @@ async function runBotTable(
 	)
 	initial.players[0]!.aiModel = bots[0].modelId
 	initial.players[0]!.kind = "ai"
-	setState(heartsStateAtoms, roomCode, initial)
+	setState(gameStateAtoms, roomCode, initial)
 
 	const transcript: TranscriptEntry[] = []
 	const httpServer = createServer()
@@ -268,14 +272,12 @@ async function runBotTable(
 						throw new Error("Unknown deterministic bot room.")
 					}
 					setState(
-						heartsStateAtoms,
+						gameStateAtoms,
 						roomCode,
-						joinHeartsGame(
-							getState(heartsStateAtoms, roomCode),
-							playerId,
-							playerName,
-							{ aiModel: bot.modelId, kind: "ai" },
-						),
+						joinHeartsGame(currentHeartsState(), playerId, playerName, {
+							aiModel: bot.modelId,
+							kind: "ai",
+						}),
 					)
 					const provideState = realtimeStateProvider({
 						consumer: playerId,
@@ -304,10 +306,10 @@ async function runBotTable(
 
 			socket.on("passCards", (cardIds, ack) => {
 				try {
-					const state = getState(heartsStateAtoms, roomCode)
+					const state = currentHeartsState()
 					const payload = parsePassCardsPayload({ cardIds })
 					const nextState = submitPass(state, playerId, payload.cardIds)
-					setState(heartsStateAtoms, roomCode, nextState)
+					setState(gameStateAtoms, roomCode, nextState)
 					transcript.push({
 						action: "passCards",
 						cards: payload.cardIds.map((id) => ({
@@ -325,10 +327,10 @@ async function runBotTable(
 
 			socket.on("playCard", (cardId, ack) => {
 				try {
-					const state = getState(heartsStateAtoms, roomCode)
+					const state = currentHeartsState()
 					const payload = parsePlayCardPayload({ cardId })
-					const nextState = playCard(state, playerId, payload.cardId)
-					setState(heartsStateAtoms, roomCode, nextState)
+					const nextState = playHeartsCard(state, playerId, payload.cardId)
+					setState(gameStateAtoms, roomCode, nextState)
 					transcript.push({
 						action: "playCard",
 						cardId: payload.cardId,
@@ -399,13 +401,9 @@ async function runBotTable(
 		}
 
 		setState(
-			heartsStateAtoms,
+			gameStateAtoms,
 			roomCode,
-			startGame(
-				getState(heartsStateAtoms, roomCode),
-				bots[0].id,
-				dealRandom.next,
-			),
+			startHeartsGame(currentHeartsState(), bots[0].id, dealRandom.next),
 		)
 		const finalState = structuredClone(
 			await waitForRoundComplete(options.timeout),

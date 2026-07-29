@@ -1,14 +1,35 @@
 import type { AiModelId } from "../ai/ai-models.ts"
-import { createDeck, createPhysicalCardIds } from "./hearts-engine.ts"
+import {
+	cardValue,
+	createDeck,
+	createPhysicalCardIds,
+	secureRandom,
+	shuffled,
+	sortedHand,
+	visibleCard,
+} from "./standard-deck-domain.ts"
 import type {
 	CardId,
 	CardValue,
+	OhHellPrivatePlayerView,
+	OhHellPublicGameView,
 	PlayerId,
-	PrivatePlayerView,
-	PublicGameView,
 	Suit,
 	VisibleCard,
-} from "./hearts-types.ts"
+} from "./game-types.ts"
+import {
+	advanceIncompleteTrick,
+	beginCardPlay,
+	completeTrick,
+	copyGameState,
+	disconnectTablePlayer,
+	joinTablePlayer,
+	nextPlayerId as sharedNextPlayerId,
+	playerIndex as sharedPlayerIndex,
+	projectPublicPlayer,
+	projectVisibleTrick,
+	requireHostAction,
+} from "./trick-taking-domain.ts"
 
 export const OH_HELL_PLAYER_MINIMUM = 3
 export const OH_HELL_PLAYER_MAXIMUM = 4
@@ -25,8 +46,6 @@ export type OhHellPlayer = {
 	roundPoints: number
 	score: number
 	tricksWon: number
-	passSelection: CardId[] | null
-	taken: CardId[]
 }
 
 export type OhHellState = {
@@ -39,11 +58,9 @@ export type OhHellState = {
 	currentPlayerId: PlayerId | null
 	currentTrick: Array<{ cardId: CardId; playerId: PlayerId }>
 	dealerId: PlayerId | null
-	heartsBroken: boolean
+	gameKind: "ohHell"
 	hostId: PlayerId | null
 	lastTrickWinnerId: PlayerId | null
-	leftoverCardId: CardId | null
-	passDirection: "hold"
 	phase: "lobby" | "bidding" | "playing" | "roundComplete" | "gameComplete"
 	physicalCardIds: CardId[]
 	players: OhHellPlayer[]
@@ -60,57 +77,44 @@ export type OhHellState = {
 
 export class OhHellRuleError extends Error {}
 
-const copy = (state: OhHellState): OhHellState => structuredClone(state)
-const secureRandom = (): number =>
-	(crypto.getRandomValues(new Uint32Array(1))[0] as number) / 4_294_967_296
-
-function shuffled<T>(input: readonly T[], random: () => number): T[] {
-	const result = [...input]
-	for (let index = result.length - 1; index > 0; index -= 1) {
-		const swap = Math.floor(random() * (index + 1))
-		;[result[index], result[swap]] = [result[swap] as T, result[index] as T]
-	}
-	return result
-}
-
 function playerIndex(state: OhHellState, id: PlayerId): number {
-	const index = state.players.findIndex((player) => player.id === id)
-	if (index < 0) throw new OhHellRuleError("That player is not at the table.")
-	return index
+	return sharedPlayerIndex(
+		state,
+		id,
+		() => new OhHellRuleError("That player is not at the table."),
+	)
 }
 
 function nextPlayerId(state: OhHellState, id: PlayerId): PlayerId {
-	return (
-		state.players[
-			(playerIndex(state, id) + 1) % state.players.length
-		] as OhHellPlayer
-	).id
+	return sharedNextPlayerId(
+		state,
+		id,
+		() => new OhHellRuleError("That player is not at the table."),
+	)
 }
 
 function value(state: OhHellState, id: CardId): CardValue {
-	const card = state.cardValues[id]
-	if (card === undefined) throw new OhHellRuleError("That card is not active.")
-	return card
+	return cardValue(
+		state,
+		id,
+		() => new OhHellRuleError("That card is not active."),
+	)
 }
 
 function visible(state: OhHellState, id: CardId): VisibleCard {
-	return { id, ...value(state, id) }
+	return visibleCard(
+		state,
+		id,
+		() => new OhHellRuleError("That card is not active."),
+	)
 }
 
 function sortHand(state: OhHellState, hand: CardId[]): CardId[] {
-	const suitOrder: Record<Suit, number> = {
-		clubs: 0,
-		diamonds: 1,
-		spades: 2,
-		hearts: 3,
-	}
-	return [...hand].sort((a, b) => {
-		const left = value(state, a)
-		const right = value(state, b)
-		return (
-			suitOrder[left.suit] - suitOrder[right.suit] || left.rank - right.rank
-		)
-	})
+	return sortedHand(
+		state,
+		hand,
+		() => new OhHellRuleError("That card is not active."),
+	)
 }
 
 export function createOhHellGame(
@@ -125,11 +129,9 @@ export function createOhHellGame(
 		currentPlayerId: null,
 		currentTrick: [],
 		dealerId: null,
-		heartsBroken: false,
+		gameKind: "ohHell",
 		hostId,
 		lastTrickWinnerId: null,
-		leftoverCardId: null,
-		passDirection: "hold",
 		phase: "lobby",
 		physicalCardIds,
 		players: [
@@ -144,8 +146,6 @@ export function createOhHellGame(
 				roundPoints: 0,
 				score: 0,
 				tricksWon: 0,
-				passSelection: null,
-				taken: [],
 			},
 		],
 		roomCode,
@@ -169,59 +169,44 @@ export function joinOhHellGame(
 		kind: "human",
 	},
 ): OhHellState {
-	const next = copy(state)
-	const existing = next.players.find((player) => player.id === id)
-	if (existing) {
-		existing.connected = true
-		existing.name = name
-		return next
-	}
-	if (next.phase !== "lobby")
-		throw new OhHellRuleError("This game is already in progress.")
-	if (next.players.length >= OH_HELL_PLAYER_MAXIMUM)
-		throw new OhHellRuleError("This table already has four players.")
-	next.players.push({
-		...controller,
-		bid: null,
-		connected: true,
-		hand: [],
-		id,
-		name,
-		roundPoints: 0,
-		score: 0,
-		tricksWon: 0,
-		passSelection: null,
-		taken: [],
+	return joinTablePlayer(state, id, name, controller, {
+		createPlayer: ({
+			controller: nextController,
+			playerId,
+			playerName,
+		}): OhHellPlayer => ({
+			...nextController,
+			bid: null,
+			connected: true,
+			hand: [],
+			id: playerId,
+			name: playerName,
+			roundPoints: 0,
+			score: 0,
+			tricksWon: 0,
+		}),
+		fullTableError: () =>
+			new OhHellRuleError("This table already has four players."),
+		inProgressError: () =>
+			new OhHellRuleError("This game is already in progress."),
+		maximumPlayers: OH_HELL_PLAYER_MAXIMUM,
+		minimumPlayers: OH_HELL_PLAYER_MINIMUM,
+		waitingStatus: "Invite one more player.",
 	})
-	next.statusMessage =
-		next.players.length < 3
-			? "Invite one more player."
-			: "The host can start the game."
-	return next
 }
 
 export function disconnectOhHellPlayer(
 	state: OhHellState,
 	id: PlayerId,
 ): OhHellState {
-	const next = copy(state)
-	const player = next.players.find((candidate) => candidate.id === id)
-	if (!player) return next
-	if (next.phase === "lobby") {
-		next.players = next.players.filter((candidate) => candidate.id !== id)
-		if (next.hostId === id) next.hostId = next.players[0]?.id ?? null
-	} else {
-		player.connected = false
-		next.statusMessage = `${player.name} disconnected. Waiting for them to return.`
-	}
-	return next
+	return disconnectTablePlayer(state, id)
 }
 
 export function dealOhHellRound(
 	state: OhHellState,
 	random: () => number = secureRandom,
 ): OhHellState {
-	const next = copy(state)
+	const next = copyGameState(state)
 	if (next.players.length < 3 || next.players.length > 4)
 		throw new OhHellRuleError("Oh Hell needs three or four players.")
 	if (next.players.some((player) => !player.connected))
@@ -245,8 +230,6 @@ export function dealOhHellRound(
 		player.hand = []
 		player.roundPoints = 0
 		player.tricksWon = 0
-		player.passSelection = null
-		player.taken = []
 	}
 	const deck = shuffled(createDeck(), random)
 	const ids = shuffled(next.physicalCardIds, random)
@@ -290,7 +273,7 @@ export function submitOhHellBid(
 	id: PlayerId,
 	bid: number,
 ): OhHellState {
-	const next = copy(state)
+	const next = copyGameState(state)
 	if (next.phase !== "bidding")
 		throw new OhHellRuleError("Bidding is not open.")
 	if (next.currentPlayerId !== id)
@@ -376,40 +359,35 @@ export function playOhHellCard(
 	id: PlayerId,
 	cardId: CardId,
 ): OhHellState {
-	const next = copy(state)
-	if (next.phase !== "playing")
-		throw new OhHellRuleError("The round is not ready for play.")
-	if (next.currentPlayerId !== id)
-		throw new OhHellRuleError("It is not your turn.")
-	const player = next.players[playerIndex(next, id)] as OhHellPlayer
-	if (!player.hand.includes(cardId))
-		throw new OhHellRuleError("That card is not in your hand.")
-	if (!playableOhHellCardIdsFor(next, id).includes(cardId))
-		throw new OhHellRuleError("You must follow suit.")
-	player.hand = player.hand.filter((candidate) => candidate !== cardId)
-	next.currentTrick.push({ cardId, playerId: id })
-	if (next.currentTrick.length < next.players.length) {
-		next.currentPlayerId = nextPlayerId(next, id)
-		next.statusMessage = `${next.players[playerIndex(next, next.currentPlayerId)]?.name} to play.`
+	const { next } = beginCardPlay(state, id, cardId, {
+		illegalCardError: () => new OhHellRuleError("You must follow suit."),
+		inactiveRoundError: () =>
+			new OhHellRuleError("The round is not ready for play."),
+		notInHandError: () => new OhHellRuleError("That card is not in your hand."),
+		notPlayersTurnError: () => new OhHellRuleError("It is not your turn."),
+		playableCardIds: playableOhHellCardIdsFor,
+		playerError: () => new OhHellRuleError("That player is not at the table."),
+	})
+	if (
+		advanceIncompleteTrick(
+			next,
+			id,
+			() => new OhHellRuleError("That player is not at the table."),
+		)
+	) {
 		return next
 	}
 	const winnerId = trickWinner(next)
 	const winner = next.players[playerIndex(next, winnerId)] as OhHellPlayer
 	winner.tricksWon += 1
-	next.completedTricks.push({
-		leftoverAward: null,
-		plays: next.currentTrick.map((play) => ({ ...play })),
+	const completed = completeTrick(
+		next,
 		winnerId,
-	})
-	next.lastTrickWinnerId = winnerId
-	next.currentTrick = []
-	next.trickNumber += 1
-	if (next.players.every((candidate) => candidate.hand.length === 0))
+		null,
+		() => new OhHellRuleError("That player is not at the table."),
+	)
+	if (completed.handsEmpty) {
 		scoreRound(next)
-	else {
-		next.currentPlayerId = winnerId
-		next.trickLeaderId = winnerId
-		next.statusMessage = `${winner.name} takes the trick and leads.`
 	}
 	return next
 }
@@ -419,10 +397,13 @@ export function startOhHellGame(
 	hostId: PlayerId,
 	random?: () => number,
 ): OhHellState {
-	if (state.hostId !== hostId)
-		throw new OhHellRuleError("Only the host can start the game.")
-	if (state.phase !== "lobby")
-		throw new OhHellRuleError("The game has already started.")
+	requireHostAction(
+		state,
+		hostId,
+		"lobby",
+		() => new OhHellRuleError("Only the host can start the game."),
+		() => new OhHellRuleError("The game has already started."),
+	)
 	return dealOhHellRound(state, random)
 }
 
@@ -431,10 +412,13 @@ export function startNextOhHellRound(
 	hostId: PlayerId,
 	random?: () => number,
 ): OhHellState {
-	if (state.hostId !== hostId)
-		throw new OhHellRuleError("Only the host can deal the next round.")
-	if (state.phase !== "roundComplete")
-		throw new OhHellRuleError("The current round is not complete.")
+	requireHostAction(
+		state,
+		hostId,
+		"roundComplete",
+		() => new OhHellRuleError("Only the host can deal the next round."),
+		() => new OhHellRuleError("The current round is not complete."),
+	)
 	return dealOhHellRound(state, random)
 }
 
@@ -462,45 +446,30 @@ export function restartOhHellGame(
 	return next
 }
 
-export function toOhHellPublicGameView(state: OhHellState): PublicGameView {
+export function toOhHellPublicGameView(
+	state: OhHellState,
+): OhHellPublicGameView {
 	const publicCard = (id: CardId) => visible(state, id)
 	return {
 		bidPlayerId: state.phase === "bidding" ? state.currentPlayerId : null,
 		bidsSubmitted: state.players.filter((player) => player.bid !== null).length,
 		completedTricks: state.completedTricks.map((trick) => ({
 			leftoverAward: null,
-			plays: trick.plays.map((play) => ({
-				card: publicCard(play.cardId),
-				playerId: play.playerId,
-			})),
+			plays: projectVisibleTrick(trick.plays, publicCard),
 			winnerId: trick.winnerId,
 		})),
 		currentPlayerId: state.currentPlayerId,
-		currentTrick: state.currentTrick.map((play) => ({
-			card: publicCard(play.cardId),
-			playerId: play.playerId,
-		})),
+		currentTrick: projectVisibleTrick(state.currentTrick, publicCard),
 		dealerId: state.dealerId,
 		deckCardIds: state.trumpCardId === null ? [] : [state.trumpCardId],
 		gameKind: "ohHell",
-		heartsBroken: false,
 		hostId: state.hostId,
 		lastTrickWinnerId: state.lastTrickWinnerId,
 		maximumRounds: OH_HELL_HAND_SCHEDULE.length,
-		passDirection: "hold",
-		passSubmittedPlayerIds: [],
 		phase: state.phase,
 		players: state.players.map((player) => ({
-			aiModel: player.aiModel,
+			...projectPublicPlayer(player),
 			bid: player.bid,
-			capturedCardIds: [],
-			connected: player.connected,
-			handCardIds: [...player.hand],
-			id: player.id,
-			kind: player.kind,
-			name: player.name,
-			roundPoints: player.roundPoints,
-			score: player.score,
 			tricksWon: player.tricksWon,
 		})),
 		roomCode: state.roomCode,
@@ -517,22 +486,20 @@ export function toOhHellPublicGameView(state: OhHellState): PublicGameView {
 export function toOhHellPrivatePlayerView(
 	state: OhHellState,
 	id: PlayerId,
-): PrivatePlayerView {
+): OhHellPrivatePlayerView {
 	const player = state.players.find((candidate) => candidate.id === id)
 	if (!player)
 		return {
-			awardedLeftoverCard: null,
 			cards: [],
+			gameKind: "ohHell",
 			legalBids: [],
-			passSubmitted: false,
 			playableCardIds: [],
 			playerId: null,
 		}
 	return {
-		awardedLeftoverCard: null,
 		cards: player.hand.map((cardId) => visible(state, cardId)),
+		gameKind: "ohHell",
 		legalBids: legalBidsFor(state, id),
-		passSubmitted: false,
 		playableCardIds: playableOhHellCardIdsFor(state, id),
 		playerId: id,
 	}

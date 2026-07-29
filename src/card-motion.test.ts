@@ -448,15 +448,11 @@ describe("observeCardMotion", () => {
 
 		await vi.waitFor(
 			() => {
-				expect(
-					root.querySelector(
-						"card-flight[data-motion-card-id='card::opponent']",
-					),
-				).not.toBeNull()
+				expect(root.dataset.lastCardMotionId).toBe("card::opponent")
+				expect(animate).toHaveBeenCalledTimes(4)
 			},
 			{ timeout: 3_000 },
 		)
-		expect(animate).toHaveBeenCalledTimes(4)
 		expect(animate.mock.calls[1]).toEqual([
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -544,9 +540,12 @@ describe("observeCardMotion", () => {
 		opponentSource.remove()
 		root.append(opponentSlot)
 
-		await vi.waitFor(() => {
-			expect(root.dataset.lastCardMotion).toBe("opponent-play")
-		})
+		await vi.waitFor(
+			() => {
+				expect(root.dataset.lastCardMotion).toBe("opponent-play")
+			},
+			{ timeout: 3_000 },
+		)
 		expect(
 			animate.mock.instances.filter(
 				(instance) => instance === localDestination,

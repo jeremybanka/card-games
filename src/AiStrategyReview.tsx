@@ -1,10 +1,11 @@
 import type { VNode } from "preact"
 
 import { aiModelLabel } from "./ai/ai-models.ts"
+import { rankMark, suitMark } from "./card-mark.ts"
 import type {
 	AiStrategyReview as AiStrategyReviewData,
 	CardValue,
-} from "./game/hearts-types.ts"
+} from "./game/game-types.ts"
 import css from "./AiStrategyReview.module.css"
 
 type AiStrategyReviewProps = {
@@ -12,36 +13,8 @@ type AiStrategyReviewProps = {
 	review: AiStrategyReviewData
 }
 
-function suitMark(card: CardValue): string {
-	switch (card.suit) {
-		case "clubs":
-			return "♣"
-		case "diamonds":
-			return "♦"
-		case "spades":
-			return "♠"
-		case "hearts":
-			return "♥"
-	}
-}
-
-function rankMark(card: CardValue): string {
-	switch (card.rank) {
-		case 11:
-			return "J"
-		case 12:
-			return "Q"
-		case 13:
-			return "K"
-		case 14:
-			return "A"
-		default:
-			return String(card.rank)
-	}
-}
-
 function cardLabel(card: CardValue): string {
-	return `${rankMark(card)}${suitMark(card)}`
+	return `${rankMark(card.rank)}${suitMark(card.suit)}`
 }
 
 export function AiStrategyReview({

@@ -5,7 +5,7 @@ import { createElement, render } from "preact"
 import { beforeEach, describe, expect, it } from "vitest"
 
 import { DeckRemainder } from "./DeckRemainder.tsx"
-import type { CardId } from "./game/hearts-types.ts"
+import type { CardId } from "./game/game-types.ts"
 
 describe("DeckRemainder", () => {
 	beforeEach(() => {

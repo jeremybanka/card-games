@@ -11,11 +11,7 @@ import { createElement, type FunctionComponent } from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { BiddingConsole } from "./BiddingConsole.tsx"
-import {
-	EMPTY_PUBLIC_GAME_VIEW,
-	type PlayerId,
-	type PublicGameView,
-} from "./game/hearts-types.ts"
+import type { OhHellPublicGameView, PlayerId } from "./game/game-types.ts"
 
 vi.mock("preact/jsx-runtime", async () => {
 	const runtime = await vi.importActual<object>("react/jsx-runtime")
@@ -43,20 +39,24 @@ const ADA = "user::ada" satisfies PlayerId
 const BEA = "user::bea" satisfies PlayerId
 const CAL = "user::cal" satisfies PlayerId
 
-function biddingView(): PublicGameView {
+function biddingView(): OhHellPublicGameView {
 	return {
-		...EMPTY_PUBLIC_GAME_VIEW,
 		bidPlayerId: ADA,
 		bidsSubmitted: 2,
+		completedTricks: [],
 		currentPlayerId: ADA,
+		currentTrick: [],
 		dealerId: ADA,
+		deckCardIds: [],
 		gameKind: "ohHell",
+		hostId: ADA,
+		lastTrickWinnerId: null,
+		maximumRounds: 5,
 		phase: "bidding",
 		players: [
 			{
 				aiModel: null,
 				bid: null,
-				capturedCardIds: [],
 				connected: true,
 				handCardIds: [],
 				id: ADA,
@@ -69,7 +69,6 @@ function biddingView(): PublicGameView {
 			{
 				aiModel: null,
 				bid: 1,
-				capturedCardIds: [],
 				connected: true,
 				handCardIds: [],
 				id: BEA,
@@ -82,7 +81,6 @@ function biddingView(): PublicGameView {
 			{
 				aiModel: null,
 				bid: 1,
-				capturedCardIds: [],
 				connected: true,
 				handCardIds: [],
 				id: CAL,
@@ -97,7 +95,10 @@ function biddingView(): PublicGameView {
 		roundHandSize: 5,
 		roundNumber: 1,
 		statusMessage: "Ada to bid.",
+		trickLeaderId: null,
+		trickNumber: 0,
 		trumpSuit: "hearts",
+		winnerIds: [],
 	}
 }
 

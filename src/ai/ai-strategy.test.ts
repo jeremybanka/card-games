@@ -1,21 +1,24 @@
 import { Squirrel } from "varmint"
 import { describe, expect, it, vi } from "vitest"
 
-import type {
-	CardId,
-	PlayerId,
-	PrivatePlayerView,
-	PublicGameView,
-	VisibleCard,
-} from "../game/hearts-types.ts"
+import {
+	EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
+	type CardId,
+	type HeartsPrivatePlayerView,
+	type HeartsPublicGameView,
+	type OhHellPrivatePlayerView,
+	type OhHellPublicGameView,
+	type PlayerId,
+	type VisibleCard,
+} from "../game/game-types.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { wrapAiGeneratorWithVarmint } from "./ai-generator.node.ts"
 import { isAiTurnReady } from "./ai-player.node.ts"
 import {
 	chooseFallbackAiAction,
 	createGuardedAiTurnGenerator,
 } from "./ai-strategy.ts"
-import { aiTurnDecisionJsonSchema } from "./ai-types.ts"
 
 const aiPlayerId =
 	"user::00000000-0000-4000-8000-0000000000a1" satisfies PlayerId
@@ -31,14 +34,19 @@ function card(
 }
 
 function gameContext(
-	privateView: PrivatePlayerView,
-	overrides: Partial<PublicGameView> = {},
+	privateOverrides: Partial<HeartsPrivatePlayerView>,
+	overrides: Partial<HeartsPublicGameView> = {},
 ): AiGameContext {
-	const publicView: PublicGameView = {
+	const privateView: HeartsPrivatePlayerView = {
+		...EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
+		...privateOverrides,
+	}
+	const publicView: HeartsPublicGameView = {
 		completedTricks: [],
 		currentPlayerId: aiPlayerId,
 		currentTrick: [],
 		deckCardIds: [],
+		gameKind: "hearts",
 		heartsBroken: false,
 		hostId: humanPlayerId,
 		lastTrickWinnerId: null,
@@ -87,9 +95,80 @@ function gameContext(
 	}
 }
 
+function ohHellContext(
+	cards: VisibleCard[],
+	options: { bid: number; tricksWon: number },
+): AiGameContext {
+	const privateView: OhHellPrivatePlayerView = {
+		cards,
+		gameKind: "ohHell",
+		legalBids: [],
+		playableCardIds: cards.map((entry) => entry.id),
+		playerId: aiPlayerId,
+	}
+	const publicView: OhHellPublicGameView = {
+		bidPlayerId: null,
+		bidsSubmitted: 2,
+		completedTricks: [],
+		currentPlayerId: aiPlayerId,
+		currentTrick: [],
+		dealerId: humanPlayerId,
+		deckCardIds: [],
+		gameKind: "ohHell",
+		hostId: humanPlayerId,
+		lastTrickWinnerId: null,
+		maximumRounds: 5,
+		phase: "playing",
+		players: [
+			{
+				aiModel: "gpt-5.6-terra",
+				bid: options.bid,
+				connected: true,
+				handCardIds: cards.map((entry) => entry.id),
+				id: aiPlayerId,
+				kind: "ai",
+				name: "Terra AI",
+				roundPoints: 0,
+				score: 0,
+				tricksWon: options.tricksWon,
+			},
+			{
+				aiModel: null,
+				bid: 0,
+				connected: true,
+				handCardIds: [],
+				id: humanPlayerId,
+				kind: "human",
+				name: "Ada",
+				roundPoints: 0,
+				score: 0,
+				tricksWon: 0,
+			},
+		],
+		roomCode: "WIND",
+		roundHandSize: cards.length,
+		roundNumber: 1,
+		statusMessage: "Your play.",
+		trickLeaderId: aiPlayerId,
+		trickNumber: 0,
+		trumpSuit: "spades",
+		winnerIds: [],
+	}
+	return {
+		memoryLedger: [],
+		observations: [],
+		playerId: aiPlayerId,
+		previousPlan: "",
+		privateView,
+		publicView,
+	}
+}
+
 describe("AI Hearts generators", () => {
 	it("uses an OpenAI-compatible structured-output schema", () => {
-		expect(aiTurnDecisionJsonSchema).toMatchObject({
+		const strategy = aiGameStrategy("hearts")
+		const outputSchema = strategy.outputSchema
+		expect(outputSchema).toMatchObject({
 			properties: {
 				nextAction: {
 					anyOf: [
@@ -112,9 +191,14 @@ describe("AI Hearts generators", () => {
 			},
 			type: "object",
 		})
-		expect(JSON.stringify(aiTurnDecisionJsonSchema)).not.toContain(
-			"uniqueItems",
-		)
+		expect(JSON.stringify(outputSchema)).not.toContain("uniqueItems")
+		expect(
+			strategy.parseDecision({
+				currentPlan: "Bid.",
+				nextAction: { action: "submitBid", bid: 1 },
+				observation: "A bid is available.",
+			}).ok,
+		).toBe(false)
 	})
 
 	it("waits for the private hand before starting an AI pass", () => {
@@ -297,7 +381,7 @@ describe("AI Hearts generators", () => {
 		)
 	})
 
-	it("runs structured generators through Varmint without kitty details", async () => {
+	it("keeps the full game context behind legacy Varmint keys", async () => {
 		const two = card("two-clubs", "clubs", 2)
 		const leftover = card("leftover", "spades", 12)
 		const context = gameContext(
@@ -339,18 +423,60 @@ describe("AI Hearts generators", () => {
 		expect(base).toHaveBeenCalledOnce()
 		expect(base).toHaveBeenCalledWith(
 			expect.objectContaining({
-				privateView: expect.not.objectContaining({
-					awardedLeftoverCard: expect.anything(),
+				privateView: expect.objectContaining({
+					awardedLeftoverCard: leftover,
+					gameKind: "hearts",
 				}),
 				publicView: expect.objectContaining({
-					completedTricks: [
-						expect.not.objectContaining({
-							leftoverAward: expect.anything(),
-						}),
-					],
+					completedTricks: context.publicView.completedTricks,
+					deckCardIds: [leftover.id],
+					gameKind: "hearts",
 				}),
 			}),
 		)
-		expect(base.mock.calls[0]?.[0].publicView).not.toHaveProperty("deckCardIds")
+	})
+})
+
+describe("AI Oh Hell strategy", () => {
+	it("uses an Oh Hell prompt and targets the exact bid", () => {
+		const low = card("low-club", "clubs", 2)
+		const trump = card("ace-spade", "spades", 14)
+		const strategy = aiGameStrategy("ohHell")
+		const facts = renderAiGameFacts(
+			ohHellContext([low, trump], { bid: 1, tricksWon: 0 }),
+		)
+
+		expect(strategy.systemPrompt).toContain("strategic Oh Hell player")
+		expect(strategy.systemPrompt).not.toContain("minimize expected points")
+		expect(facts).toContain(
+			"during play choose one card ID from a hand row labeled LEGAL",
+		)
+		expect(facts).not.toContain("during passing")
+		expect(JSON.stringify(strategy.outputSchema)).toContain("submitBid")
+		expect(JSON.stringify(strategy.outputSchema)).not.toContain("passCards")
+		expect(
+			strategy.parseDecision({
+				currentPlan: "Pass.",
+				nextAction: { action: "passCards", cardIds: [low.id] },
+				observation: "Cards can be passed.",
+			}).ok,
+		).toBe(false)
+		expect(
+			strategy.parseDecision({
+				currentPlan: "Bid one.",
+				nextAction: { action: "submitBid", bid: 1 },
+				observation: "One is legal.",
+			}).ok,
+		).toBe(true)
+		expect(
+			chooseFallbackAiAction(
+				ohHellContext([low, trump], { bid: 1, tricksWon: 0 }),
+			),
+		).toEqual({ action: "playCard", cardId: trump.id })
+		expect(
+			chooseFallbackAiAction(
+				ohHellContext([low, trump], { bid: 1, tricksWon: 1 }),
+			),
+		).toEqual({ action: "playCard", cardId: low.id })
 	})
 })
