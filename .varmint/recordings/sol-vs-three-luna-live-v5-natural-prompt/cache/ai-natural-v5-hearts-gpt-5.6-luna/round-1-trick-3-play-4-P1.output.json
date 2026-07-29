@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Play the forced club; avoid winning future point tricks and shed high hearts safely.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TC"
+	},
+	"observation": "TC is the only legal play and wins this point-free club trick."
+}

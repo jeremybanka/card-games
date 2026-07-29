@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Avoid winning tricks; retain 9D as a safer diamond and shed the higher KD when possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KD"
+	},
+	"observation": "KD follows diamonds and cannot win this trick; P1's 8D remains highest."
+}

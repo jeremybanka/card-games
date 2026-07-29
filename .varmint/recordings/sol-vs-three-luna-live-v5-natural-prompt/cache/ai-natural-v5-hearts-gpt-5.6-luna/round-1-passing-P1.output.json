@@ -1,0 +1,12 @@
+{
+	"currentPlan": "Pass high-risk winners and avoid taking early tricks.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"AC",
+			"JC",
+			"KD"
+		]
+	},
+	"observation": "Passing left: AC, JC, and KD are exposed to P0 after the pass."
+}

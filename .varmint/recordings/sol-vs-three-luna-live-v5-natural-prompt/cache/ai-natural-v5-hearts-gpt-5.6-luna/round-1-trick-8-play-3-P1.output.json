@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Avoid winning tricks; preserve hearts for later and discard the spade ace when safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AS"
+	},
+	"observation": "Void in clubs; discard AS safely. Hearts remain intact."
+}

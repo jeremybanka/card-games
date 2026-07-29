@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Shed low hearts first; avoid winning later heart tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4H"
+	},
+	"observation": "Leading 4H minimizes the chance of winning while shedding a heart."
+}

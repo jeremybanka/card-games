@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Shed the lowest heart now; avoid taking future tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8H"
+	},
+	"observation": "Void in spades, so discard 8H under KS; P0 should retain trick."
+}

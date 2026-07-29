@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Shed low hearts; avoid winning later heart tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6H"
+	},
+	"observation": "Following suit is impossible; 6H is lowest and avoids taking the trick unless P3 plays lower."
+}

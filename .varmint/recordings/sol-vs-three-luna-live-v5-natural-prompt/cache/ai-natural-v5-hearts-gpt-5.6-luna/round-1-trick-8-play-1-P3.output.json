@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead a club to avoid winning; retain AD as a safe control card.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QC"
+	},
+	"observation": "QC is less likely to win than KC; AD is the only remaining diamond and would certainly win."
+}

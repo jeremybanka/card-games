@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Avoid winning point-heavy tricks; play QH only when forced or safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AD"
+	},
+	"observation": "Void in spades; AD discards safely, while QH would win the trick and take 3 points."
+}

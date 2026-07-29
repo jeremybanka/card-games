@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Keep AD as a control; discard low hearts when void.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9H"
+	},
+	"observation": "Void in spades, so discard the lower heart; 9H minimizes risk."
+}

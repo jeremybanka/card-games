@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Take this point-free trick with 5D; next lead a low club if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5D"
+	},
+	"observation": "Diamonds 2D, 3D, 4D are exposed; 5D is the lowest legal card and wins a harmless trick."
+}

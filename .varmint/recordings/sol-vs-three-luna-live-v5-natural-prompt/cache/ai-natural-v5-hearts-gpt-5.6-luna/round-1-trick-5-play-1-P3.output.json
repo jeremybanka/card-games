@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Unload JS; avoid winning and keep hearts concealed.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JS"
+	},
+	"observation": "P0 is known to hold QS and KS, making JS a safe lead to shed."
+}

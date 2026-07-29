@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Avoid winning tricks; keep high hearts controlled and shed them when safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	},
+	"observation": "Forced to follow spades; TS loses to P3’s JS."
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Duck tricks; discard QS first when void, then KS/AH as safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3C"
+	},
+	"observation": "Clubs led; 3C stays below 8C and minimizes win risk."
+}

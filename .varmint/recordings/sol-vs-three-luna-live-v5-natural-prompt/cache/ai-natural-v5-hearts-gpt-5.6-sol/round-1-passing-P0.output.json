@@ -1,0 +1,12 @@
+{
+	"currentPlan": "Stay low; exploit heart void to discard dangerous cards.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"AS",
+			"KH",
+			"2H"
+		]
+	},
+	"observation": "Passing both hearts creates a void; AS removes major spade risk."
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Take the unavoidable trick, then shed high-risk hearts when safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AC"
+	},
+	"observation": "AC is the only legal play and wins the club trick, taking the 2H point."
+}

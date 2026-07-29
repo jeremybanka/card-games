@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Play forced AH; then use low spades before KS to avoid later tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AH"
+	},
+	"observation": "Heart lead makes AH the only legal play; it currently takes the trick."
+}

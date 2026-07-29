@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Discard QS now; retain low spades and avoid taking hearts with AH.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QS"
+	},
+	"observation": "Void in clubs; KC lead safely absorbs QS."
+}

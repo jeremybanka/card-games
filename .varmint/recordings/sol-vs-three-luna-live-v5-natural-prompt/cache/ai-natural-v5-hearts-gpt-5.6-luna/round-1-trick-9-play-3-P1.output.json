@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Avoid winning; shed the lowest heart while P3 controls the trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2H"
+	},
+	"observation": "Void in clubs, so 2H is legal and cannot win over P3’s KC."
+}

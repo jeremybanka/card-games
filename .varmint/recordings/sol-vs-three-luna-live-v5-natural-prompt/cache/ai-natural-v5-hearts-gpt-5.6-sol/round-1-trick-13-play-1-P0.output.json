@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead the forced final 7S; all opponents are void in spades, so it wins and takes their discards.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7S"
+	},
+	"observation": "Only 7S remains and is legal."
+}

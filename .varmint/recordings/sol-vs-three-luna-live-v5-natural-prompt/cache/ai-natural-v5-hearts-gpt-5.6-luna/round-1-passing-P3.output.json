@@ -1,0 +1,12 @@
+{
+	"currentPlan": "Pass dangerous high cards left; retain low cards to shed safely.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"QS",
+			"AH",
+			"KS"
+		]
+	},
+	"observation": "Passed QS, AH, and KS to P0."
+}

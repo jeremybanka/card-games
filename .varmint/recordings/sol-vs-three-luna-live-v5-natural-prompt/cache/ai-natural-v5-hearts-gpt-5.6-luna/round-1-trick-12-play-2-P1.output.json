@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Shed the lowest heart; avoid taking future tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JH"
+	},
+	"observation": "Void in spades; JH is less likely than KH to win this trick."
+}

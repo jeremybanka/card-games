@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead low spades first; retain AS as a controlled discard and avoid taking tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2S"
+	},
+	"observation": "Hearts remain intact; 2S is the safest lead and cannot win this trick."
+}

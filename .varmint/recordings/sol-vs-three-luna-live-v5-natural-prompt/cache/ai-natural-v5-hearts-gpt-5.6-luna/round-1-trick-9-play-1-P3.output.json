@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Lead KC to avoid taking the lead with AD retained as control.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KC"
+	},
+	"observation": "KC is the safer lead; AD could win a diamond trick."
+}
