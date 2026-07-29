@@ -51,8 +51,8 @@ strategy. Without a key, AI seats remain fully playable through the deterministi
 strategic fallback. `VARMINT_CACHE_MODE` can be set to `read`, `write`, or
 `read-write` when recording or replaying generator results; it defaults to
 `off`. `VARMINT_CACHE_DIRECTORY` overrides the default
-`.varmint/hearts-ai` location when a recording should be saved as a tracked
-fixture.
+`.varmint/hearts-ai` local cache location. Replay fixtures required by CI belong
+under `test-fixtures/` and must be committed.
 
 Every AI is a separate Socket.IO player. It receives the same public projection
 and one private hand projection through atom.io realtime, stores them in its own
@@ -79,12 +79,14 @@ ordered action stream. Identity and deal generators are domain-separated so
 public opaque IDs do not expose the shuffle stream.
 
 The four-bot realtime end-to-end test uses the invariant
-`sol-vs-three-luna-v1` seed. It records a complete round with one Sol seat and
-three Luna seats into a temporary Varmint cache, then runs the same table again
-in read mode. The replay must execute no underlying generators and produce the
-same 56 intents, card values, winners, scores, and final authoritative state.
-Player secrets and observability span IDs remain cryptographically random
-because they are not game actions and must not be replayed.
+`sol-vs-three-luna-v1` seed and Sol/Luna seat metadata, but deliberately drives
+every seat with the same deterministic fallback strategy. It records a complete
+round into a temporary Varmint cache, then runs the same table again in read
+mode. This tests the record/replay mechanism, not model behavior. The replay
+must execute no underlying generators and produce the same 56 intents, card
+values, winners, scores, and final authoritative state. Player secrets and
+observability span IDs remain cryptographically random because they are not game
+actions and must not be replayed.
 
 Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
@@ -96,7 +98,8 @@ actions, full server state, trick winners, and scores. It then performs a
 cache-only replay and requires the same decisions, actions, and final state
 without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
 recorder to stream the same complete local spans exposed by the debug test
-commands.
+commands. These gitignored recordings are local analysis artifacts; CI does not
+consume them.
 
 The player-versus-Terra Testing Library test replays the browser recording in
 `test-fixtures/player-vs-terra-v1/` with the invariant
