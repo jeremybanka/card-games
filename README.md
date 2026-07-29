@@ -90,7 +90,7 @@ actions and must not be replayed.
 
 Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
-`.varmint/recordings/sol-vs-three-luna-live-v5-labeled-choices/`. Override the
+`.varmint/hearts-games/sol-vs-three-luna-live-v5-labeled-choices/`. Override the
 artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves prompt
 strings directly as Varmint inputs and value-based outputs. Each fixture
 filename keeps its readable round/trick/player prefix and appends a SHA-256
@@ -106,7 +106,7 @@ Sol/Luna recording in strict `read` mode, requiring all 56 decisions to be
 cache hits with no model calls or fallbacks.
 
 The player-versus-Terra Testing Library test replays the browser recording in
-`test-fixtures/player-vs-terra-v1/` with the invariant
+`.varmint/hearts-games/player-vs-terra-v1/` with the invariant
 `player-vs-terra-browser-v1` seed. A simulated human uses the rendered controls
 to pass and play all 26 cards while Terra participates through its ordinary
 realtime boundary. The fixture contains 27 real Terra decisions. Replay uses a

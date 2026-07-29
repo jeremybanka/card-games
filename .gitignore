@@ -9,5 +9,5 @@ coverage/
 .env.*
 !.env.example
 *.log
-.varmint/recordings/**/analysis.json
-.varmint/recordings/**/assessment.md
+.varmint/hearts-games/**/analysis.json
+.varmint/hearts-games/**/assessment.md

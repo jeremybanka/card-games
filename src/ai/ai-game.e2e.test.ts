@@ -564,7 +564,7 @@ describe("four-bot deterministic realtime game", () => {
 		const cacheDirectory = join(
 			process.cwd(),
 			".varmint",
-			"recordings",
+			"hearts-games",
 			"sol-vs-three-luna-live-v5-labeled-choices",
 			"cache",
 		)
@@ -606,7 +606,7 @@ describe("four-bot deterministic realtime game", () => {
 			const recordingDirectory = join(
 				process.cwd(),
 				".varmint",
-				"recordings",
+				"hearts-games",
 				liveRecordingName,
 			)
 			const cacheDirectory = join(recordingDirectory, "cache")
