@@ -15,7 +15,6 @@ import {
 	registeredGameCapability,
 } from "../game/game-registry.ts"
 import type {
-	ActionResult,
 	AiStrategyReviewAction,
 	AiStrategyReviewTurn,
 	CardId,
@@ -33,6 +32,7 @@ import {
 	passSenderSeatIndex,
 } from "../game/seat-order.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
+import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
@@ -131,24 +131,6 @@ type PassMemoryAdapter = (
 	cardIds: CardId[],
 	playerId: PlayerId,
 ) => { entry: AiMemoryLedgerEntry; pendingPass: PendingPass }
-
-function submitAiAction(
-	socket: AiSocket,
-	action: AiNextAction,
-): Promise<ActionResult> {
-	return new Promise((resolve) => {
-		switch (action.action) {
-			case "passCards":
-				socket.emit("passCards", action.cardIds, resolve)
-				return
-			case "submitBid":
-				socket.emit("submitBid", action.bid, resolve)
-				return
-			case "playCard":
-				socket.emit("playCard", action.cardId, resolve)
-		}
-	})
-}
 
 export function isAiTurnReady(
 	playerId: PlayerId,
@@ -366,7 +348,9 @@ async function createAiPlayerRuntime(
 						turnKey,
 					})
 
-					const result = await submitAiAction(socket, decision.nextAction)
+					const result = await aiGameStrategy(
+						gameAtStart.gameKind,
+					).submitAction(socket, decision.nextAction)
 					if (result.ok && decision.nextAction.action === "passCards") {
 						const passMemory = registeredGameCapability<PassMemoryAdapter>(
 							gameAtStart.gameKind,
@@ -425,8 +409,14 @@ async function createAiPlayerRuntime(
 					])
 				},
 			)
-		} catch {
-			lastAttemptedFingerprint = ""
+		} catch (error) {
+			serverLogger.error("ai.turn.failed", {
+				error,
+				fingerprintId: fingerprintId(fingerprint),
+				modelId: options.modelId,
+				playerId: options.playerId,
+				roomCode: options.roomCode,
+			})
 		} finally {
 			acting = false
 			if (shouldAct()) queueMicrotask(() => void act())

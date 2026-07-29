@@ -6,7 +6,9 @@ import type {
 	OhHellPublicGameView,
 	PlayerId,
 	PrivatePlayerView,
+	PrivatePlayerViewFor,
 	PublicGameView,
+	PublicGameViewFor,
 	Rank,
 	Suit,
 	VisibleCard,
@@ -17,14 +19,21 @@ import {
 } from "../game/game-registry.ts"
 import type { AiMemoryLedgerEntry, AiTurnObservation } from "./ai-types.ts"
 
-export type AiGameContext = {
+type CommonAiGameContext = {
 	memoryLedger: AiMemoryLedgerEntry[]
 	observations: AiTurnObservation[]
 	playerId: PlayerId
 	previousPlan: string
-	privateView: PrivatePlayerView
-	publicView: PublicGameView
 }
+
+export type AiGameContextFor<Kind extends GameKind> = CommonAiGameContext & {
+	privateView: PrivatePlayerViewFor<Kind>
+	publicView: PublicGameViewFor<Kind>
+}
+
+export type AiGameContext = {
+	[Kind in GameKind]: AiGameContextFor<Kind>
+}[GameKind]
 
 type AiFactsAdapter<PublicView, PrivateView> = {
 	gameDetails: (

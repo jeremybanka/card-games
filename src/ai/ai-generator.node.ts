@@ -4,7 +4,7 @@ import type { CacheMode } from "varmint"
 import { Squirrel } from "varmint"
 
 import { serverLogger } from "../observability/span-logger.node.ts"
-import { renderAiGameFacts } from "./ai-game-facts.ts"
+import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { legacyCompatibleCacheViews } from "./legacy-hearts-cache.ts"
 import type { AiModelId } from "./ai-models.ts"
@@ -14,7 +14,7 @@ import {
 	type AiGuardObserver,
 	type AiTurnGenerator,
 } from "./ai-strategy.ts"
-import { aiTurnDecisionJsonSchema, type AiTurnDecision } from "./ai-types.ts"
+import type { AiTurnDecision } from "./ai-types.ts"
 
 export type AiModelResponseRecord = {
 	finishReason: string
@@ -57,7 +57,17 @@ export function wrapAiGeneratorWithVarmint(
 	generate: AiTurnGenerator,
 	squirrel: Squirrel = aiGeneratorSquirrel,
 ): AiTurnGenerator {
-	const wrapped = squirrel.add(key, generate)
+	const sourceContexts = new WeakMap<object, AiGameContext>()
+	const wrapped = squirrel.add(
+		key,
+		async (cacheableContext: AiGameContext): Promise<AiTurnDecision> => {
+			const sourceContext = sourceContexts.get(cacheableContext)
+			if (sourceContext === undefined) {
+				throw new Error("The AI cache input lost its source game context.")
+			}
+			return generate(sourceContext)
+		},
+	)
 	return async (context) => {
 		const {
 			privateView: cacheablePrivateView,
@@ -67,19 +77,24 @@ export function wrapAiGeneratorWithVarmint(
 			...context,
 			privateView: cacheablePrivateView,
 			publicView: cacheablePublicView,
-		} as typeof context
-		return wrapped
-			.for(
-				JSON.stringify({
-					memoryLedger: context.memoryLedger,
-					observations: context.observations,
-					playerId: context.playerId,
-					previousPlan: context.previousPlan,
-					privateView: cacheablePrivateView,
-					publicView: cacheablePublicView,
-				}),
-			)
-			.get(cacheableContext)
+		} as AiGameContext
+		sourceContexts.set(cacheableContext, context)
+		try {
+			return await wrapped
+				.for(
+					JSON.stringify({
+						memoryLedger: context.memoryLedger,
+						observations: context.observations,
+						playerId: context.playerId,
+						previousPlan: context.previousPlan,
+						privateView: cacheablePrivateView,
+						publicView: cacheablePublicView,
+					}),
+				)
+				.get(cacheableContext)
+		} finally {
+			sourceContexts.delete(cacheableContext)
+		}
 	}
 }
 
@@ -123,7 +138,7 @@ export function createOpenAiTurnGenerator(
 				trickNumber: context.publicView.trickNumber,
 			},
 			async (span) => {
-				const gameKind = context.publicView.gameKind ?? "hearts"
+				const gameKind = context.publicView.gameKind
 				const renderedFacts = renderAiGameFacts(context)
 				const strategy = aiGameStrategy(gameKind)
 				const systemPrompt = strategy.systemPrompt
@@ -136,7 +151,7 @@ export function createOpenAiTurnGenerator(
 					output: Output.object({
 						description: strategy.outputDescription,
 						name: strategy.outputName,
-						schema: jsonSchema<AiTurnDecision>(aiTurnDecisionJsonSchema),
+						schema: jsonSchema<AiTurnDecision>(strategy.outputSchema),
 					}),
 					prompt: renderedFacts,
 					providerOptions: {

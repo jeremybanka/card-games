@@ -125,6 +125,10 @@ export type OhHellPublicGameView = CommonPublicGameView & {
 }
 
 export type PublicGameView = HeartsPublicGameView | OhHellPublicGameView
+export type PublicGameViewFor<Kind extends GameKind> = Extract<
+	PublicGameView,
+	{ gameKind: Kind }
+>
 
 type CommonPrivatePlayerView = {
 	cards: VisibleCard[]
@@ -155,6 +159,10 @@ export type OhHellPrivatePlayerView = CommonPrivatePlayerView & {
 export type PrivatePlayerView =
 	| HeartsPrivatePlayerView
 	| OhHellPrivatePlayerView
+export type PrivatePlayerViewFor<Kind extends GameKind> = Extract<
+	PrivatePlayerView,
+	{ gameKind: Kind }
+>
 
 export type AiStrategyReviewAction =
 	| { cards: CardValue[]; kind: "passCards" }

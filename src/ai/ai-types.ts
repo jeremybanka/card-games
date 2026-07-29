@@ -1,25 +1,34 @@
-import { type } from "arktype"
-import type { JSONSchema7 } from "ai"
-
-import { cardIdType } from "../game/game-actions.ts"
-import { passCardIdsType } from "../game/hearts-actions.ts"
 import type {
 	CardId,
+	GameKind,
 	PassDirection,
 	PlayerId,
 	VisibleCard,
 } from "../game/game-types.ts"
 
-export type AiNextAction =
+export type HeartsAiNextAction =
 	| { action: "passCards"; cardIds: CardId[] }
+	| { action: "playCard"; cardId: CardId }
+
+export type OhHellAiNextAction =
 	| { action: "playCard"; cardId: CardId }
 	| { action: "submitBid"; bid: number }
 
-export type AiTurnDecision = {
+export type AiNextActionByGame = {
+	hearts: HeartsAiNextAction
+	ohHell: OhHellAiNextAction
+}
+
+export type AiNextActionFor<Kind extends GameKind> = AiNextActionByGame[Kind]
+export type AiNextAction = AiNextActionFor<GameKind>
+
+export type AiTurnDecisionFor<Kind extends GameKind> = {
 	currentPlan: string
-	nextAction: AiNextAction
+	nextAction: AiNextActionFor<Kind>
 	observation: string
 }
+
+export type AiTurnDecision = AiTurnDecisionFor<GameKind>
 
 export type AiTurnObservation = {
 	observation: string
@@ -41,59 +50,3 @@ export type AiMemoryLedgerEntry =
 			roundNumber: number
 			senderId: PlayerId
 	  }
-
-export const aiNextActionType = type({
-	action: "'passCards'",
-	cardIds: passCardIdsType,
-})
-	.or({
-		action: "'playCard'",
-		cardId: cardIdType,
-	})
-	.or({
-		action: "'submitBid'",
-		bid: "number.integer >= 0",
-	})
-
-export const aiTurnDecisionType = type({
-	currentPlan: "string",
-	nextAction: aiNextActionType,
-	observation: "string",
-})
-
-export const aiTurnDecisionJsonSchema: JSONSchema7 = {
-	additionalProperties: false,
-	properties: {
-		currentPlan: { type: "string" },
-		nextAction: {
-			anyOf: [
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["passCards"], type: "string" },
-						cardIds: {
-							items: { pattern: "^card::", type: "string" },
-							maxItems: 3,
-							minItems: 3,
-							type: "array",
-						},
-					},
-					required: ["action", "cardIds"],
-					type: "object",
-				},
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["playCard"], type: "string" },
-						cardId: { pattern: "^card::", type: "string" },
-					},
-					required: ["action", "cardId"],
-					type: "object",
-				},
-			],
-		},
-		observation: { type: "string" },
-	},
-	required: ["currentPlan", "nextAction", "observation"],
-	type: "object",
-}

@@ -9,6 +9,7 @@ import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
 } from "../game/game-state-atoms.ts"
+import { correlateGameViews } from "../game/game-registry.ts"
 import type { AiStrategyReviewTurn, PlayerId } from "../game/game-types.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
@@ -67,13 +68,17 @@ export function createAiPlayerSiloState(
 	}): AiGameContext => {
 		const strategicPrivateView = { ...get(privatePlayerViewAtom) }
 		Reflect.deleteProperty(strategicPrivateView, "passReceipt")
+		const views = correlateGameViews(
+			get(publicGameViewAtom),
+			strategicPrivateView,
+			"AI public and private views describe different games.",
+		)
 		return {
 			memoryLedger: get(aiMemoryLedgerAtom),
 			observations: get(aiTurnObservationsAtom),
 			playerId,
 			previousPlan: get(aiCurrentPlanAtom),
-			privateView: strategicPrivateView,
-			publicView: get(publicGameViewAtom),
+			...views,
 		}
 	}
 

@@ -1,4 +1,10 @@
-import type { GameKind } from "./game-types.ts"
+import type {
+	GameKind,
+	PrivatePlayerView,
+	PrivatePlayerViewFor,
+	PublicGameView,
+	PublicGameViewFor,
+} from "./game-types.ts"
 
 type GameTagged = {
 	gameKind: GameKind
@@ -17,6 +23,22 @@ export function matchingGameKinds(
 	right: GameTagged,
 ): boolean {
 	return left.gameKind === right.gameKind
+}
+
+export type CorrelatedGameViews = {
+	[Kind in GameKind]: {
+		privateView: PrivatePlayerViewFor<Kind>
+		publicView: PublicGameViewFor<Kind>
+	}
+}[GameKind]
+
+export function correlateGameViews(
+	publicView: PublicGameView,
+	privateView: PrivatePlayerView,
+	message: string,
+): CorrelatedGameViews {
+	assertMatchingGameKinds(publicView, privateView, message)
+	return { privateView, publicView } as CorrelatedGameViews
 }
 
 /**
