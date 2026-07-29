@@ -29,11 +29,15 @@ export type AiGameStrategy<Kind extends GameKind> = {
 	outputName: string
 	outputSchema: JSONSchema7
 	parseDecision: (input: unknown) => AiDecisionParseResult<Kind>
+	privateViewForStrategy: (
+		view: AiGameContextFor<Kind>["privateView"],
+	) => AiGameContextFor<Kind>["privateView"]
 	submitAction: (
 		socket: AiActionSocket,
 		action: AiNextActionFor<Kind>,
 	) => Promise<ActionResult>
 	systemPrompt: string
+	usesTurnGenerator: (context: AiGameContextFor<Kind>) => boolean
 }
 
 const strategies = {

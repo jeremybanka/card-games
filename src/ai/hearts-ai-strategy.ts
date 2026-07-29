@@ -139,6 +139,11 @@ export const heartsAiStrategy: AiGameStrategy<"hearts"> = {
 					value: result as AiTurnDecisionFor<"hearts">,
 				}
 	},
+	privateViewForStrategy: (view) => {
+		const strategicView = { ...view }
+		Reflect.deleteProperty(strategicView, "passReceipt")
+		return strategicView
+	},
 	submitAction: (socket, action) => {
 		switch (action.action) {
 			case "passCards":
@@ -164,4 +169,5 @@ export const heartsAiStrategy: AiGameStrategy<"hearts"> = {
 		"For play, copy exactly the card:: ID inside brackets on a hand row labeled LEGAL; do not include brackets or the label.",
 		"Keep observation and plan terse; refer to cards by compact code and never repeat opaque IDs outside nextAction.",
 	].join("\n"),
+	usesTurnGenerator: () => true,
 }

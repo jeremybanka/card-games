@@ -149,6 +149,7 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 					value: result as AiTurnDecisionFor<"ohHell">,
 				}
 	},
+	privateViewForStrategy: (view) => view,
 	submitAction: (socket, action) => {
 		switch (action.action) {
 			case "playCard":
@@ -168,4 +169,5 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 		"For bidding, return one number listed among the legal bids.",
 		...commonPrompt,
 	].join("\n"),
+	usesTurnGenerator: (context) => context.publicView.phase !== "bidding",
 }
