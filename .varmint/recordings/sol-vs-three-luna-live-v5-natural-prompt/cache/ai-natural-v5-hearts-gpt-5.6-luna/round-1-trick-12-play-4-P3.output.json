@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "AD"
-	},
-	"observation": "Void in spades; AD discards safely, while QH would win the trick and take 3 points."
+	}
 }

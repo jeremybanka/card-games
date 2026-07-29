@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "JD"
-	},
-	"observation": "JD is the only legal diamond; it currently ducks under QD."
+	}
 }

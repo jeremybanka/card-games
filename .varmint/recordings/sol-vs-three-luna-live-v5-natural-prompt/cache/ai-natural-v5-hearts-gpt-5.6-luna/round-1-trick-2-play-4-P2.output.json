@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "5D"
-	},
-	"observation": "Diamonds 2D, 3D, 4D are exposed; 5D is the lowest legal card and wins a harmless trick."
+	}
 }

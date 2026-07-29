@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "7S"
-	},
-	"observation": "P0 retains passed QS/KS/AS; 7S safely loses."
+	}
 }

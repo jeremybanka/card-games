@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "QD"
-	},
-	"observation": "P0’s exposed diamonds are below QD; hearts remain closed."
+	}
 }

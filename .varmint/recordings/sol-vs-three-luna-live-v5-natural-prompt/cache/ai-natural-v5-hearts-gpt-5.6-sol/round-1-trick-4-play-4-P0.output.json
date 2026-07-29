@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "5S"
-	},
-	"observation": "5S loses safely to 6S; no points in trick."
+	}
 }

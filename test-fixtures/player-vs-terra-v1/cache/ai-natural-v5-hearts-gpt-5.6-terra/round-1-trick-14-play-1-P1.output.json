@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KD"
-	},
-	"observation": "P0’s only unplayed diamond is TD; hearts remain closed."
+	}
 }

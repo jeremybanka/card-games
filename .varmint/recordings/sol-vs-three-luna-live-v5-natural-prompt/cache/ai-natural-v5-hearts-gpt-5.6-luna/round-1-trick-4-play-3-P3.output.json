@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "6S"
-	},
-	"observation": "6S is the lowest legal spade; P0 holds QS and KS, so this should not win."
+	}
 }

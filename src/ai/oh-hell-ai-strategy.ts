@@ -16,7 +16,6 @@ const ohHellAiTurnDecisionType = type({
 		action: "'submitBid'",
 		bid: "number.integer >= 0",
 	}),
-	observation: "string",
 })
 
 const ohHellAiTurnDecisionJsonSchema: JSONSchema7 = {
@@ -45,16 +44,9 @@ const ohHellAiTurnDecisionJsonSchema: JSONSchema7 = {
 				},
 			],
 		},
-		observation: { type: "string" },
 	},
-	required: ["currentPlan", "nextAction", "observation"],
+	required: ["currentPlan", "nextAction"],
 	type: "object",
-}
-
-function fallbackObservation(context: AiGameContextFor<"ohHell">): string {
-	return context.publicView.currentTrick.length === 0
-		? "A new trick is ready."
-		: `${context.publicView.currentTrick.length} card(s) are visible in the current trick.`
 }
 
 function chooseOhHellBid(
@@ -104,7 +96,6 @@ function fallbackOhHellDecision(
 				? "Make a conservative legal bid from the strength visible in this hand."
 				: "Target the exact bid: take tricks still needed, then shed strength and avoid extra tricks.",
 		nextAction,
-		observation: fallbackObservation(context),
 	}
 }
 
@@ -133,14 +124,13 @@ const commonPrompt = [
 	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
 	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
 	"For play, return exactly one listed legal card value.",
-	"Keep observation and plan terse.",
+	"Keep the plan terse.",
 ]
 
 export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 	fallbackDecision: fallbackOhHellDecision,
 	isLegalAction: isLegalOhHellAction,
-	outputDescription:
-		"A legal Oh Hell action plus a private observation and strategic plan.",
+	outputDescription: "A legal Oh Hell action plus a reusable strategic plan.",
 	outputName: "oh_hell_turn_decision",
 	outputSchema: ohHellAiTurnDecisionJsonSchema,
 	parseDecision: (input) => {
@@ -172,7 +162,7 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 	},
 	systemPrompt: [
 		"You are a strategic Oh Hell player seated at a private multiplayer table.",
-		"Success means: bid and win exactly the predicted number of tricks, obey turn order and follow-suit rules, account for trump, and return a concise observation and reusable plan.",
+		"Success means: bid and win exactly the predicted number of tricks, obey turn order and follow-suit rules, account for trump, and return a concise reusable plan.",
 		"For bidding, return one number listed among the legal bids.",
 		...commonPrompt,
 	].join("\n"),

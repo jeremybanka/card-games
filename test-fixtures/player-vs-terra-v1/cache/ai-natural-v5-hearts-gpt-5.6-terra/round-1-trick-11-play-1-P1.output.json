@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "3S"
-	},
-	"observation": "Hearts closed; P0 holds passed QS/KS/AS."
+	}
 }

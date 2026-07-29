@@ -1,8 +1,11 @@
 # Sol vs. three Luna — v5 natural-prompt assessment
 
-Recorded July 29, 2026 with the invariant `sol-vs-three-luna-v1` seed.
+Recorded July 29, 2026 with the invariant `sol-vs-three-luna-live-v1` seed.
 The live run made 56 model calls and the strict cache-only replay reproduced all
 56 decisions, actions, and the final state. There were no guarded fallbacks.
+The cache was subsequently migrated to add deterministic legal-play labels and
+remove the obsolete `observation` output field; `analysis.json` preserves the
+original live model exchange for audit and cost analysis.
 
 ## Cost
 

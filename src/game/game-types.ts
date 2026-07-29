@@ -171,7 +171,6 @@ export type AiStrategyReviewAction =
 
 export type AiStrategyReviewTurn = {
 	action: AiStrategyReviewAction
-	observation: string
 	phase: "passing" | "bidding" | "playing"
 	plan: string
 	trickNumber: number

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "JS"
-	},
-	"observation": "P0 is known to hold QS and KS, making JS a safe lead to shed."
+	}
 }

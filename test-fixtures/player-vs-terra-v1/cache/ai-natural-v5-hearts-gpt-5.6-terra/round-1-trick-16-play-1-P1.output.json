@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KC"
-	},
-	"observation": "P0 is void C/D and retains passed high spades."
+	}
 }

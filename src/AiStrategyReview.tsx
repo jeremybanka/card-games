@@ -69,8 +69,6 @@ export function AiStrategyReview({
 								</turn-heading>
 							</turn-header>
 							<dl>
-								<dt>Saw</dt>
-								<dd>{turn.observation}</dd>
 								<dt>Thought</dt>
 								<dd>{turn.plan}</dd>
 								<dt>Did</dt>

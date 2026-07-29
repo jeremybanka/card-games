@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "7H"
-	},
-	"observation": "P0 is void C/D and holds high passed spades; our hearts are 7-A."
+	}
 }

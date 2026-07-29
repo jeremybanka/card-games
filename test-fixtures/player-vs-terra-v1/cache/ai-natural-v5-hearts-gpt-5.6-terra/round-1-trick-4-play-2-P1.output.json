@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "TC"
-	},
-	"observation": "P0 led JC; TC safely loses while hearts are closed."
+	}
 }

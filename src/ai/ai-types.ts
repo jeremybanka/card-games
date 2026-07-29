@@ -42,15 +42,9 @@ export type AiNextAction = AiNextActionFor<GameKind>
 export type AiTurnDecisionFor<Kind extends GameKind> = {
 	currentPlan: string
 	nextAction: AiNextActionFor<Kind>
-	observation: string
 }
 
 export type AiTurnDecision = AiTurnDecisionFor<GameKind>
-
-export type AiTurnObservation = {
-	observation: string
-	turnKey: string
-}
 
 export type HeartsPassMemoryEntry = {
 	cards: VisibleCard[]

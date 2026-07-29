@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "3D"
-	},
-	"observation": "3D safely ducks the 4D; P1 still holds AS, 2H, and KH."
+	}
 }

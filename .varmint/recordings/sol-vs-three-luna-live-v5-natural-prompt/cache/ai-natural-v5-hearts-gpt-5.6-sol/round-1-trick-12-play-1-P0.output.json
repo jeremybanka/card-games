@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "8S"
-	},
-	"observation": "All opposing spades are exposed; 8S is guaranteed to win."
+	}
 }

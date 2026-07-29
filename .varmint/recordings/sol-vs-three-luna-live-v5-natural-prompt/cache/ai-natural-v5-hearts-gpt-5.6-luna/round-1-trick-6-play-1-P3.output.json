@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "7D"
-	},
-	"observation": "7D is the safest lead; lower diamonds may still be held, while QD/AD are dangerous."
+	}
 }

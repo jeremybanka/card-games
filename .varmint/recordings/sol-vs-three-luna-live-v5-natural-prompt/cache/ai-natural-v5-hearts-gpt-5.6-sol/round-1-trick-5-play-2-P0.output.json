@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "9S"
-	},
-	"observation": "9S stays below the led JS while shedding the highest safe spade."
+	}
 }

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "AC"
-	},
-	"observation": "P0 void C/D; AC forces a discard."
+	}
 }

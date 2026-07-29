@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "QD"
-	},
-	"observation": "Following diamonds; QD is the lower legal winner, with no points currently in the trick."
+	}
 }

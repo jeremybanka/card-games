@@ -1164,7 +1164,7 @@ describe("recorded player versus Terra table", () => {
 			expect(within(strategyLog).getAllByRole("article")).toHaveLength(27)
 			expect(within(strategyLog).getByText("PASS")).not.toBeNull()
 			expect(within(strategyLog).getByText("TRICK 26")).not.toBeNull()
-			expect(within(strategyLog).getAllByText("Saw")).toHaveLength(27)
+			expect(within(strategyLog).queryByText("Saw")).toBeNull()
 			expect(within(strategyLog).getAllByText("Thought")).toHaveLength(27)
 			expect(within(strategyLog).getAllByText("Did")).toHaveLength(27)
 			expect(strategyLog.textContent).not.toContain("card::")

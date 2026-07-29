@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "QH"
-	},
-	"observation": "QH is the only card and follows hearts; P1's KH currently wins, so QH adds no win risk."
+	}
 }

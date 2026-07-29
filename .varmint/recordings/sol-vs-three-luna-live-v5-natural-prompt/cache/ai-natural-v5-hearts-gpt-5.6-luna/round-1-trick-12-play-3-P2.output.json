@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "7H"
-	},
-	"observation": "Both cards follow legally; 7H is safer to discard under JH."
+	}
 }

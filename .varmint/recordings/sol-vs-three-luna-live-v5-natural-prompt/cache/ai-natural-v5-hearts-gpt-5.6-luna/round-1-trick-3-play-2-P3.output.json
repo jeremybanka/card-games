@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "8C"
-	},
-	"observation": "8C is the lowest legal club and least likely to win the trick."
+	}
 }

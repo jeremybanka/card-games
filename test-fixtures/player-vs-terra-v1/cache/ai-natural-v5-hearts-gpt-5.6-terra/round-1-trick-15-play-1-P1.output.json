@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "8C"
-	},
-	"observation": "P0 has no clubs or diamonds left; 8C forces a discard and preserves higher winners."
+	}
 }

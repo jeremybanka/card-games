@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "6D"
-	},
-	"observation": "Must cover 2D; 6D is the lowest forced winner."
+	}
 }

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "QH"
-	},
-	"observation": "P0 has only passed high spades left."
+	}
 }

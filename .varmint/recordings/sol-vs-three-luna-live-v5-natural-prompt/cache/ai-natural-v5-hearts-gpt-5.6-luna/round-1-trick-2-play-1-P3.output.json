@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "4D"
-	},
-	"observation": "Hearts remain intact. 4D is my lowest safe-looking lead; exposed clubs are 2C, 4C, 5C, 6C."
+	}
 }

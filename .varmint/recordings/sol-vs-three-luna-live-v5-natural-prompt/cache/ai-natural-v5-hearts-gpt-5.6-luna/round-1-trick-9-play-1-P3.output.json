@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KC"
-	},
-	"observation": "KC is the safer lead; AD could win a diamond trick."
+	}
 }

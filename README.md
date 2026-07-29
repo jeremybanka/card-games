@@ -98,8 +98,8 @@ records, accepted actions, full server state, trick winners, and scores. It then
 performs a cache-only replay and requires the same decisions, actions, and final
 state without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
 recorder to stream the same complete local spans exposed by the debug test
-commands. CI only consumes a recording after a test is explicitly wired to
-replay that fixture in strict `read` mode.
+commands. CI replays the checked-in v5 Sol/Luna recording in strict `read` mode,
+requiring all 56 decisions to be cache hits with no model calls or fallbacks.
 
 The player-versus-Terra Testing Library test replays the browser recording in
 `test-fixtures/player-vs-terra-v1/` with the invariant

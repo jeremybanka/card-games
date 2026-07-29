@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "TH"
-	},
-	"observation": "P0 has two hearts and three passed high spades remaining."
+	}
 }

@@ -135,7 +135,6 @@ export function bindAiSeatActions<
 								.getState(runtime.state.aiStrategyReviewTurnsAtom)
 								.map((turn) => ({
 									...turn,
-									observation: strategyTextForReview(turn.observation),
 									plan: strategyTextForReview(turn.plan),
 								}))
 							const review = {

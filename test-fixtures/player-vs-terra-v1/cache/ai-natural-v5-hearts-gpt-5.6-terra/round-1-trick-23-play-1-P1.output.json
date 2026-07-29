@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "JH"
-	},
-	"observation": "P0 must follow with remaining 6H."
+	}
 }

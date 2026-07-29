@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "TD"
-	},
-	"observation": "Forced diamond play; TD loses to QD, so P3 should win. No points are added."
+	}
 }

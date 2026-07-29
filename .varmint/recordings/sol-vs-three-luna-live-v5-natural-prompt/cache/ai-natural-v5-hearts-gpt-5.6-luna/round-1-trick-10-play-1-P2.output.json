@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "4H"
-	},
-	"observation": "Leading 4H minimizes the chance of winning while shedding a heart."
+	}
 }

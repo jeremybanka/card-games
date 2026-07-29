@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "TH"
-	},
-	"observation": "Void in spades, so TH is the only legal play."
+	}
 }

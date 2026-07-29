@@ -17,12 +17,15 @@ import {
 	assertMatchingGameKinds,
 	registeredGameAdapter,
 } from "../game/game-registry.ts"
+import {
+	passRecipientSeatIndex,
+	passSenderSeatIndex,
+} from "../game/seat-order.ts"
 import { aiCardValue } from "./ai-card-value.ts"
-import type { AiMemoryLedgerEntry, AiTurnObservation } from "./ai-types.ts"
+import type { AiMemoryLedgerEntry } from "./ai-types.ts"
 
 type CommonAiGameContext = {
 	memoryLedger: AiMemoryLedgerEntry[]
-	observations: AiTurnObservation[]
 	playerId: PlayerId
 	previousPlan: string
 }
@@ -239,13 +242,82 @@ function knownVoids(context: AiGameContextFor<"hearts">): string[] {
 	})
 }
 
+function heartsPoints(card: Pick<VisibleCard, "rank" | "suit">): number {
+	if (card.suit === "hearts") return 1
+	return card.suit === "spades" && card.rank === 12 ? 13 : 0
+}
+
+function legalPlayMeaning(
+	context: AiGameContextFor<"hearts">,
+	card: VisibleCard,
+): string {
+	const trick = context.publicView.currentTrick
+	if (trick.length === 0) return "leads"
+	const leadSuit = trick[0]?.card.suit
+	if (card.suit !== leadSuit) {
+		const points = heartsPoints(card)
+		return points === 0
+			? "discards; cannot win"
+			: `discards ${points} point${points === 1 ? "" : "s"}; cannot win`
+	}
+	const currentLeader = trick.reduce((leader, play) =>
+		play.card.suit === leadSuit && play.card.rank > leader.card.rank
+			? play
+			: leader,
+	)
+	if (card.rank < currentLeader.card.rank) {
+		return `ducks ${aiCardValue(currentLeader.card)}`
+	}
+	const playerCount = context.publicView.players.length
+	const playPosition = trick.length + 1
+	if (playPosition === playerCount) {
+		const points =
+			trick.reduce((total, play) => total + heartsPoints(play.card), 0) +
+			heartsPoints(card)
+		return `takes the trick; ${points} point${points === 1 ? "" : "s"}`
+	}
+	const remaining = playerCount - playPosition
+	return `overtakes ${aiCardValue(currentLeader.card)}; ${remaining} player${
+		remaining === 1 ? "" : "s"
+	} ${remaining === 1 ? "remains" : "remain"}`
+}
+
 function renderHeartsFacts(context: AiGameContextFor<"hearts">): string {
 	const me = playerAlias(context, context.playerId)
 	const playerCount = context.publicView.players.length
 	const playPosition = context.publicView.currentTrick.length + 1
+	const playerIndex = context.publicView.players.findIndex(
+		(player) => player.id === context.playerId,
+	)
+	const passRecipient =
+		context.publicView.players[
+			passRecipientSeatIndex(
+				playerIndex,
+				playerCount,
+				context.publicView.passDirection,
+			)
+		]
+	const passSender =
+		context.publicView.players[
+			passSenderSeatIndex(
+				playerIndex,
+				playerCount,
+				context.publicView.passDirection,
+			)
+		]
 	const phaseLine =
 		context.publicView.phase === "passing"
-			? `Hearts, round ${context.publicView.roundNumber}. Pass ${context.publicView.passDirection}. You are ${me}.`
+			? `Hearts, round ${context.publicView.roundNumber}. Pass ${
+					context.publicView.passDirection
+				}. You are ${me}. You pass to ${
+					passRecipient === undefined
+						? "an unknown player"
+						: playerAlias(context, passRecipient.id)
+				} and receive from ${
+					passSender === undefined
+						? "an unknown player"
+						: playerAlias(context, passSender.id)
+				}.`
 			: `Hearts, round ${context.publicView.roundNumber}, trick ${
 					context.publicView.trickNumber + 1
 				}. Hearts are ${
@@ -262,7 +334,7 @@ function renderHeartsFacts(context: AiGameContextFor<"hearts">): string {
 	const hand = context.privateView.cards.map(aiCardValue).join(", ") || "empty"
 	const legal = context.privateView.cards
 		.filter((card) => context.privateView.playableCardIds.includes(card.id))
-		.map(aiCardValue)
+		.map((card) => `${aiCardValue(card)} (${legalPlayMeaning(context, card)})`)
 		.join(", ")
 	const currentTrick =
 		context.publicView.currentTrick.length === 0
@@ -342,12 +414,6 @@ function renderLegacyGameFacts(context: AiGameContext): string {
 								: ""
 						}`,
 				)
-	const observations =
-		context.observations.length === 0
-			? ["- none"]
-			: context.observations
-					.slice(-12)
-					.map((entry) => `- ${entry.turnKey}: ${entry.observation}`)
 	const memoryLedger =
 		context.memoryLedger.length === 0
 			? ["- none"]
@@ -382,9 +448,6 @@ function renderLegacyGameFacts(context: AiGameContext): string {
 		"",
 		"## Private pass memory",
 		...memoryLedger,
-		"",
-		"## Recent private observations",
-		...observations,
 		"",
 		"Information boundary: exact values appear only in your hand/pass memory and public tricks; opponent hands expose counts only. Deck values are unique, so compact card codes preserve card identity after IDs are omitted from history.",
 	].join("\n")

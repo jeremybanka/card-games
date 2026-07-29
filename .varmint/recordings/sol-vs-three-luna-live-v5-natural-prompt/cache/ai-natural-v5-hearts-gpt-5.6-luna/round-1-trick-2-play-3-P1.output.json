@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "2D"
-	},
-	"observation": "Following diamonds with 2D, which cannot win over P0’s 3D."
+	}
 }

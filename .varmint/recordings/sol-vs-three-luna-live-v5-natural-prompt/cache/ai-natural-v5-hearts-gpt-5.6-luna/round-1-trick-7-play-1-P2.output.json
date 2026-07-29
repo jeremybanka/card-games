@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "9D"
-	},
-	"observation": "Diamonds are mostly exposed; P3 holds QD and should win this zero-point trick."
+	}
 }

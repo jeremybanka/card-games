@@ -559,6 +559,39 @@ describe("four-bot deterministic realtime game", () => {
 		}
 	}, 20_000)
 
+	it("replays the checked-in strategic Sol and Luna fixture", async () => {
+		const cacheDirectory = join(
+			process.cwd(),
+			".varmint",
+			"recordings",
+			"sol-vs-three-luna-live-v5-natural-prompt",
+			"cache",
+		)
+		const decisions: LiveDecisionRecord[] = []
+		const modelResponses: LiveModelResponseRecord[] = []
+		const fallbacks: LiveFallbackRecord[] = []
+		const replayed = await runBotTable("read", cacheDirectory, {
+			createGenerator: createLiveGeneratorFactory(
+				"cache-only",
+				decisions,
+				modelResponses,
+				fallbacks,
+			),
+			seed: liveInvariantSeed,
+		})
+
+		expect(decisions).toHaveLength(56)
+		expect(decisions.every((decision) => decision.source === "cache")).toBe(
+			true,
+		)
+		expect(modelResponses).toHaveLength(0)
+		expect(fallbacks).toHaveLength(0)
+		expect(replayed.cacheOutputCount).toBe(56)
+		expect(
+			replayed.finalState.players.map((player) => player.roundPoints),
+		).toEqual([12, 0, 14, 0])
+	}, 20_000)
+
 	const liveIt = process.env.RECORD_LIVE_AI_GAME === "1" ? it : it.skip
 
 	liveIt(

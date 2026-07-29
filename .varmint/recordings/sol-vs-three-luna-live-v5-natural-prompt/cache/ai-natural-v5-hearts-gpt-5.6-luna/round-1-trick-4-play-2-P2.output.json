@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "4S"
-	},
-	"observation": "Followed spade with 4S; TS remains in hand."
+	}
 }

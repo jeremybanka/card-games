@@ -217,7 +217,6 @@ async function createAiPlayerRuntime(
 		lastAttemptedFingerprint = ""
 		silo.setState(state.aiMemoryLedgerAtom, [])
 		silo.setState(state.aiStrategyReviewTurnsAtom, [])
-		silo.setState(state.aiTurnObservationsAtom, [])
 		silo.setState(state.aiCurrentPlanAtom, "")
 		silo.setState(state.aiNextActionAtom, null)
 	}
@@ -337,15 +336,9 @@ async function createAiPlayerRuntime(
 					const turnKey = `round-${currentGame.roundNumber}-trick-${currentGame.trickNumber}`
 					silo.setState(state.aiCurrentPlanAtom, decision.currentPlan)
 					silo.setState(state.aiNextActionAtom, decision.nextAction)
-					silo.setState(state.aiTurnObservationsAtom, (observations) => [
-						...observations.slice(-23),
-						{ observation: decision.observation, turnKey },
-					])
 					span.event("ai.state.updated", {
 						currentPlan: decision.currentPlan,
 						nextAction: decision.nextAction,
-						observation: decision.observation,
-						observationJournal: silo.getState(state.aiTurnObservationsAtom),
 						turnKey,
 					})
 
@@ -403,7 +396,6 @@ async function createAiPlayerRuntime(
 								decision.nextAction,
 								privateViewAtStart,
 							),
-							observation: decision.observation,
 							phase: reviewPhase,
 							plan: decision.currentPlan,
 							trickNumber: gameAtStart.trickNumber,

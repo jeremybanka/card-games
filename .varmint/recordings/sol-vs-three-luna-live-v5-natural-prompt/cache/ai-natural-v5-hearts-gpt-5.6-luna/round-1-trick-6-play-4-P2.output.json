@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KD"
-	},
-	"observation": "KD follows diamonds and cannot win this trick; P1's 8D remains highest."
+	}
 }

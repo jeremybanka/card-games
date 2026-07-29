@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "QC"
-	},
-	"observation": "QC is less likely to win than KC; AD is the only remaining diamond and would certainly win."
+	}
 }

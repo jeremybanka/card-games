@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "6C"
-	},
-	"observation": "Lead 6C; hearts remain closed."
+	}
 }

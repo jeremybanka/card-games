@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "7C"
-	},
-	"observation": "Clubs 2C, 4C, 5C, and 6C are exposed; 7C is the lowest club available."
+	}
 }

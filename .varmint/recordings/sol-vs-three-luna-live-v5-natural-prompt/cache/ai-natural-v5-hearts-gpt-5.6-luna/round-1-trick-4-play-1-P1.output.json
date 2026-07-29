@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "2S"
-	},
-	"observation": "Hearts remain intact; 2S is the safest lead and cannot win this trick."
+	}
 }

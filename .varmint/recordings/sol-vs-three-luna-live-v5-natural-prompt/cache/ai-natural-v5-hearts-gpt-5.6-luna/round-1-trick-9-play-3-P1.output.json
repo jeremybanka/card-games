@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "2H"
-	},
-	"observation": "Void in clubs, so 2H is legal and cannot win over P3’s KC."
+	}
 }

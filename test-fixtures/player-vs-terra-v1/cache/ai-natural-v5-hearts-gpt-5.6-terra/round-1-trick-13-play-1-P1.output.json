@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "TS"
-	},
-	"observation": "P0 holds passed QS/KS/AS; TS pressures a spade cover."
+	}
 }

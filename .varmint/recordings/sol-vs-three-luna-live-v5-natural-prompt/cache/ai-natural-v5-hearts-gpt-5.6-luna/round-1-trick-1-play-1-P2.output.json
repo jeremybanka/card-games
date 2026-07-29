@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "2C"
-	},
-	"observation": "2C is the only legal lead. Passed QD, AD, JS to P3; received JC, AC, KD from P1."
+	}
 }

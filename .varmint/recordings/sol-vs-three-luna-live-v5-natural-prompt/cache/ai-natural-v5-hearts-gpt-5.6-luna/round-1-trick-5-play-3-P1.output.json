@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "3S"
-	},
-	"observation": "Follow suit low with 3S; P3 remains likely to win."
+	}
 }

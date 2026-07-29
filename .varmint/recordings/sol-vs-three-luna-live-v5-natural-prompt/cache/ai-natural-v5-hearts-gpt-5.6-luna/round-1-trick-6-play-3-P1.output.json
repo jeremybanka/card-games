@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "8D"
-	},
-	"observation": "Play 8D under P3's 7D and P0's 6D; TD could win if P2 lacks a higher diamond."
+	}
 }

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "3H"
-	},
-	"observation": "P0's AH controls the trick, so 3H safely loses and minimizes exposure."
+	}
 }

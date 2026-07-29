@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "AD"
-	},
-	"observation": "Only legal lead is AD; P0 is void diamonds."
+	}
 }

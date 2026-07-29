@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "7S"
-	},
-	"observation": "Only 7S remains and is legal."
+	}
 }

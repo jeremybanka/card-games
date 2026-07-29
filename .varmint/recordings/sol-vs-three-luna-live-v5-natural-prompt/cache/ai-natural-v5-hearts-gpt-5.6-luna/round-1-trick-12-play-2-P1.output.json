@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "JH"
-	},
-	"observation": "Void in spades; JH is less likely than KH to win this trick."
+	}
 }

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "9C"
-	},
-	"observation": "P0's QC covers; 9C safely loses."
+	}
 }

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "3C"
-	},
-	"observation": "Follow 2C with 3C; retains club control."
+	}
 }

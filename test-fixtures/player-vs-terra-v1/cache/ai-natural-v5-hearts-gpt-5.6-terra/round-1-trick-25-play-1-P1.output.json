@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KH"
-	},
-	"observation": "P0 is void hearts with KS/AS remaining."
+	}
 }

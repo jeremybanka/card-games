@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "AS"
-	},
-	"observation": "Void in clubs; discard AS safely. Hearts remain intact."
+	}
 }

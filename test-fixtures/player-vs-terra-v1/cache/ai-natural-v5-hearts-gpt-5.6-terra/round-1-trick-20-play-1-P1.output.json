@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "8H"
-	},
-	"observation": "P0 has passed QS/KS/AS and only lower hearts remain."
+	}
 }

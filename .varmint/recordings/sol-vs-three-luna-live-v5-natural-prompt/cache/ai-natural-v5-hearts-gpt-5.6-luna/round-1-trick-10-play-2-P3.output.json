@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "5H"
-	},
-	"observation": "Following hearts with 5H minimizes the chance of winning this trick."
+	}
 }

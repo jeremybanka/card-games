@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "6C"
-	},
-	"observation": "Followed clubs with the lowest club, retaining higher clubs to avoid taking future tricks."
+	}
 }

@@ -11,7 +11,11 @@ import {
 	type PlayerId,
 	type VisibleCard,
 } from "../game/game-types.ts"
-import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
+import {
+	renderAiGameFacts,
+	type AiGameContext,
+	type AiGameContextFor,
+} from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { wrapAiGeneratorWithVarmint } from "./ai-generator.node.ts"
 import { isAiTurnReady } from "./ai-player.node.ts"
@@ -87,7 +91,6 @@ function gameContext(
 	}
 	return {
 		memoryLedger: [],
-		observations: [],
 		playerId: aiPlayerId,
 		previousPlan: "",
 		privateView,
@@ -156,7 +159,6 @@ function ohHellContext(
 	}
 	return {
 		memoryLedger: [],
-		observations: [],
 		playerId: aiPlayerId,
 		previousPlan: "",
 		privateView,
@@ -196,7 +198,6 @@ describe("AI Hearts generators", () => {
 			strategy.parseDecision({
 				currentPlan: "Bid.",
 				nextAction: { action: "submitBid", bid: 1 },
-				observation: "A bid is available.",
 			}).ok,
 		).toBe(false)
 	})
@@ -240,11 +241,109 @@ describe("AI Hearts generators", () => {
 		)
 
 		expect(facts).toContain("Your hand: QS.")
-		expect(facts).toContain("Legal plays: QS.")
+		expect(facts).toContain("Legal plays: QS (leads).")
 		expect(facts).toContain("P0 (you), Terra AI: score 0")
 		expect(facts).not.toContain("card::opaque-opponent-card")
 		expect(facts).not.toContain("card::own-queen")
 		expect(facts).not.toContain("AI:gpt")
+	})
+
+	it("labels the deterministic meaning of every legal Hearts play", () => {
+		const ten = card("ten-clubs", "clubs", 10)
+		const queen = card("queen-clubs", "clubs", 12)
+		const jack = card("jack-clubs", "clubs", 11)
+		const finalPlay = renderAiGameFacts(
+			gameContext(
+				{
+					cards: [ten, queen],
+					passSubmitted: false,
+					playableCardIds: [ten.id, queen.id],
+					playerId: aiPlayerId,
+				},
+				{
+					currentTrick: [{ card: jack, playerId: humanPlayerId }],
+				},
+			),
+		)
+
+		expect(finalPlay).toContain("TC (ducks JC)")
+		expect(finalPlay).toContain("QC (takes the trick; 0 points)")
+
+		const queenHeart = card("queen-heart", "hearts", 12)
+		const aceDiamond = card("ace-diamond", "diamonds", 14)
+		const offSuit = renderAiGameFacts(
+			gameContext(
+				{
+					cards: [queenHeart, aceDiamond],
+					passSubmitted: false,
+					playableCardIds: [queenHeart.id, aceDiamond.id],
+					playerId: aiPlayerId,
+				},
+				{
+					currentTrick: [
+						{
+							card: card("eight-spades", "spades", 8),
+							playerId: humanPlayerId,
+						},
+					],
+				},
+			),
+		)
+
+		expect(offSuit).toContain("QH (discards 1 point; cannot win)")
+		expect(offSuit).toContain("AD (discards; cannot win)")
+
+		const eightDiamond = card("eight-diamond", "diamonds", 8)
+		const overtakeContext = gameContext(
+			{
+				cards: [eightDiamond],
+				passSubmitted: false,
+				playableCardIds: [eightDiamond.id],
+				playerId: aiPlayerId,
+			},
+			{
+				currentTrick: [
+					{
+						card: card("seven-diamond", "diamonds", 7),
+						playerId: humanPlayerId,
+					},
+				],
+			},
+		)
+		const heartsOvertakeContext = overtakeContext as AiGameContextFor<"hearts">
+		const opponent = heartsOvertakeContext.publicView.players[1]!
+		heartsOvertakeContext.publicView.players.push(
+			{
+				...opponent,
+				id: "user::00000000-0000-4000-8000-0000000000c3",
+				name: "Grace",
+			},
+			{
+				...opponent,
+				id: "user::00000000-0000-4000-8000-0000000000d4",
+				name: "Linus",
+			},
+		)
+
+		expect(renderAiGameFacts(overtakeContext)).toContain(
+			"8D (overtakes 7D; 2 players remain)",
+		)
+	})
+
+	it("names the pass recipient and sender explicitly", () => {
+		const context = gameContext(
+			{
+				cards: [],
+				passSubmitted: false,
+				playableCardIds: [],
+				playerId: aiPlayerId,
+			},
+			{ passDirection: "across", phase: "passing" },
+		)
+
+		expect(renderAiGameFacts(context)).toContain(
+			"You pass to P1 and receive from P1.",
+		)
 	})
 
 	it("renders exact private transfers and completed public tricks as memory", () => {
@@ -361,7 +460,6 @@ describe("AI Hearts generators", () => {
 					action: "playCard",
 					card: "AS",
 				},
-				observation: "I can see hidden cards.",
 			}),
 			{ onFallback },
 		)
@@ -377,7 +475,6 @@ describe("AI Hearts generators", () => {
 						action: "playCard",
 						card: "AS",
 					},
-					observation: "I can see hidden cards.",
 				},
 				reason: "illegal_action",
 			}),
@@ -412,7 +509,6 @@ describe("AI Hearts generators", () => {
 		const base = vi.fn(async (_context: AiGameContext) => ({
 			currentPlan: "Lead the required lowest club.",
 			nextAction: { action: "playCard" as const, card: "2C" as const },
-			observation: "The opening lead is forced.",
 		}))
 		const cacheDirectory = await mkdtemp(join(tmpdir(), "wayfarer-prompt-"))
 		try {
@@ -466,14 +562,12 @@ describe("AI Oh Hell strategy", () => {
 			strategy.parseDecision({
 				currentPlan: "Pass.",
 				nextAction: { action: "passCards", cards: ["2C"] },
-				observation: "Cards can be passed.",
 			}).ok,
 		).toBe(false)
 		expect(
 			strategy.parseDecision({
 				currentPlan: "Bid one.",
 				nextAction: { action: "submitBid", bid: 1 },
-				observation: "One is legal.",
 			}).ok,
 		).toBe(true)
 		expect(

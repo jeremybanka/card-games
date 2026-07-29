@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "8D"
-	},
-	"observation": "P0 has only exposed 2D; 8D is the lowest safe non-heart lead."
+	}
 }

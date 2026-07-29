@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "9C"
-	},
-	"observation": "Must follow clubs. QC currently leads the trick."
+	}
 }

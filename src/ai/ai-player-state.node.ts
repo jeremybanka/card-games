@@ -18,7 +18,6 @@ import type {
 	AiMemoryLedgerEntry,
 	AiNextAction,
 	AiTurnDecision,
-	AiTurnObservation,
 } from "./ai-types.ts"
 
 export type AiPlayerSiloState = {
@@ -32,8 +31,6 @@ export type AiPlayerSiloState = {
 	aiRenderedGameFactsSelector: ReadonlyPureSelectorToken<string>
 	aiStrategicTurnSelector: ReadonlyPureSelectorToken<Loadable<AiTurnDecision>>
 	aiStrategyReviewTurnsAtom: RegularAtomToken<AiStrategyReviewTurn[]>
-	aiTurnObservationSelector: ReadonlyPureSelectorToken<Loadable<string>>
-	aiTurnObservationsAtom: RegularAtomToken<AiTurnObservation[]>
 }
 
 export function createAiPlayerSiloState(
@@ -43,10 +40,6 @@ export function createAiPlayerSiloState(
 ): AiPlayerSiloState {
 	silo.install([publicGameViewAtom, privatePlayerViewAtom])
 
-	const aiTurnObservationsAtom = silo.atom<AiTurnObservation[]>({
-		key: "aiTurnObservations",
-		default: [],
-	})
 	const aiCurrentPlanAtom = silo.atom<string>({
 		key: "aiCurrentPlan",
 		default: "",
@@ -83,7 +76,6 @@ export function createAiPlayerSiloState(
 		)
 		return {
 			memoryLedger: get(aiMemoryLedgerAtom),
-			observations: get(aiTurnObservationsAtom),
 			playerId,
 			previousPlan: get(aiCurrentPlanAtom),
 			...strategicViews,
@@ -105,13 +97,6 @@ export function createAiPlayerSiloState(
 				? generateTurn(context)
 				: fallbackAiDecision(context)
 		},
-	})
-	const aiTurnObservationSelector = silo.selector<Loadable<string>>({
-		key: "aiTurnObservation",
-		get: ({ get }) =>
-			Promise.resolve(get(aiStrategicTurnSelector)).then(
-				(decision) => decision.observation,
-			),
 	})
 	const aiGeneratedCurrentPlanSelector = silo.selector<Loadable<string>>({
 		key: "aiGeneratedCurrentPlan",
@@ -137,7 +122,5 @@ export function createAiPlayerSiloState(
 		aiRenderedGameFactsSelector,
 		aiStrategicTurnSelector,
 		aiStrategyReviewTurnsAtom,
-		aiTurnObservationSelector,
-		aiTurnObservationsAtom,
 	}
 }

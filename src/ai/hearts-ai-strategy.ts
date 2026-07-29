@@ -17,7 +17,6 @@ const heartsAiTurnDecisionType = type({
 		action: "'playCard'",
 		card: "string",
 	}),
-	observation: "string",
 })
 
 const cardValuePattern = "^(?:[2-9TJQKA])[CDHS]$"
@@ -53,16 +52,9 @@ const heartsAiTurnDecisionJsonSchema: JSONSchema7 = {
 				},
 			],
 		},
-		observation: { type: "string" },
 	},
-	required: ["currentPlan", "nextAction", "observation"],
+	required: ["currentPlan", "nextAction"],
 	type: "object",
-}
-
-function fallbackObservation(context: AiGameContextFor<"hearts">): string {
-	return context.publicView.currentTrick.length === 0
-		? "A new trick is ready."
-		: `${context.publicView.currentTrick.length} card(s) are visible in the current trick.`
 }
 
 function chooseHeartsPass(
@@ -106,7 +98,6 @@ function fallbackHeartsDecision(
 				? "Reduce immediate point-card risk while preserving flexible low cards."
 				: "Avoid taking point-heavy tricks when possible and discard dangerous cards when void.",
 		nextAction,
-		observation: fallbackObservation(context),
 	}
 }
 
@@ -134,8 +125,7 @@ function isLegalHeartsAction(
 export const heartsAiStrategy: AiGameStrategy<"hearts"> = {
 	fallbackDecision: fallbackHeartsDecision,
 	isLegalAction: isLegalHeartsAction,
-	outputDescription:
-		"A legal Hearts action plus a private observation and strategic plan.",
+	outputDescription: "A legal Hearts action plus a reusable strategic plan.",
 	outputName: "hearts_turn_decision",
 	outputSchema: heartsAiTurnDecisionJsonSchema,
 	parseDecision: (input) => {
@@ -178,13 +168,14 @@ export const heartsAiStrategy: AiGameStrategy<"hearts"> = {
 	systemPrompt: [
 		"You are a strategic Hearts player seated at a private multiplayer table.",
 		"Choose exactly one legal next action using a literal card value from the supplied hand.",
-		"Success means: obey the current phase, follow suit, minimize expected points, track exposed cards, and return a concise observation and reusable plan.",
+		"Success means: obey the current phase, follow suit, minimize expected points, track exposed cards, and return a concise reusable plan.",
 		"Cards use rank then suit: T/J/Q/K/A and C/D/H/S.",
+		"Treat each parenthesized legal-play label as authoritative tactical fact.",
 		"Use private pass memory and completed tricks as exact memory. Cards you passed remain known to be with their recipient until publicly played.",
 		"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
 		"For passing, return exactly three different card values from your private hand.",
 		"For play, return exactly one listed legal card value.",
-		"Keep observation and plan terse.",
+		"Keep the plan terse.",
 	].join("\n"),
 	usesTurnGenerator: () => true,
 }

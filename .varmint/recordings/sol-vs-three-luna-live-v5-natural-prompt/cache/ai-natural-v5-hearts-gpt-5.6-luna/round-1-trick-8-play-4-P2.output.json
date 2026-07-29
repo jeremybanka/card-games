@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "JC"
-	},
-	"observation": "QC is winning; JC follows suit without overtaking it."
+	}
 }

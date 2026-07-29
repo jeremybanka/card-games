@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "4C"
-	},
-	"observation": "Following clubs; 4C cannot win against 5C and 6C."
+	}
 }

@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "3C"
-	},
-	"observation": "Clubs led; 3C stays below 8C and minimizes win risk."
+	}
 }

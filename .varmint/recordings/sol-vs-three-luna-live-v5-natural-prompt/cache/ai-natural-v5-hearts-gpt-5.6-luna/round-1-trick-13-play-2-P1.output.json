@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KH"
-	},
-	"observation": "Forced to discard KH while void in spades; P0 currently leads 7S."
+	}
 }

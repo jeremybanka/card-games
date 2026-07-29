@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "9D"
-	},
-	"observation": "P0's remaining diamonds are 4D 5D 7D TD; 9D loses to TD."
+	}
 }

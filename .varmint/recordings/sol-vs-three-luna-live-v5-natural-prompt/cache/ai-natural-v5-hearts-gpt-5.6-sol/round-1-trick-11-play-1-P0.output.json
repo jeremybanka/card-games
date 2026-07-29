@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "KS"
-	},
-	"observation": "Only 7S, 8S, and KS remain in spades, all in hand."
+	}
 }

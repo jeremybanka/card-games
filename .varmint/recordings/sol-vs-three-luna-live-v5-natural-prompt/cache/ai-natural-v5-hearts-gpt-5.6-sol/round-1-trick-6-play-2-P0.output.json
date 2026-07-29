@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "6D"
-	},
-	"observation": "Playing 6D stays below the 7D and avoids likely taking the trick."
+	}
 }

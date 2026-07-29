@@ -3,6 +3,5 @@
 	"nextAction": {
 		"action": "playCard",
 		"card": "QS"
-	},
-	"observation": "Void in clubs; KC lead safely absorbs QS."
+	}
 }
