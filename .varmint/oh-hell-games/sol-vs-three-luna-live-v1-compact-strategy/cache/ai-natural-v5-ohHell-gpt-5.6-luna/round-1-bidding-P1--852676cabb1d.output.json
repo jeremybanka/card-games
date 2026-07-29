@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 2; rely on AD and TS, avoid overcommitting QH or low cards.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 2
+	}
+}

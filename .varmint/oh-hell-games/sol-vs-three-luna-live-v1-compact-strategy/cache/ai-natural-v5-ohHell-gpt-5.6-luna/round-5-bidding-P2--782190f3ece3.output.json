@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1; play 4C to take a trick whenever it can win.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

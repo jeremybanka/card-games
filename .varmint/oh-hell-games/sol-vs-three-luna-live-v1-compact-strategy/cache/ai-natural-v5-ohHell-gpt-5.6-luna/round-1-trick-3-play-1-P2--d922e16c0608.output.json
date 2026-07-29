@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the low trump to pressure opponents; if it loses, use 3C or 2D to seek the needed final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2S"
+	}
+}

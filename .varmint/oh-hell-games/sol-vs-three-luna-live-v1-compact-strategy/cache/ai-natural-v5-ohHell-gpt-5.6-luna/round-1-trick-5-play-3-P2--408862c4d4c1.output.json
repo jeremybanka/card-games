@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard 3C; P3 may win the trick, leaving my bid unmet.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3C"
+	}
+}

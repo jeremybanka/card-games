@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take this trump trick; preserve AD for exactly one further winner and avoid QH overtricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

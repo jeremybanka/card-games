@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1 for the reliable ace of clubs; avoid risking extra tricks with the king of spades or queen of diamonds.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

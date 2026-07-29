@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 2; preserve AD and TS as primary winners, using low leads to avoid accidental extra tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8C"
+	}
+}

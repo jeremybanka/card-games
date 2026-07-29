@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at zero; discard 4D safely.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4D"
+	}
+}

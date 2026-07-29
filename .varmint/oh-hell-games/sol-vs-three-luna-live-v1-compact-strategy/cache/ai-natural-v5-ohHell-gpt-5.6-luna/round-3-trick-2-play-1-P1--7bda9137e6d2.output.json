@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Avoid winning this trick; lead a card likely to be overtaken, then discard safely on the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QD"
+	}
+}

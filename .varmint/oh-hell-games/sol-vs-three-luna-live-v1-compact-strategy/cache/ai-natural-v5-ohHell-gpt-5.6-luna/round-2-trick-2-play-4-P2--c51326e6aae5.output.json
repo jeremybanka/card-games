@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take this trick with KS to reach my bid of 1; avoid winning further tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KS"
+	}
+}

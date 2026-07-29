@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take the guaranteed trick now; preserve low cards for a later chance to reach exactly two.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AS"
+	}
+}

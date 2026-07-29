@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Win with KC if safe; preserve AS as the strongest later trick and use 2S only as needed.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KC"
+	}
+}

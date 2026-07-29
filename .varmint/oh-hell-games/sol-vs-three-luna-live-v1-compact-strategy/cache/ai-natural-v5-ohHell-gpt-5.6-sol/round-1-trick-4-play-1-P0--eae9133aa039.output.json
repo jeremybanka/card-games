@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at 2 tricks; lead the lower card and avoid the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JD"
+	}
+}

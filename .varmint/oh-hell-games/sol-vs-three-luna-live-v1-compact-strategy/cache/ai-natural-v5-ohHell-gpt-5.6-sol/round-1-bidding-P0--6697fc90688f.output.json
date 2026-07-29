@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Target 2 tricks: use spades to ruff, preserve 9S, and avoid cashing KH unless favorable.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 2
+	}
+}

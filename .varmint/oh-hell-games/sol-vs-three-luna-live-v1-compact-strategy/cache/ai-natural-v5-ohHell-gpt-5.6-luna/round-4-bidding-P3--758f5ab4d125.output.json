@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 0; avoid winning either trick by shedding under leads.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

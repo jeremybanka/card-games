@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take the required trick with the club ruff.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4C"
+	}
+}

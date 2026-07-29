@@ -14,6 +14,7 @@
 		"lint": "vp lint && eslint . && lasertag check",
 		"preview": "vite preview",
 		"record:ai-game": "node --env-file-if-exists=.env scripts/record-ai-game.node.ts",
+		"record:oh-hell-ai-game": "node --env-file-if-exists=.env scripts/record-oh-hell-ai-game.node.ts",
 		"spellcheck": "cspell .",
 		"start": "node --env-file-if-exists=.env server/main.node.ts",
 		"test": "vp test --run",

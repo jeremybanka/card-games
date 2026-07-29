@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Maintain bid 0; discard the higher diamond now, retaining 3D to minimize final-trick risk.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7D"
+	}
+}

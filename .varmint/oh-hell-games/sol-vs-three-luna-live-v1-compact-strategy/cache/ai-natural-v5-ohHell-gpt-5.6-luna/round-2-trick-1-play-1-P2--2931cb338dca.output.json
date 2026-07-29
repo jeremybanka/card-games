@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead KD as the main trick attempt; preserve KS for a later chance if KD is beaten.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KD"
+	}
+}
