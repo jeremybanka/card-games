@@ -51,7 +51,7 @@ export type OhHellPhase =
 
 export type PassDirection = "left" | "right" | "across" | "hold"
 
-type CommonPublicPlayerView = {
+type TrickTakingPublicPlayerFields = {
 	aiModel: AiModelId | null
 	bid?: number | null
 	capturedCardIds?: CardId[]
@@ -65,13 +65,13 @@ type CommonPublicPlayerView = {
 	tricksWon?: number
 }
 
-export type HeartsPublicPlayerView = CommonPublicPlayerView & {
+export type HeartsPublicPlayerView = TrickTakingPublicPlayerFields & {
 	bid?: never
 	capturedCardIds: CardId[]
 	tricksWon?: never
 }
 
-export type OhHellPublicPlayerView = CommonPublicPlayerView & {
+export type OhHellPublicPlayerView = TrickTakingPublicPlayerFields & {
 	bid: number | null
 	capturedCardIds?: never
 	tricksWon: number
@@ -79,7 +79,7 @@ export type OhHellPublicPlayerView = CommonPublicPlayerView & {
 
 export type PublicPlayerView = HeartsPublicPlayerView | OhHellPublicPlayerView
 
-type CommonPublicGameView = {
+type TrickTakingPublicGameFields = {
 	completedTricks: CompletedTrick[]
 	currentPlayerId: PlayerId | null
 	currentTrick: TrickPlay[]
@@ -94,7 +94,7 @@ type CommonPublicGameView = {
 	winnerIds: PlayerId[]
 }
 
-export type HeartsPublicGameView = CommonPublicGameView & {
+export type HeartsPublicGameView = TrickTakingPublicGameFields & {
 	bidPlayerId?: never
 	bidsSubmitted?: never
 	dealerId?: never
@@ -109,7 +109,7 @@ export type HeartsPublicGameView = CommonPublicGameView & {
 	trumpSuit?: never
 }
 
-export type OhHellPublicGameView = CommonPublicGameView & {
+export type OhHellPublicGameView = TrickTakingPublicGameFields & {
 	bidPlayerId: PlayerId | null
 	bidsSubmitted: number
 	dealerId: PlayerId | null
@@ -130,13 +130,13 @@ export type PublicGameViewFor<Kind extends GameKind> = Extract<
 	{ gameKind: Kind }
 >
 
-type CommonPrivatePlayerView = {
+type TrickTakingPrivatePlayerFields = {
 	cards: VisibleCard[]
 	playableCardIds: CardId[]
 	playerId: PlayerId | null
 }
 
-export type HeartsPrivatePlayerView = CommonPrivatePlayerView & {
+export type HeartsPrivatePlayerView = TrickTakingPrivatePlayerFields & {
 	awardedLeftoverCard: VisibleCard | null
 	gameKind: "hearts"
 	legalBids?: never
@@ -148,7 +148,7 @@ export type HeartsPrivatePlayerView = CommonPrivatePlayerView & {
 	passSubmitted: boolean
 }
 
-export type OhHellPrivatePlayerView = CommonPrivatePlayerView & {
+export type OhHellPrivatePlayerView = TrickTakingPrivatePlayerFields & {
 	awardedLeftoverCard?: never
 	gameKind: "ohHell"
 	legalBids: number[]
