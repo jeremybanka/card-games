@@ -9,8 +9,24 @@ import type {
 	VisibleCard,
 } from "./game/game-types.ts"
 import { orderedTrickReviewPlays } from "./game-presentation.ts"
+import { registeredGameAdapter } from "./game/game-registry.ts"
+import type { GameKind } from "./game/game-types.ts"
 import css from "./GameTransitions.module.css"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
+
+const transitionRules = {
+	hearts: {
+		ruleText: "Highest card in the led suit wins.",
+		showsLeftoverAward: true,
+	},
+	ohHell: {
+		ruleText: "Highest trump wins; otherwise highest card in the led suit wins.",
+		showsLeftoverAward: false,
+	},
+} as const satisfies Record<
+	GameKind,
+	{ ruleText: string; showsLeftoverAward: boolean }
+>
 
 function TurnBanner({
 	game,
@@ -59,6 +75,10 @@ function TrickReview({
 }): VNode {
 	const continueButton = useRef<HTMLButtonElement>(null)
 	const winner = game.players.find((player) => player.id === trick.winnerId)
+	const rules = registeredGameAdapter<(typeof transitionRules)[GameKind]>(
+		game.gameKind,
+		transitionRules,
+	)
 	const orderedPlays = orderedTrickReviewPlays(trick)
 	const middle = (orderedPlays.length - 1) / 2
 	const title = `${winner?.name ?? "The high card"} takes the trick`
@@ -71,7 +91,7 @@ function TrickReview({
 			<review-heading>
 				<small>TRICK {game.completedTricks.length}</small>
 				<h2>{title}</h2>
-				<span>Highest card in the led suit wins.</span>
+				<span>{rules.ruleText}</span>
 			</review-heading>
 			<review-stack aria-label="Completed trick">
 				{orderedPlays.map((play, index) => {
@@ -126,7 +146,7 @@ function TrickReview({
 					)
 				})}
 			</review-stack>
-			{trick.leftoverAward === null ? null : (
+			{!rules.showsLeftoverAward || trick.leftoverAward === null ? null : (
 				<leftover-award
 					aria-label={`${winner?.name ?? "The trick winner"} receives the leftover card`}
 				>
