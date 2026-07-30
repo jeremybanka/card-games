@@ -238,6 +238,11 @@ with a new empty set. After touching `first`, `second`, and `third`, calling
 The implementation should accumulate touched subkeys for the lifetime of the
 collection rather than resetting the set on each `.for(...)` call.
 
+Varmint 0.5.20 fixes this defect. We verified the patch first against an
+isolated cache, where all three touched cases survived and an injected stale
+case was removed, then against the repository's authoritative replay suites.
+The real global flush touched all 163 checked-in cases and removed none.
+
 `flush()` also iterates only collection keys touched by the current `Squirrel`
 instance, so it cannot discover and remove an entirely orphaned collection
 directory.
@@ -247,9 +252,9 @@ Suggested replacement:
 > Use `flush` only when the current run authoritatively enumerates the entire
 > fixture collection, uses an isolated writable directory, and is not a filtered
 > or concurrent test run. Never flush a shared collection from a partial test
-> selection. Until touched-case accumulation is verified for the installed
-> Varmint version, reproduce `flush()` behavior against an isolated temporary
-> cache before using it on tracked fixtures.
+> selection. After a Varmint upgrade that changes cleanup behavior, reproduce
+> `flush()` against an isolated temporary cache before using it on tracked
+> fixtures.
 
 ### 9. Prefer deterministic injection for application-owned nondeterminism
 

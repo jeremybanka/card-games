@@ -38,8 +38,8 @@ importers:
         specifier: 4.8.3
         version: 4.8.3(supports-color@10.2.2)
       varmint:
-        specifier: 0.5.19
-        version: 0.5.19(zod@4.4.3)
+        specifier: 0.5.20
+        version: 0.5.20(zod@4.4.3)
     devDependencies:
       '@dprint/json':
         specifier: 0.23.0
@@ -3713,8 +3713,8 @@ packages:
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
 
-  varmint@0.5.19:
-    resolution: {integrity: sha512-4aVdfihZlDBo+ooRBuysH6lhiv/4t9FmMpM2AqPwf+p1u16IkpASvosE2SF259aZkGbaFqJe4D5VzGrnknge2A==}
+  varmint@0.5.20:
+    resolution: {integrity: sha512-+jWc8k8l0uLRKS8gPNtP7ctWfnOOLTu4DsziUBjpQ0BTfq+lPNKGRUy2FP7i5dIGPOiKjDVVGcLcbLvhzakr0A==}
     hasBin: true
 
   vary@1.1.2:
@@ -7397,7 +7397,7 @@ snapshots:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
 
-  varmint@0.5.19(zod@4.4.3):
+  varmint@0.5.20(zod@4.4.3):
     dependencies:
       arktype: 2.2.3
       cachedir: 2.4.0
