@@ -1,3 +1,0 @@
-[
-	"Hearts, round 1, trick 1. Hearts are intact. You are P3, playing 2 of 4.\n\nPlayers:\nP0, Sol Bot: score 0, round points 0, 13 cards.\nP1, Luna Bot 1: score 0, round points 0, 13 cards.\nP2, Luna Bot 2: score 0, round points 0, 12 cards.\nP3 (you), Luna Bot 3: score 0, round points 0, 13 cards.\n\nYour hand: 6C, 8C, QC, KC, 4D, 7D, QD, AD, 6S, JS, 5H, 9H, QH.\nLegal plays: 6C (overtakes 2C; 2 players remain), 8C (overtakes 2C; 2 players remain), QC (overtakes 2C; 2 players remain), KC (overtakes 2C; 2 players remain). Choose one legal card value.\n\nCurrent trick:\nP2 2C\n\nCompleted play:\nNone.\n\nPass left:\nGave P0 QS, KS, AH.\nReceived QD, AD, JS from P2.\n\nCurrent plan:\nPass dangerous high cards left; retain low cards to shed safely."
-]

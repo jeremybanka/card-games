@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with 6D; unload QS under P1's known AS when possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6D"
-	}
-}

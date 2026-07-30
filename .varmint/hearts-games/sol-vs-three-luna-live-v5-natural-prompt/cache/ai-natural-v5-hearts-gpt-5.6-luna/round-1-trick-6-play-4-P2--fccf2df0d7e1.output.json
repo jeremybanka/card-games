@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning tricks; retain 9D as a safer diamond and shed the higher KD when possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "KD"
-	}
-}

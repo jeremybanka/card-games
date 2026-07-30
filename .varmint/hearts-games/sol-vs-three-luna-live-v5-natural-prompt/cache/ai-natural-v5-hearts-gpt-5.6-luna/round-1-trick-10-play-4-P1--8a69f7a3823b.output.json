@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Continue shedding low hearts while avoiding trick wins.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3H"
-	}
-}

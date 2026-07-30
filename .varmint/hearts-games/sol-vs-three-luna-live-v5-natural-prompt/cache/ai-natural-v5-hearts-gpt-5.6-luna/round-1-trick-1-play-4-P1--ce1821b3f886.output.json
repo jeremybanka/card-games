@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning; retain TC as a safer club discard option.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "4C"
-	}
-}

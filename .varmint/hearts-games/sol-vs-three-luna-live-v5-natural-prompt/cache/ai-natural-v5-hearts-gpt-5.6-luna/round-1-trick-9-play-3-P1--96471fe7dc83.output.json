@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning; shed the lowest heart while P3 controls the trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "2H"
-	}
-}

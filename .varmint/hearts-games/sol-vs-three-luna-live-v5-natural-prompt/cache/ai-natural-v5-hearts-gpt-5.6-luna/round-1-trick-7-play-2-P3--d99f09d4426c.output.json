@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid taking tricks when possible; preserve hearts for dumping.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "QD"
-	}
-}

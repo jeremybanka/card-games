@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning tricks; preserve AS for a controlled discard.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TD"
-	}
-}

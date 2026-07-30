@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead 8S, then 7S; all opponents are void in spades, so both leads win while forcing discards.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "8S"
-	}
-}

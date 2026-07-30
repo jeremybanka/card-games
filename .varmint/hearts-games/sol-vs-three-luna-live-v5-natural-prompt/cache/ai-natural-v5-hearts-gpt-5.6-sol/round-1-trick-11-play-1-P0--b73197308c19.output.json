@@ -1,7 +1,0 @@
-{
-	"currentPlan": "All opposing spades are exposed; every lead wins. Cash KS, then continue spades.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "KS"
-	}
-}

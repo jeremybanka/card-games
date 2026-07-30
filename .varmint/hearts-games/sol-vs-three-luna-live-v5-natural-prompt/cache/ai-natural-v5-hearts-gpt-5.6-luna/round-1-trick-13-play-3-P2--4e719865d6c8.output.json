@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard TH; accept the heart points since no alternative is legal.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TH"
-	}
-}

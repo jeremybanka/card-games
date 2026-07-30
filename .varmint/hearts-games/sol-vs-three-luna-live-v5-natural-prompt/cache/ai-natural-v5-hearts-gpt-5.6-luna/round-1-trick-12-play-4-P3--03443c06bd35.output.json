@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning point-heavy tricks; play QH only when forced or safe.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AD"
-	}
-}

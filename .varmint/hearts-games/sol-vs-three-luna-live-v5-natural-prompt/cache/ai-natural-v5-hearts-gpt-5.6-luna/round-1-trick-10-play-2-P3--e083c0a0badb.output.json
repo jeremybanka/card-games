@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play the lowest heart when following; retain AD as a control card.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5H"
-	}
-}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Shed 4S safely; preserve TS as a later spade exit while avoiding tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "4S"
-	}
-}

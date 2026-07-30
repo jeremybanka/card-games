@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Keep ducking; unload QS when safely void in a led suit.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5S"
-	}
-}

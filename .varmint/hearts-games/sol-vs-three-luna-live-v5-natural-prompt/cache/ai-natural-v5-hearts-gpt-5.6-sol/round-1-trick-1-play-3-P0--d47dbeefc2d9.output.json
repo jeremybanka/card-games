@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Stay low; use club cover, then dump spade dangers when void.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5C"
-	}
-}

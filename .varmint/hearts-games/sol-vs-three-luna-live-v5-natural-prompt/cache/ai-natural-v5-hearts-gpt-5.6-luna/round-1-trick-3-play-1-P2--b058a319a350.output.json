@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead low clubs to shed them and avoid winning; keep hearts and high spades protected.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7C"
-	}
-}

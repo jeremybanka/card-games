@@ -1,3 +1,0 @@
-[
-	"Hearts, round 1, trick 5. Hearts are intact. You are P2, playing 4 of 4.\n\nPlayers:\nP0, Sol Bot: score 0, round points 0, 8 cards.\nP1, Luna Bot 1: score 0, round points 0, 8 cards.\nP2 (you), Luna Bot 2: score 0, round points 0, 9 cards.\nP3, Luna Bot 3: score 0, round points 0, 8 cards.\n\nYour hand: JC, AC, 9D, KD, TS, 4H, 6H, 7H, TH.\nLegal plays: TS (ducks JS). Choose one legal card value.\n\nCurrent trick:\nP3 JS, P0 9S, P1 3S\n\nCompleted play:\n1. P2 2C, P3 6C, P0 5C, P1 4C. P3 won.\n2. P3 4D, P0 3D, P1 2D, P2 5D. P2 won.\n3. P2 7C, P3 8C, P0 3C, P1 TC. P1 won.\n4. P1 2S, P2 4S, P3 6S, P0 5S. P3 won.\n\nPass left:\nGave P3 QD, AD, JS.\nReceived JC, AC, KD from P1.\n\nCurrent plan:\nShed 4S safely; preserve TS as a later spade exit while avoiding tricks."
-]

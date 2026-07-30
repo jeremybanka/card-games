@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid taking the club trick; discard the lowest legal club.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "JC"
-	}
-}

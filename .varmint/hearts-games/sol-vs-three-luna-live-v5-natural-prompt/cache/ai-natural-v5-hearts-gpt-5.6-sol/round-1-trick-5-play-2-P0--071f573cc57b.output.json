@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with 9S; seek a safe chance to unload QS before P1's known AS appears.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "9S"
-	}
-}

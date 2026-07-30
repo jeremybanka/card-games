@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play the forced QH; absorb the final heart points.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "QH"
-	}
-}

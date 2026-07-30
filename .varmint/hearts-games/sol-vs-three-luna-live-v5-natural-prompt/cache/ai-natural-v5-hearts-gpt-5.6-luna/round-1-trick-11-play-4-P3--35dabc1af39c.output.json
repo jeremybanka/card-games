@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Keep AD as a control; discard low hearts when void.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "9H"
-	}
-}

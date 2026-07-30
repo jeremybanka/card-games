@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play JD as forced; continue seeking to unload QS beneath P1's known AS.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "JD"
-	}
-}

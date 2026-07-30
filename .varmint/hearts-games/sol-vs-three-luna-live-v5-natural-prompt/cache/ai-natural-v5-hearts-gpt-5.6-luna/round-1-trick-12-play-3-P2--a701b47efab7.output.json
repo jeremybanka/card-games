@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Shed the 7H; avoid winning the final heart trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7H"
-	}
-}

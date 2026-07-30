@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning tricks; preserve hearts for later and discard the spade ace when safe.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AS"
-	}
-}

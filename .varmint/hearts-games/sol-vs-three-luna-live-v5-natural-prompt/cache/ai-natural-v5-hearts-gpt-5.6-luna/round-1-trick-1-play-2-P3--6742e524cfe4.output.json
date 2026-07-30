@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning early tricks; shed low cards and keep high cards for controlled discards.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6C"
-	}
-}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard low spades when safe; avoid winning tricks and hearts.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6S"
-	}
-}

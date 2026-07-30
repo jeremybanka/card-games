@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead a club to avoid winning; retain AD as a safe control card.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "QC"
-	}
-}

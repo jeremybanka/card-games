@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Take this point-free trick with 5D; next lead a low club if possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5D"
-	}
-}

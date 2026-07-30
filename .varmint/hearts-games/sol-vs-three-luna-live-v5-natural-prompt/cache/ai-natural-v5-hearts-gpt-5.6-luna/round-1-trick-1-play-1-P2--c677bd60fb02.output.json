@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead low clubs; retain high cards for controlled shedding and avoid hearts until broken.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "2C"
-	}
-}

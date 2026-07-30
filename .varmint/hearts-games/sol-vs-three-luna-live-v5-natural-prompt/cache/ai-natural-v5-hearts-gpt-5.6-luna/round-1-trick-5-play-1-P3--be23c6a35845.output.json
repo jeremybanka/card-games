@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Unload JS; avoid winning and keep hearts concealed.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "JS"
-	}
-}

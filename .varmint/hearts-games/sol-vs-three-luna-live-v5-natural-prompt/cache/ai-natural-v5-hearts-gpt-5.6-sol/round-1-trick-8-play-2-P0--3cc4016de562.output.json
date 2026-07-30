@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play 9C forced; later unload QS beneath P1's known AS.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "9C"
-	}
-}

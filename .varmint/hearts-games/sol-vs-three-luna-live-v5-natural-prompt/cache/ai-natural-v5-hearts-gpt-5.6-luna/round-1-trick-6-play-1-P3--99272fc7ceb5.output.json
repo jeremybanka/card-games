@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead a low card to avoid winning; preserve hearts for later dumping.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "7D"
-	}
-}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead low non-heart cards; avoid taking tricks and retain high cards for controlled discards.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "4D"
-	}
-}

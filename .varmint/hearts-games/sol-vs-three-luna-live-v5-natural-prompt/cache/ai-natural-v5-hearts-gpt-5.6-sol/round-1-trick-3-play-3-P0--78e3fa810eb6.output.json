@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck tricks; discard QS first when void, then KS/AH as safe.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3C"
-	}
-}

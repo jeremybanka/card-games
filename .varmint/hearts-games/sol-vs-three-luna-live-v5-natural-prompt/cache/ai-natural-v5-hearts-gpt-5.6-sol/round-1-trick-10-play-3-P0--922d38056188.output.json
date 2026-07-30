@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play forced AH; then use low spades before KS to avoid later tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AH"
-	}
-}
