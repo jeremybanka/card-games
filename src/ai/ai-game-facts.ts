@@ -409,9 +409,7 @@ function ordinal(value: number): string {
 	}
 }
 
-function renderOhHellBiddingFacts(
-	context: AiGameContextFor<"ohHell">,
-): string {
+function renderOhHellBiddingFacts(context: AiGameContextFor<"ohHell">): string {
 	const playerCount = context.publicView.players.length
 	const dealerIndex = context.publicView.players.findIndex(
 		(player) => player.id === context.publicView.dealerId,
@@ -497,9 +495,7 @@ function ohHellTargetStatus(bid: number, tricksWon: number): string {
 	return `over target by ${-tricksNeeded}`
 }
 
-function ohHellWinningConsequence(
-	context: AiGameContextFor<"ohHell">,
-): string {
+function ohHellWinningConsequence(context: AiGameContextFor<"ohHell">): string {
 	const me = context.publicView.players.find(
 		(player) => player.id === context.playerId,
 	)
@@ -540,8 +536,7 @@ function ohHellLegalPlayMeaning(
 	}
 	const leadSuit = trick[0]?.card.suit
 	const cardIsTrump = card.suit === context.publicView.trumpSuit
-	const winnerIsTrump =
-		currentWinner.card.suit === context.publicView.trumpSuit
+	const winnerIsTrump = currentWinner.card.suit === context.publicView.trumpSuit
 	const action =
 		cardIsTrump && !winnerIsTrump && card.suit !== leadSuit
 			? `ruffs ${aiCardValue(currentWinner.card)}`
@@ -549,7 +544,8 @@ function ohHellLegalPlayMeaning(
 				? `overtrumps ${aiCardValue(currentWinner.card)}`
 				: `overtakes ${aiCardValue(currentWinner.card)}`
 	const playersRemaining =
-		context.publicView.players.length - (context.publicView.currentTrick.length + 1)
+		context.publicView.players.length -
+		(context.publicView.currentTrick.length + 1)
 	const unbeatable =
 		card.suit === context.publicView.trumpSuit && card.rank === 14
 	if (playersRemaining === 0) {
@@ -587,18 +583,15 @@ function ohHellKnownVoids(context: AiGameContextFor<"ohHell">): string[] {
 	})
 }
 
-function renderOhHellCurrentTrick(
-	context: AiGameContextFor<"ohHell">,
-): string {
+function renderOhHellCurrentTrick(context: AiGameContextFor<"ohHell">): string {
 	const trick = context.publicView.currentTrick
 	if (trick.length === 0) return "You lead."
 	const winner = ohHellTrickWinner(context, trick)
 	const plays = trick
-		.map(
-			(play, index) =>
-				index === 0
-					? `${playerAlias(context, play.playerId)} led ${aiCardValue(play.card)}`
-					: `${playerAlias(context, play.playerId)} played ${aiCardValue(play.card)}`,
+		.map((play, index) =>
+			index === 0
+				? `${playerAlias(context, play.playerId)} led ${aiCardValue(play.card)}`
+				: `${playerAlias(context, play.playerId)} played ${aiCardValue(play.card)}`,
 		)
 		.join(". ")
 	const currentWinner =
@@ -609,7 +602,8 @@ function renderOhHellCurrentTrick(
 		(player) => player.id === context.playerId,
 	)
 	const playersRemaining =
-		context.publicView.players.length - (context.publicView.currentTrick.length + 1)
+		context.publicView.players.length -
+		(context.publicView.currentTrick.length + 1)
 	const laterPlayers = Array.from({ length: playersRemaining }, (_, offset) => {
 		const player =
 			context.publicView.players[
@@ -626,9 +620,7 @@ function renderOhHellCurrentTrick(
 	return `${plays}.${currentWinner}${laterPlay}`
 }
 
-function renderOhHellPlayingFacts(
-	context: AiGameContextFor<"ohHell">,
-): string {
+function renderOhHellPlayingFacts(context: AiGameContextFor<"ohHell">): string {
 	const playerCount = context.publicView.players.length
 	const playPosition = context.publicView.currentTrick.length + 1
 	const tricksRemaining =

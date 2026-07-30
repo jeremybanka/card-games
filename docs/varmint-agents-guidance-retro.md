@@ -188,7 +188,7 @@ For a one-argument wrapped function, Varmint records:
 
 ```json
 [
-  "the prompt"
+	"the prompt"
 ]
 ```
 

@@ -580,8 +580,7 @@ describe("four-bot deterministic realtime Oh Hell game", () => {
 		expect(replayed.finalState.winnerIds).toEqual([bots[2].id])
 	}, 20_000)
 
-	const liveIt =
-		process.env.RECORD_LIVE_OH_HELL_AI_GAME === "1" ? it : it.skip
+	const liveIt = process.env.RECORD_LIVE_OH_HELL_AI_GAME === "1" ? it : it.skip
 
 	liveIt(
 		"records a real Sol-versus-three-Luna Oh Hell game for analysis",

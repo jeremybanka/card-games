@@ -259,7 +259,9 @@ function ohHellBiddingContext(
 	}
 }
 
-function ohHellPlayingContext(cards: VisibleCard[]): AiGameContextFor<"ohHell"> {
+function ohHellPlayingContext(
+	cards: VisibleCard[],
+): AiGameContextFor<"ohHell"> {
 	const context = ohHellBiddingContext(cards, {})
 	const queenSpade = card("queen-spade", "spades", 12)
 	const aceDiamond = card("ace-diamond", "diamonds", 14)
@@ -913,7 +915,9 @@ Choose one legal card value.`)
 
 		const facts = renderAiGameFacts(context)
 
-		expect(facts).toContain("TS (ruffs KC; currently winning; 1 player remains)")
+		expect(facts).toContain(
+			"TS (ruffs KC; currently winning; 1 player remains)",
+		)
 		expect(facts).toContain("2H (discards; cannot win)")
 		expect(facts).toContain("P2 is void in clubs.")
 	})
