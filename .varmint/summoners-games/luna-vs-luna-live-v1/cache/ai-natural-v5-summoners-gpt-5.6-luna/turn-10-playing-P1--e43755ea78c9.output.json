@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Develop Thornhare now; next turn equip Rootwoven Buckler to stabilize it.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Thornhare",
+		"target": null
+	}
+}

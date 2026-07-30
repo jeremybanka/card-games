@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Develop the Guard now, then pressure the exposed Summoner with Coalcoat Cub when ready.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Kilnback Tortoise",
+		"target": null
+	}
+}

@@ -103,7 +103,9 @@ export function promptFixtureKey(
 	)
 	const player = playerIndex === -1 ? context.playerId : `P${playerIndex}`
 	const readableKey =
-		context.publicView.phase === "playing"
+		context.publicView.gameKind === "summoners"
+			? `turn-${context.publicView.turnNumber}-${context.publicView.phase}-${player}`
+			: context.publicView.phase === "playing"
 			? `round-${context.publicView.roundNumber}-trick-${
 					context.publicView.trickNumber + 1
 				}-play-${context.publicView.currentTrick.length + 1}-${player}`
@@ -184,8 +186,18 @@ export function createOpenAiTurnGenerator(
 				phase: context.publicView.phase,
 				playerId: context.playerId,
 				roomCode: context.publicView.roomCode,
-				roundNumber: context.publicView.roundNumber,
-				trickNumber: context.publicView.trickNumber,
+				roundNumber:
+					context.publicView.gameKind === "summoners"
+						? undefined
+						: context.publicView.roundNumber,
+				trickNumber:
+					context.publicView.gameKind === "summoners"
+						? undefined
+						: context.publicView.trickNumber,
+				turnNumber:
+					context.publicView.gameKind === "summoners"
+						? context.publicView.turnNumber
+						: undefined,
 			},
 			async (span) => {
 				const gameKind = context.publicView.gameKind
@@ -267,8 +279,18 @@ export function createOpenAiTurnGenerator(
 				phase: context.publicView.phase,
 				playerId: context.playerId,
 				roomCode: context.publicView.roomCode,
-				roundNumber: context.publicView.roundNumber,
-				trickNumber: context.publicView.trickNumber,
+				roundNumber:
+					context.publicView.gameKind === "summoners"
+						? undefined
+						: context.publicView.roundNumber,
+				trickNumber:
+					context.publicView.gameKind === "summoners"
+						? undefined
+						: context.publicView.trickNumber,
+				turnNumber:
+					context.publicView.gameKind === "summoners"
+						? context.publicView.turnNumber
+						: undefined,
 			},
 			async (span) => {
 				const decision = await guarded(context)

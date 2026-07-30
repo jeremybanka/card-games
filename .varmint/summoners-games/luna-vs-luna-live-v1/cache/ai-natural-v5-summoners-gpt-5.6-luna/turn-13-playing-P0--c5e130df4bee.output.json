@@ -1,0 +1,6 @@
+{
+	"currentPlan": "All Beings are weary and 1 Spark cannot afford either card; end the turn to recover for next round.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

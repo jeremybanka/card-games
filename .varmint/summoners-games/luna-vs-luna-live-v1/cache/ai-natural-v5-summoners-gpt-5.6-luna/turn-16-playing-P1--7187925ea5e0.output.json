@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Draw and heal first, then deploy Thornhare and build pressure.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Canopy Muster",
+		"target": null
+	}
+}

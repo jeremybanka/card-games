@@ -1,0 +1,6 @@
+{
+	"currentPlan": "All Beings are weary and hand cards are unaffordable; end turn to ready them for next attack.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

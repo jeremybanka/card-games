@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Build Spark, then deploy Rush pressure next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

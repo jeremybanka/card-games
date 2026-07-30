@@ -10,6 +10,7 @@ import type {
 import { heartsAiStrategy } from "./hearts-ai-strategy.ts"
 import type { AiGameContextFor } from "./ai-game-facts.ts"
 import { ohHellAiStrategy } from "./oh-hell-ai-strategy.ts"
+import { summonersAiStrategy } from "./summoners-ai-strategy.ts"
 import type {
 	AiGameKind,
 	AiNextActionFor,
@@ -38,7 +39,7 @@ export type AiGameStrategy<Kind extends AiGameKind> = {
 	submitAction: (
 		socket: AiActionSocket,
 		action: AiNextActionFor<Kind>,
-		privateView: AiGameContextFor<Kind>["privateView"],
+		context: AiGameContextFor<Kind>,
 	) => Promise<ActionResult>
 	systemPrompt: string
 	usesTurnGenerator: (context: AiGameContextFor<Kind>) => boolean
@@ -47,6 +48,7 @@ export type AiGameStrategy<Kind extends AiGameKind> = {
 const strategies = {
 	hearts: heartsAiStrategy,
 	ohHell: ohHellAiStrategy,
+	summoners: summonersAiStrategy,
 } as const satisfies {
 	[Kind in AiGameKind]: AiGameStrategy<Kind>
 }

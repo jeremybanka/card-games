@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Break the enemy Guard with Elder Antler, preserving Spark for follow-up pressure.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B2",
+		"target": "P0:B0"
+	}
+}

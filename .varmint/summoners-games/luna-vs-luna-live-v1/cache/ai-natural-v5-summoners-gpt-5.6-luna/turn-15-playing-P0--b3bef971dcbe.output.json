@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Attack Thornhare with the equipped Brasshorn Ibex, then reassess pressure and Spark.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B1",
+		"target": "P1:B0"
+	}
+}

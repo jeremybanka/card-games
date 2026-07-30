@@ -62,12 +62,6 @@ export function createAiPlayerSiloState(
 	}): AiGameContext => {
 		const publicView = get(publicGameViewAtom)
 		const privateView = get(privatePlayerViewAtom)
-		if (
-			publicView.gameKind === "summoners" ||
-			privateView.gameKind === "summoners"
-		) {
-			throw new Error("The trick-taking AI does not operate Summoners seats.")
-		}
 		assertMatchingGameKinds(
 			publicView,
 			privateView,

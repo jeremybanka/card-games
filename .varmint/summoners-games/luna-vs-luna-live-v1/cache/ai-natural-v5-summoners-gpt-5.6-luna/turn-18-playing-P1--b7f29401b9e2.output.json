@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Remove the enemy Being, then attack the exposed Summoner and develop Guard next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Green Reprisal",
+		"target": "P0:B0"
+	}
+}

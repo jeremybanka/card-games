@@ -39,6 +39,7 @@ type SummonersBeing = {
 }
 
 export type SummonersPlayer = {
+	aiModel: PlayerController["aiModel"]
 	battlefield: SummonersBeing[]
 	connected: boolean
 	deck: CardId[]
@@ -49,7 +50,7 @@ export type SummonersPlayer = {
 	hand: CardId[]
 	health: number
 	id: PlayerId
-	kind: "human"
+	kind: PlayerController["kind"]
 	maxSpark: number
 	name: string
 	powerUsed: boolean
@@ -151,6 +152,7 @@ function publicPlayer(
 	const deck =
 		player.deckId === null ? null : summonersStarterDecks[player.deckId]
 	return {
+		aiModel: player.aiModel,
 		battlefield: player.battlefield.map((being) => publicBeing(state, being)),
 		connected: player.connected,
 		deck,
@@ -162,7 +164,7 @@ function publicPlayer(
 		handCount: player.hand.length,
 		health: player.health,
 		id: player.id,
-		kind: "human",
+		kind: player.kind,
 		maxSpark: player.maxSpark,
 		name: player.name,
 		powerUsed: player.powerUsed,
@@ -249,8 +251,12 @@ export function createSummonersPhysicalCardIds(
 	)
 }
 
-function emptyPlayer(player: { id: PlayerId; name: string }): SummonersPlayer {
+function emptyPlayer(
+	player: { id: PlayerId; name: string },
+	controller: PlayerController = { aiModel: null, kind: "human" },
+): SummonersPlayer {
 	return {
+		aiModel: controller.aiModel,
 		battlefield: [],
 		connected: true,
 		deck: [],
@@ -261,7 +267,7 @@ function emptyPlayer(player: { id: PlayerId; name: string }): SummonersPlayer {
 		hand: [],
 		health: SUMMONERS_STARTING_HEALTH,
 		id: player.id,
-		kind: "human",
+		kind: controller.kind,
 		maxSpark: 0,
 		name: player.name,
 		powerUsed: false,
@@ -301,15 +307,12 @@ export function joinSummonersGame(
 	playerName: string,
 	controller: PlayerController = { aiModel: null, kind: "human" },
 ): SummonersState {
-	if (controller.kind === "ai") {
-		throw new SummonersRuleError(
-			"Summoners AI seats are still studying the forbidden catalogue.",
-		)
-	}
 	const next = copyState(state)
 	const existing = next.players.find((player) => player.id === playerId)
 	if (existing !== undefined) {
+		existing.aiModel = controller.aiModel
 		existing.connected = true
+		existing.kind = controller.kind
 		existing.name = playerName
 		return next
 	}
@@ -319,7 +322,7 @@ export function joinSummonersGame(
 	if (next.players.length >= SUMMONERS_PLAYER_MAXIMUM) {
 		throw new SummonersRuleError("This Conclave already has four Summoners.")
 	}
-	next.players.push(emptyPlayer({ id: playerId, name: playerName }))
+	next.players.push(emptyPlayer({ id: playerId, name: playerName }, controller))
 	next.statusMessage =
 		next.players.length < SUMMONERS_PLAYER_MINIMUM
 			? "Invite another Summoner and choose a starter deck."

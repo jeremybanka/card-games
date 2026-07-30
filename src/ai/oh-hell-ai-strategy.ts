@@ -145,13 +145,13 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 				}
 	},
 	privateViewForStrategy: (view) => view,
-	submitAction: (socket, action, privateView) => {
+	submitAction: (socket, action, context) => {
 		switch (action.action) {
 			case "playCard":
 				return new Promise((resolve) => {
 					socket.emit(
 						"playCard",
-						cardIdForAiValue(privateView.cards, action.card),
+						cardIdForAiValue(context.privateView.cards, action.card),
 						resolve,
 					)
 				})

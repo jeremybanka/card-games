@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Establish a Guard now to stabilize at 13 life, then equip or add attackers next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Slimebound Ox",
+		"target": null
+	}
+}

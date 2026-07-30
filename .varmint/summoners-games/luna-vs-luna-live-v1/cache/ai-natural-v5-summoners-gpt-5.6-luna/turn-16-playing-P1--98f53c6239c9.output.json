@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Add a ready Guard with remaining Spark, then build pressure next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Barkhide Mouse",
+		"target": null
+	}
+}

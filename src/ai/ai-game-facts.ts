@@ -22,6 +22,7 @@ import {
 } from "../game/seat-order.ts"
 import { aiCardValue } from "./ai-card-value.ts"
 import type { AiGameKind, AiMemoryLedgerEntry } from "./ai-types.ts"
+import { summonersTargetReference } from "./summoners-ai-strategy.ts"
 
 type CommonAiGameContext = {
 	memoryLedger: AiMemoryLedgerEntry[]
@@ -37,6 +38,10 @@ export type AiGameContextFor<Kind extends AiGameKind> = CommonAiGameContext & {
 export type AiGameContext = {
 	[Kind in AiGameKind]: AiGameContextFor<Kind>
 }[AiGameKind]
+
+type TrickTakingAiGameContext =
+	| AiGameContextFor<"hearts">
+	| AiGameContextFor<"ohHell">
 
 type AiFactsAdapter<PublicView, PrivateView> = {
 	gameDetails: (
@@ -82,14 +87,17 @@ const aiFactsAdapters = {
 		title: "Oh Hell",
 	} satisfies AiFactsAdapter<OhHellPublicGameView, OhHellPrivatePlayerView>,
 } satisfies {
-	[Kind in AiGameKind]: AiFactsAdapter<
+	[Kind in "hearts" | "ohHell"]: AiFactsAdapter<
 		Extract<PublicGameView, { gameKind: Kind }>,
 		Extract<PrivatePlayerView, { gameKind: Kind }>
 	>
 }
 
 function aiFactsAdapter(
-	context: AiGameContext,
+	context: Extract<
+		AiGameContext,
+		{ publicView: { gameKind: "hearts" | "ohHell" } }
+	>,
 ): AiFactsAdapter<PublicGameView, PrivatePlayerView> {
 	assertMatchingGameKinds(
 		context.privateView,
@@ -99,6 +107,96 @@ function aiFactsAdapter(
 	return registeredGameAdapter<
 		AiFactsAdapter<PublicGameView, PrivatePlayerView>
 	>(context.publicView.gameKind, aiFactsAdapters)
+}
+
+function renderSummonersFacts(
+	context: AiGameContextFor<"summoners">,
+): string {
+	const me = context.publicView.players.find(
+		(player) => player.id === context.playerId,
+	)
+	const seats = context.publicView.players.flatMap((player, playerIndex) => {
+		const playerLine = `- P${playerIndex}${
+			player.id === context.playerId ? " (you)" : ""
+		} ${player.name}: life ${player.health}, Spark ${player.spark}/${
+			player.maxSpark
+		}, hand ${player.handCount}, deck ${player.deckCount}, ${
+			player.eliminated ? "eliminated" : "active"
+		}, Summoner ${player.summoner?.name ?? "unchosen"}.`
+		const beings = player.battlefield.map(
+			(being, beingIndex) =>
+				`  - P${playerIndex}:B${beingIndex} ${being.card.name}: ${
+					being.attack
+				} Attack, ${being.energy - being.damage}/${being.energy} Energy, ${
+					being.ready ? "ready" : "weary"
+				}${being.keywords.length === 0 ? "" : `, ${being.keywords.join("/")}`}${
+					being.item === null ? "" : `, equipped ${being.item.name}`
+				}.`,
+		)
+		return [playerLine, ...(beings.length === 0 ? ["  - no Beings"] : beings)]
+	})
+	const hand =
+		context.privateView.hand.length === 0
+			? ["- empty"]
+			: context.privateView.hand.map(
+					(card) =>
+						`- ${card.name}: ${card.cost} Spark, ${card.type}, target ${
+							card.targeting
+						}. ${card.rules}${
+							context.privateView.playableCardIds.includes(card.physicalId)
+								? " — COST/SPACE READY"
+								: ""
+						}`,
+				)
+	const myIndex = context.publicView.players.findIndex(
+		(player) => player.id === context.playerId,
+	)
+	const targetLegend = context.publicView.players.flatMap((player) => [
+		`P${context.publicView.players.indexOf(player)} = ${player.name}'s Summoner`,
+		...player.battlefield.map((being) => {
+			const target = {
+				cardId: being.card.physicalId,
+				kind: "being" as const,
+				playerId: player.id,
+			}
+			return `${summonersTargetReference(context, target)} = ${being.card.name}`
+		}),
+	])
+	const phaseInstruction =
+		context.publicView.phase === "lobby"
+			? `Choose a starter deck. Valid deck IDs: emberReliquary, outlandChorus, tidemarkMenagerie, verdantCompact. You are seat P${myIndex}.`
+			: [
+					"Choose one action: play one COST/SPACE READY card with a legal target; attack with one ready Bn; use your unused affordable power; or endTurn.",
+					"Cards with target none require target null. Targeted cards and powers require one exact reference from the legend.",
+					"Attacks use your Bn index as attacker and must hit an enemy Guard when one exists.",
+				].join(" ")
+
+	return [
+		`Summoners, turn ${context.publicView.turnNumber}. Phase ${context.publicView.phase}. You are P${myIndex} (${me?.name ?? context.playerId}).`,
+		`Current player: ${
+			context.publicView.currentPlayerId === null
+				? "none"
+				: `P${context.publicView.players.findIndex(
+						(player) => player.id === context.publicView.currentPlayerId,
+					)}`
+		}.`,
+		"",
+		"Public table:",
+		...seats,
+		"",
+		"Your private hand:",
+		...hand,
+		"",
+		"Target legend:",
+		...targetLegend,
+		"",
+		phaseInstruction,
+		"",
+		"Current plan:",
+		context.previousPlan || "None.",
+		"",
+		"Hidden-information boundary: opponent card values are unknown. Never name or infer them.",
+	].join("\n")
 }
 
 const suitCodes: Record<Suit, string> = {
@@ -140,7 +238,7 @@ function playerAlias(context: AiGameContext, playerId: PlayerId): string {
 	return index === -1 ? playerId : `P${index}`
 }
 
-function renderPlayers(context: AiGameContext): string[] {
+function renderPlayers(context: TrickTakingAiGameContext): string[] {
 	return context.publicView.players.map((player, index) => {
 		const perspective = player.id === context.playerId ? " YOU" : ""
 		const controller =
@@ -153,7 +251,7 @@ function renderPlayers(context: AiGameContext): string[] {
 	})
 }
 
-function renderCurrentTrick(context: AiGameContext): string[] {
+function renderCurrentTrick(context: TrickTakingAiGameContext): string[] {
 	if (context.publicView.currentTrick.length === 0) return ["- empty"]
 	return [
 		`- ${context.publicView.currentTrick
@@ -167,7 +265,7 @@ function renderCurrentTrick(context: AiGameContext): string[] {
 	]
 }
 
-function renderCompletedTricks(context: AiGameContext): string[] {
+function renderCompletedTricks(context: TrickTakingAiGameContext): string[] {
 	if (context.publicView.completedTricks.length === 0) {
 		return ["- none"]
 	}
@@ -185,7 +283,7 @@ function renderCompletedTricks(context: AiGameContext): string[] {
 }
 
 function renderMemoryLedger(
-	context: AiGameContext,
+	context: TrickTakingAiGameContext,
 	entry: AiMemoryLedgerEntry,
 ): string {
 	const cards = entry.cards.map(renderLedgerCard).join(" ")
@@ -680,7 +778,7 @@ function renderOhHellPlayingFacts(context: AiGameContextFor<"ohHell">): string {
 	].join("\n")
 }
 
-function renderLegacyGameFacts(context: AiGameContext): string {
+function renderLegacyGameFacts(context: TrickTakingAiGameContext): string {
 	const adapter = aiFactsAdapter(context)
 	const me = context.publicView.players.find(
 		(player) => player.id === context.playerId,
@@ -745,11 +843,13 @@ export function renderAiGameFacts(context: AiGameContext): string {
 		context.publicView,
 		"AI public and private views describe different games.",
 	)
-	return context.publicView.gameKind === "hearts"
+	return context.publicView.gameKind === "summoners"
+		? renderSummonersFacts(context as AiGameContextFor<"summoners">)
+		: context.publicView.gameKind === "hearts"
 		? renderHeartsFacts(context as AiGameContextFor<"hearts">)
 		: context.publicView.phase === "bidding"
 			? renderOhHellBiddingFacts(context as AiGameContextFor<"ohHell">)
 			: context.publicView.phase === "playing"
 				? renderOhHellPlayingFacts(context as AiGameContextFor<"ohHell">)
-				: renderLegacyGameFacts(context)
+				: renderLegacyGameFacts(context as TrickTakingAiGameContext)
 }

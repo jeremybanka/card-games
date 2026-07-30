@@ -20,6 +20,7 @@ import {
 import { parseSummonersTarget } from "../src/summoners/summoners-actions.ts"
 import type { SummonersClientEvents } from "../src/summoners/summoners-types.ts"
 import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
+import { bindAiSeatActions } from "./ai-seat-actions.node.ts"
 import {
 	bindGameEvent,
 	combineDisposers,
@@ -80,8 +81,14 @@ export const summonersGame: GameDefinition<
 	SummonersClientEvents,
 	WayfarerGameResources
 > = {
-	bindActions: ({ acknowledge, controller, playerId, socket }) =>
-		combineDisposers([
+	bindActions: (context) => {
+		const { acknowledge, controller, playerId, socket } = context
+		return combineDisposers([
+			bindAiSeatActions(context, {
+				canManageSeats: (state) => state.phase === "lobby",
+				canReviewStrategy: () => false,
+				maximumPlayers: 4,
+			}),
 			bindGameEvent(socket, "selectSummonersDeck", (deckId, ack) => {
 				acknowledge(
 					ack,
@@ -224,7 +231,8 @@ export const summonersGame: GameDefinition<
 					},
 				)
 			}),
-		]),
+		])
+	},
 	connectPlayer: (state, player) =>
 		joinSummonersGame(state, player.id, player.name, player.controller),
 	create: ({ host, resources, roomCode }) =>
@@ -235,7 +243,9 @@ export const summonersGame: GameDefinition<
 			createSummonersPhysicalCardIds(resources.identityRandom.uuid),
 		),
 	disconnectPlayer: disconnectSummonersPlayer,
-	dispose: () => {},
+	dispose: (resources) => {
+		for (const aiPlayer of resources.aiPlayers.values()) aiPlayer.dispose()
+	},
 	isVacant: (state) => state.players.length === 0,
 	kind: "summoners",
 	stateSnapshotForLog: summonersStateSnapshotForLog,

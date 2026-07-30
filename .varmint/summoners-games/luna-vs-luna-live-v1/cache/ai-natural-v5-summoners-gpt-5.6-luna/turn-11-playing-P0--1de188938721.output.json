@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Burn the exposed enemy Summoner, then pressure with surviving attackers next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Last Light",
+		"target": "P1"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deliver lethal damage to the exposed enemy Summoner.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P0"
+	}
+}

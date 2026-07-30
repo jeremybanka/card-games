@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Attack the Guard with Coalcoat Cub, then preserve pressure with the surviving board.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B1",
+		"target": "P1:B1"
+	}
+}

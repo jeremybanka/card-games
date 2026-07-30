@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Play Seedling Scout to establish an early attacker and preserve future Spark for development.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Seedling Scout",
+		"target": null
+	}
+}

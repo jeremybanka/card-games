@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Preserve the board and end the turn; no legal spell target or ready attacker is available.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

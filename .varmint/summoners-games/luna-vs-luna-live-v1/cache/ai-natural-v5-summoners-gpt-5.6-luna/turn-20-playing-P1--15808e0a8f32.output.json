@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Pressure P0 with Thornhare, then develop the board and recover Spark.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P0"
+	}
+}

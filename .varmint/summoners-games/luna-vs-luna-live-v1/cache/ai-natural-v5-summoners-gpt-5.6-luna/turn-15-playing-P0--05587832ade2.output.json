@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Cast Ash Lesson to draw two cards and improve development options before attacking.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Ash Lesson",
+		"target": null
+	}
+}

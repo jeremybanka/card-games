@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Recover Spark and ready units, then deploy a Guard next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

@@ -1,6 +1,11 @@
-import type { AiGameContext } from "./ai-game-facts.ts"
+import type { AiGameContext, AiGameContextFor } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
-import type { AiNextAction, AiTurnDecision } from "./ai-types.ts"
+import type {
+	AiGameKind,
+	AiNextActionFor,
+	AiTurnDecision,
+	AiTurnDecisionFor,
+} from "./ai-types.ts"
 
 export type AiTurnGenerator = (
 	context: AiGameContext,
@@ -20,11 +25,15 @@ export type AiGuardObserver = {
 	}) => void
 }
 
-export function fallbackAiDecision(context: AiGameContext): AiTurnDecision {
-	return aiGameStrategy(context.publicView.gameKind).fallbackDecision(context)
+export function fallbackAiDecision<Kind extends AiGameKind>(
+	context: AiGameContextFor<Kind>,
+): AiTurnDecisionFor<Kind> {
+	return aiGameStrategy<Kind>(context.publicView.gameKind).fallbackDecision(context)
 }
 
-export function chooseFallbackAiAction(context: AiGameContext): AiNextAction {
+export function chooseFallbackAiAction<Kind extends AiGameKind>(
+	context: AiGameContextFor<Kind>,
+): AiNextActionFor<Kind> {
 	return fallbackAiDecision(context).nextAction
 }
 

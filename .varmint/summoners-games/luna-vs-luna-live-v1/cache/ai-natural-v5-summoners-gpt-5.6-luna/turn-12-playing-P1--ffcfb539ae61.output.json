@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Strengthen Thornhare’s Guard to 8/8 with Leech, then hold the line and pressure through the enemy Guard next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Blooming Staff",
+		"target": "P1:B0"
+	}
+}

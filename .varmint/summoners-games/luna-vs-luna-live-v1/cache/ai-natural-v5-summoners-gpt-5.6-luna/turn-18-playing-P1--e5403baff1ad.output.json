@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Enemy has no Beings, so pressure the exposed Summoner now; develop Guard next turn.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P0"
+	}
+}

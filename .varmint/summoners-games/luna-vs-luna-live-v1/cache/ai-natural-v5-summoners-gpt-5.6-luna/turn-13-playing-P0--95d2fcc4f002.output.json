@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Pressure the enemy Summoner with the ready Cub, then preserve Spark for follow-up.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P1"
+	}
+}

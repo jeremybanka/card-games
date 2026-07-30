@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Use the strongest Rush attacker to pressure the enemy Summoner now; preserve the Cub for future pressure.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B1",
+		"target": "P1"
+	}
+}

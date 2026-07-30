@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Pressure the exposed Summoner now; recover both Beings next turn.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P1"
+	}
+}

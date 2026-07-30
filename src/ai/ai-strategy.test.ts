@@ -52,7 +52,7 @@ function card(
 function gameContext(
 	privateOverrides: Partial<HeartsPrivatePlayerView>,
 	overrides: Partial<HeartsPublicGameView> = {},
-): AiGameContext {
+): AiGameContextFor<"hearts"> {
 	const privateView: HeartsPrivatePlayerView = {
 		...EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 		...privateOverrides,
@@ -113,7 +113,7 @@ function gameContext(
 function ohHellContext(
 	cards: VisibleCard[],
 	options: { bid: number; tricksWon: number },
-): AiGameContext {
+): AiGameContextFor<"ohHell"> {
 	const privateView: OhHellPrivatePlayerView = {
 		cards,
 		gameKind: "ohHell",

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Pressure P0 with Seedling Scout, then end turn to grow Spark for a Thornhare or Staff.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P0"
+	}
+}

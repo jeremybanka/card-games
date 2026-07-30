@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Recover both Beings next turn, then pressure the exposed Summoner.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

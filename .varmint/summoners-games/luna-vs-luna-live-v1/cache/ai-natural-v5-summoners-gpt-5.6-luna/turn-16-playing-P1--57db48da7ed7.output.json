@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deploy Thornhare now, then use remaining Spark to heal or draw before building pressure.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Thornhare",
+		"target": null
+	}
+}

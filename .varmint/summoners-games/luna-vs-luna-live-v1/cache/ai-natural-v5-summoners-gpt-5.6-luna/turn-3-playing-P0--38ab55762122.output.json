@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deploy the Rush threat now, then pressure the enemy Summoner next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Cinderwing Finch",
+		"target": null
+	}
+}

@@ -3,6 +3,7 @@ import type {
 	PlayerId,
 	VisibleCard,
 } from "../game/game-types.ts"
+import type { SummonersDeckId } from "../summoners/summoners-types.ts"
 
 type AiCardRank =
 	| "2"
@@ -30,9 +31,21 @@ export type OhHellAiNextAction =
 	| { action: "playCard"; card: AiCardValue }
 	| { action: "submitBid"; bid: number }
 
+export type SummonersAiNextAction =
+	| { action: "attack"; attacker: string; target: string }
+	| { action: "endTurn" }
+	| {
+			action: "playCard"
+			card: string
+			target: string | null
+	  }
+	| { action: "selectDeck"; deck: SummonersDeckId }
+	| { action: "usePower"; target: string | null }
+
 export type AiNextActionByGame = {
 	hearts: HeartsAiNextAction
 	ohHell: OhHellAiNextAction
+	summoners: SummonersAiNextAction
 }
 
 export type AiGameKind = keyof AiNextActionByGame

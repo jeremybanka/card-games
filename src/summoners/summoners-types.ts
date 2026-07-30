@@ -1,4 +1,9 @@
-import type { CardId, PlayerId } from "../game/game-types.ts"
+import type { AiModelId } from "../ai/ai-models.ts"
+import type {
+	AiSeatClientEvents,
+	CardId,
+	PlayerId,
+} from "../game/game-types.ts"
 
 export type SummonersDeckId =
 	| "emberReliquary"
@@ -132,6 +137,7 @@ export type SummonersPublicBeing = {
 export type SummonersPhase = "gameComplete" | "lobby" | "playing"
 
 export type SummonersPublicPlayerView = {
+	aiModel: AiModelId | null
 	connected: boolean
 	deck: SummonersStarterDeckDefinition | null
 	deckCount: number
@@ -142,7 +148,7 @@ export type SummonersPublicPlayerView = {
 	handCount: number
 	health: number
 	id: PlayerId
-	kind: "human"
+	kind: "ai" | "human"
 	maxSpark: number
 	name: string
 	powerUsed: boolean
@@ -204,7 +210,8 @@ export type EndSummonersTurnClientEvents = {
 	endSummonersTurn: (ack: import("../game/game-types.ts").ActionAck) => void
 }
 
-export type SummonersClientEvents = AttackSummonersClientEvents &
+export type SummonersClientEvents = AiSeatClientEvents &
+	AttackSummonersClientEvents &
 	EndSummonersTurnClientEvents &
 	PlaySummonersCardClientEvents &
 	SelectSummonersDeckClientEvents &

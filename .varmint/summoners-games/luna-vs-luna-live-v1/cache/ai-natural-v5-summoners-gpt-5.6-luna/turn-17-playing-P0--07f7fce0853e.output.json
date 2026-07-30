@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Attack the Guard with a rushing Cub, then preserve the remaining Cub for continued pressure.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P1:B1"
+	}
+}

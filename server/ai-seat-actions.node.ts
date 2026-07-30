@@ -22,7 +22,8 @@ type AiSeatState = {
 		kind: "ai" | "human"
 		name: string
 	}>
-	roundNumber: number
+	roundNumber?: number
+	turnNumber?: number
 }
 
 type AiSeatActionOptions<State extends AiSeatState> = {
@@ -141,7 +142,7 @@ export function bindAiSeatActions<
 								modelId: runtime.modelId,
 								playerId: aiPlayer.id,
 								playerName: aiPlayer.name,
-								roundNumber: state.roundNumber,
+								roundNumber: state.roundNumber ?? state.turnNumber ?? 0,
 								turns,
 							}
 							ack({ ok: true, review })

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Heal Brindle now, then recover Spark and ready Thornhare for a guarded attack next turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Mend the Vessel",
+		"target": "P1"
+	}
+}

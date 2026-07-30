@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Break the Guard with Thornhare, gaining life through leech and opening pressure for next turn.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "B0",
+		"target": "P0:B1"
+	}
+}

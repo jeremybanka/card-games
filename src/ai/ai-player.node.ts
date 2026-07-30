@@ -17,6 +17,8 @@ import {
 import type {
 	AiStrategyReviewAction,
 	AiStrategyReviewTurn,
+	AnyPrivatePlayerView,
+	AnyPublicGameView,
 	CardId,
 	ClientToServerEvents,
 	PassDirection,
@@ -26,6 +28,9 @@ import type {
 	HeartsPublicGameView,
 	ServerToClientEvents,
 	VisibleCard,
+	GameKind,
+	PrivatePlayerViewFor,
+	PublicGameViewFor,
 } from "../game/game-types.ts"
 import {
 	passRecipientSeatIndex,
@@ -34,6 +39,7 @@ import {
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { aiCardValue, cardIdForAiValue } from "./ai-card-value.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
+import type { AiGameContext } from "./ai-game-facts.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
@@ -62,7 +68,10 @@ export type AiPlayerRuntime = {
 }
 
 export type CreateAiPlayerOptions = {
-	canAct?: (game: PublicGameView, privateView: PrivatePlayerView) => boolean
+	canAct?: (
+		game: AnyPublicGameView,
+		privateView: AnyPrivatePlayerView,
+	) => boolean
 	generateTurn?: AiTurnGenerator
 	modelId: AiModelId
 	name: string
@@ -72,20 +81,12 @@ export type CreateAiPlayerOptions = {
 	serverUrl: string
 }
 
-function aiPublicView(silo: Silo): PublicGameView {
-	const view = silo.getState(publicGameViewAtom)
-	if (view.gameKind === "summoners") {
-		throw new Error("The trick-taking AI received a Summoners public view.")
-	}
-	return view
+function aiPublicView(silo: Silo): AnyPublicGameView {
+	return silo.getState(publicGameViewAtom)
 }
 
-function aiPrivateView(silo: Silo): PrivatePlayerView {
-	const view = silo.getState(privatePlayerViewAtom)
-	if (view.gameKind === "summoners") {
-		throw new Error("The trick-taking AI received a Summoners private view.")
-	}
-	return view
+function aiPrivateView(silo: Silo): AnyPrivatePlayerView {
+	return silo.getState(privatePlayerViewAtom)
 }
 
 function passPartnerId(
@@ -149,10 +150,10 @@ type PassMemoryAdapter = (
 	playerId: PlayerId,
 ) => { entry: AiMemoryLedgerEntry; pendingPass: PendingPass }
 
-export function isAiTurnReady(
+export function isAiTurnReady<Kind extends GameKind>(
 	playerId: PlayerId,
-	game: PublicGameView,
-	privateView: PrivatePlayerView,
+	game: PublicGameViewFor<Kind>,
+	privateView: PrivatePlayerViewFor<Kind>,
 ): boolean {
 	if (privateView.playerId !== playerId) return false
 	if (!matchingGameKinds(privateView, game)) return false
@@ -165,8 +166,8 @@ export function isAiTurnReady(
 
 type AiTurnReadiness = (
 	playerId: PlayerId,
-	game: PublicGameView,
-	privateView: PrivatePlayerView,
+	game: AnyPublicGameView,
+	privateView: AnyPrivatePlayerView,
 ) => boolean
 
 const aiTurnReadiness = {
@@ -190,7 +191,24 @@ const aiTurnReadiness = {
 			: game.phase === "playing" &&
 				game.currentPlayerId === playerId &&
 				privateView.playableCardIds.length > 0,
-} satisfies Record<PublicGameView["gameKind"], unknown>
+	summoners: (
+		playerId: PlayerId,
+		game: Extract<AnyPublicGameView, { gameKind: "summoners" }>,
+		privateView: Extract<AnyPrivatePlayerView, { gameKind: "summoners" }>,
+	): boolean => {
+		if (game.phase === "lobby") {
+			return (
+				privateView.playerId === playerId &&
+				game.players.find((player) => player.id === playerId)?.deck === null
+			)
+		}
+		return (
+			game.phase === "playing" &&
+			game.currentPlayerId === playerId &&
+				!game.players.find((player) => player.id === playerId)?.eliminated
+		)
+	},
+} satisfies Record<AnyPublicGameView["gameKind"], unknown>
 
 async function createAiPlayerRuntime(
 	options: CreateAiPlayerOptions,
@@ -226,7 +244,9 @@ async function createAiPlayerRuntime(
 	}
 
 	const resetMemoryForNewRound = (): void => {
-		const roundNumber = aiPublicView(silo).roundNumber
+		const game = aiPublicView(silo)
+		if (game.gameKind === "summoners") return
+		const roundNumber = game.roundNumber
 		if (roundNumber === observedRoundNumber) return
 		observedRoundNumber = roundNumber
 		pendingPass = undefined
@@ -240,6 +260,7 @@ async function createAiPlayerRuntime(
 	const captureReceivedPassCards = (): void => {
 		if (pendingPass === undefined) return
 		const privateView = aiPrivateView(silo)
+		if (privateView.gameKind !== "hearts") return
 		const passedIds = new Set(pendingPass.passedCards.map((card) => card.id))
 		if (privateView.cards.some((card) => passedIds.has(card.id))) return
 		const retainedIds = new Set(
@@ -264,6 +285,25 @@ async function createAiPlayerRuntime(
 	const turnFingerprint = (): string => {
 		const game = aiPublicView(silo)
 		const privateView = aiPrivateView(silo)
+		if (game.gameKind === "summoners" && privateView.gameKind === "summoners") {
+			return JSON.stringify({
+				currentPlayerId: game.currentPlayerId,
+				handCardIds: privateView.hand.map((card) => card.physicalId),
+				phase: game.phase,
+				players: game.players.map((player) => ({
+					battlefield: player.battlefield,
+					deckId: player.deck?.id ?? null,
+					health: player.health,
+					id: player.id,
+					powerUsed: player.powerUsed,
+					spark: player.spark,
+				})),
+				turnNumber: game.turnNumber,
+			})
+		}
+		if (game.gameKind === "summoners" || privateView.gameKind === "summoners") {
+			throw new Error("AI public and private views describe different games.")
+		}
 		return JSON.stringify({
 			currentPlayerId: game.currentPlayerId,
 			currentTrick: game.currentTrick,
@@ -292,6 +332,9 @@ async function createAiPlayerRuntime(
 		}
 		if (action.action === "submitBid") {
 			return { bid: action.bid, kind: "submitBid" }
+		}
+		if (action.action !== "playCard") {
+			throw new Error("Summoners actions are not included in trick reviews.")
 		}
 		const playedCard = privateView.cards.find(
 			(card) => aiCardValue(card) === action.card,
@@ -349,7 +392,10 @@ async function createAiPlayerRuntime(
 					}
 
 					const currentGame = aiPublicView(silo)
-					const turnKey = `round-${currentGame.roundNumber}-trick-${currentGame.trickNumber}`
+					const turnKey =
+						currentGame.gameKind === "summoners"
+							? `turn-${currentGame.turnNumber}`
+							: `round-${currentGame.roundNumber}-trick-${currentGame.trickNumber}`
 					silo.setState(state.aiCurrentPlanAtom, decision.currentPlan)
 					silo.setState(state.aiNextActionAtom, decision.nextAction)
 					span.event("ai.state.updated", {
@@ -358,10 +404,25 @@ async function createAiPlayerRuntime(
 						turnKey,
 					})
 
+					const actionContext = {
+						memoryLedger: silo.getState(state.aiMemoryLedgerAtom),
+						playerId: options.playerId,
+						previousPlan: silo.getState(state.aiCurrentPlanAtom),
+						privateView: privateViewAtStart,
+						publicView: gameAtStart,
+					} as AiGameContext
 					const result = await aiGameStrategy(
 						gameAtStart.gameKind,
-					).submitAction(socket, decision.nextAction, privateViewAtStart)
+					).submitAction(socket, decision.nextAction, actionContext)
 					if (result.ok && decision.nextAction.action === "passCards") {
+						if (
+							gameAtStart.gameKind !== "hearts" ||
+							privateViewAtStart.gameKind !== "hearts"
+						) {
+							throw new Error(
+								"Only Hearts supports AI card-pass memory.",
+							)
+						}
 						const passMemory = registeredGameCapability<PassMemoryAdapter>(
 							gameAtStart.gameKind,
 							passMemoryAdapters,
@@ -397,6 +458,12 @@ async function createAiPlayerRuntime(
 					if (!result.ok) {
 						lastAttemptedFingerprint = ""
 						span.setOutcome("error")
+						return
+					}
+					if (
+						gameAtStart.gameKind === "summoners" ||
+						privateViewAtStart.gameKind === "summoners"
+					) {
 						return
 					}
 					const reviewPhase: AiStrategyReviewTurn["phase"] =

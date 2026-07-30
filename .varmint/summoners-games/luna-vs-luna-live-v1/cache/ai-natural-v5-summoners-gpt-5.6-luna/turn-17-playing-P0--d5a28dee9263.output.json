@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Add another rushing Cub to build pressure, then attack the Guard next opportunity.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Coalcoat Cub",
+		"target": null
+	}
+}

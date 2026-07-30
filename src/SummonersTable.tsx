@@ -5,6 +5,11 @@ import type { JSX, VNode } from "preact"
 import { useEffect, useMemo, useRef, useState } from "preact/hooks"
 
 import { actionErrorAtom } from "./client-state.ts"
+import {
+	DEFAULT_AI_MODEL_ID,
+	isAiModelId,
+	OPENAI_HEARTS_MODELS,
+} from "./ai/ai-models.ts"
 import type { GameSocket } from "./game-socket.ts"
 import {
 	privatePlayerViewAtom,
@@ -424,6 +429,7 @@ function SummonersLobby({
 	onOpenRules: () => void
 	socket: GameSocket
 }): VNode {
+	const [selectedAiModel, setSelectedAiModel] = useState(DEFAULT_AI_MODEL_ID)
 	const readyToStart =
 		game.players.length >= 2 &&
 		game.players.every((player) => player.connected && player.deck !== null)
@@ -502,18 +508,66 @@ function SummonersLobby({
 								{player.name}
 								{player.id === game.hostId ? " · host" : ""}
 							</strong>
-							<small>{player.deck?.name ?? "Choosing…"}</small>
+							<small>
+								{player.deck?.name ?? "Choosing…"}
+								{player.aiModel === null ? "" : ` · ${player.aiModel}`}
+							</small>
+							{player.kind === "ai" && game.hostId === myPlayerId ? (
+								<button
+									type="button"
+									aria-label={`Remove ${player.name}`}
+									onClick={() =>
+										socket.emit("removeAiSeat", player.id, handleResult)
+									}
+								>
+									×
+								</button>
+							) : null}
 						</li>
 					))}
 				</ol>
 				{game.hostId === myPlayerId ? (
-					<button
-						type="button"
-						disabled={!readyToStart}
-						onClick={() => socket.emit("startGame", handleResult)}
-					>
-						Begin the Conclave
-					</button>
+					<>
+						{game.players.length < 4 ? (
+							<ai-seat-controls>
+								<label>
+									<span>OpenAI opponent</span>
+									<select
+										value={selectedAiModel}
+										onInput={(event) => {
+											const modelId = event.currentTarget.value
+											if (isAiModelId(modelId)) setSelectedAiModel(modelId)
+										}}
+									>
+										{OPENAI_HEARTS_MODELS.map((model) => (
+											<option key={model.id} value={model.id}>
+												{model.label}
+											</option>
+										))}
+									</select>
+								</label>
+								<button
+									type="button"
+									onClick={() =>
+										socket.emit(
+											"assignAiSeat",
+											selectedAiModel,
+											handleResult,
+										)
+									}
+								>
+									Invite AI Summoner
+								</button>
+							</ai-seat-controls>
+						) : null}
+						<button
+							type="button"
+							disabled={!readyToStart}
+							onClick={() => socket.emit("startGame", handleResult)}
+						>
+							Begin the Conclave
+						</button>
+					</>
 				) : (
 					<p>Waiting for the host to begin.</p>
 				)}

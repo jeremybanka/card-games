@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No ready Beings or playable cards; preserve Spark and end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

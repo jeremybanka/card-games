@@ -417,7 +417,7 @@ summoners-table.class {
 
 				> li {
 					display: grid;
-					grid-template-columns: 2rem 1fr;
+					grid-template-columns: 2rem 1fr auto;
 					grid-template-rows: auto auto;
 					align-items: center;
 					gap: 0 0.5rem;
@@ -449,6 +449,58 @@ summoners-table.class {
 						color: var(--summoners-muted);
 						font-size: 0.58rem;
 					}
+
+					> button {
+						grid-column: 3;
+						grid-row: 1 / -1;
+						width: 1.7rem;
+						aspect-ratio: 1;
+						border: 1px solid var(--summoners-line);
+						border-radius: 50%;
+						background: transparent;
+						color: var(--summoners-muted);
+						cursor: pointer;
+					}
+				}
+			}
+
+			> ai-seat-controls {
+				display: grid;
+				grid-template-columns: 1fr auto;
+				gap: 0.5rem;
+
+				> label {
+					display: grid;
+					gap: 0.2rem;
+
+					> span {
+						color: var(--summoners-muted);
+						font-size: 0.5rem;
+						font-weight: 800;
+						letter-spacing: 0.1em;
+						text-transform: uppercase;
+					}
+
+					> select {
+						min-width: 0;
+						padding: 0.5rem 0.65rem;
+						border: 1px solid var(--summoners-line);
+						border-radius: 0.55rem;
+						background: #111812;
+						color: var(--summoners-ink);
+					}
+				}
+
+				> button {
+					align-self: end;
+					min-height: 2.25rem;
+					padding: 0.5rem 0.75rem;
+					border: 1px solid var(--summoners-line);
+					border-radius: 0.55rem;
+					background: rgb(255 255 255 / 0.045);
+					color: var(--summoners-ink);
+					cursor: pointer;
+					font-weight: 800;
 				}
 			}
 
