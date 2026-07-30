@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Pressure the exposed enemy Summoner with the only ready attacker; develop Guard next turn.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B1",
-		"target": "P0"
-	}
-}

@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Pressure the exposed enemy Summoner with the strongest ready attacker.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B0",
-		"target": "P1"
-	}
-}

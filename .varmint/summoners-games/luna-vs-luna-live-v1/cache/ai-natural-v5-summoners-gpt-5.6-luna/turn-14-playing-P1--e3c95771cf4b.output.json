@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Restore Thornhare now so it survives a guarded attack next turn.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Mend the Vessel",
-		"target": "P1:B0"
-	}
-}

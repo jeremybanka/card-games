@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Develop Sporecap and stabilize, then use increased Spark to add a Thornhare or Staff next turn.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Sporecap Tender",
-		"target": null
-	}
-}

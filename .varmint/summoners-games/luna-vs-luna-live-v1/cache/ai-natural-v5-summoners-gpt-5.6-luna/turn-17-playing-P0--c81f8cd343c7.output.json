@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Develop Brasshorn Ibex now, then pressure the guarded board next opportunity.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Brasshorn Ibex",
-		"target": null
-	}
-}

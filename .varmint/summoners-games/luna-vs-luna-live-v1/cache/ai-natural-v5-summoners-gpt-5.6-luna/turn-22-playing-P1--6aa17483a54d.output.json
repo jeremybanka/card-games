@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Add another Guard while preserving Ox for defense; attack next turn if ready.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Barkhide Mouse",
-		"target": null
-	}
-}

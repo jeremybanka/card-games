@@ -43,7 +43,11 @@ import type { AiGameContext } from "./ai-game-facts.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
-import type { AiMemoryLedgerEntry, AiNextAction } from "./ai-types.ts"
+import type {
+	AiMemoryLedgerEntry,
+	HeartsAiNextAction,
+	OhHellAiNextAction,
+} from "./ai-types.ts"
 import {
 	createAiPlayerSiloState,
 	type AiPlayerSiloState,
@@ -196,6 +200,7 @@ const aiTurnReadiness = {
 		game: Extract<AnyPublicGameView, { gameKind: "summoners" }>,
 		privateView: Extract<AnyPrivatePlayerView, { gameKind: "summoners" }>,
 	): boolean => {
+		if (game.revision !== privateView.revision) return false
 		if (game.phase === "lobby") {
 			return (
 				privateView.playerId === playerId &&
@@ -290,6 +295,7 @@ async function createAiPlayerRuntime(
 				currentPlayerId: game.currentPlayerId,
 				handCardIds: privateView.hand.map((card) => card.physicalId),
 				phase: game.phase,
+				revision: game.revision,
 				players: game.players.map((player) => ({
 					battlefield: player.battlefield,
 					deckId: player.deck?.id ?? null,
@@ -318,7 +324,7 @@ async function createAiPlayerRuntime(
 		createHash("sha256").update(fingerprint).digest("hex").slice(0, 12)
 
 	const strategyReviewAction = (
-		action: AiNextAction,
+		action: HeartsAiNextAction | OhHellAiNextAction,
 		privateView: PrivatePlayerView,
 	): AiStrategyReviewAction => {
 		if (action.action === "passCards") {
@@ -414,7 +420,12 @@ async function createAiPlayerRuntime(
 					const result = await aiGameStrategy(
 						gameAtStart.gameKind,
 					).submitAction(socket, decision.nextAction, actionContext)
-					if (result.ok && decision.nextAction.action === "passCards") {
+					const nextAction = decision.nextAction
+					if (
+						result.ok &&
+						!Array.isArray(nextAction) &&
+						nextAction.action === "passCards"
+					) {
 						if (
 							gameAtStart.gameKind !== "hearts" ||
 							privateViewAtStart.gameKind !== "hearts"
@@ -438,7 +449,7 @@ async function createAiPlayerRuntime(
 						const capturedPass = passMemory(
 							gameAtStart,
 							privateViewAtStart,
-							decision.nextAction.cards.map((card) =>
+							nextAction.cards.map((card) =>
 								cardIdForAiValue(privateViewAtStart.cards, card),
 							),
 							options.playerId,
@@ -462,7 +473,8 @@ async function createAiPlayerRuntime(
 					}
 					if (
 						gameAtStart.gameKind === "summoners" ||
-						privateViewAtStart.gameKind === "summoners"
+						privateViewAtStart.gameKind === "summoners" ||
+						Array.isArray(nextAction)
 					) {
 						return
 					}
@@ -476,7 +488,7 @@ async function createAiPlayerRuntime(
 						...turns,
 						{
 							action: strategyReviewAction(
-								decision.nextAction,
+								nextAction,
 								privateViewAtStart,
 							),
 							phase: reviewPhase,

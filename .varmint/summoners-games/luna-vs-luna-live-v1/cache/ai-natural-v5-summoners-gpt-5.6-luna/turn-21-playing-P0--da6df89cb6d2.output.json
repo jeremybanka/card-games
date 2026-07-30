@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Deploy Ashen Colossus as a durable Guard, then preserve Spark and reassess.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Ashen Colossus",
-		"target": null
-	}
-}

@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Strengthen Elder Antler for the next attack while retaining 1 Spark.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Sudden Overgrowth",
-		"target": "P1:B2"
-	}
-}

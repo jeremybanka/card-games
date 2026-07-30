@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Destroy the Guard with Last Light, then send Coalcoat Cub at the exposed Summoner.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Last Light",
-		"target": "P1:B0"
-	}
-}

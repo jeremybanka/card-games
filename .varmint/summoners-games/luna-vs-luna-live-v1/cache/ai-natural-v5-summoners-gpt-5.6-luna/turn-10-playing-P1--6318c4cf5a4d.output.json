@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Rootwoven Buckler",
+			"target": "P1:B0"
+		},
+		{
+			"action": "usePower",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip Sporecap Tender with Rootwoven Buckler, restore it with Tender Growth, then trade damage into the enemy Guard while surviving the simultaneous combat."
+}

@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Canopy Muster",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Mend the Vessel",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Play Canopy Muster to draw two cards and restore Brindle, then use Mend the Vessel on P1. Spend 5 Spark, retain 1, and end the turn."
+}

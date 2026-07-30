@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Sporecap Tender",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 5 Spark safely: summon Sporecap Tender to heal Brindle by 2, summon Seedling Scout, and use Tender Growth on the existing Guard. Retain 5 Spark and avoid attacking into unknown defenses."
+}

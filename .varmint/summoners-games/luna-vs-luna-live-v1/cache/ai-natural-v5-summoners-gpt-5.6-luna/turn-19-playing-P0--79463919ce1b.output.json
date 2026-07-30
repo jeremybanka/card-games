@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Cast Wildfire Lesson to weaken all enemy Beings, then preserve remaining Spark.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Wildfire Lesson",
-		"target": null
-	}
-}

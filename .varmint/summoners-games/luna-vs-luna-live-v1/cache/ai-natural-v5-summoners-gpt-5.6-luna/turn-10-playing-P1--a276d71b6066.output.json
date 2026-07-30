@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Stabilize Thornhare with Guard and extra Energy; pressure through the enemy Guard next turn.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Rootwoven Buckler",
-		"target": "P1:B0"
-	}
-}

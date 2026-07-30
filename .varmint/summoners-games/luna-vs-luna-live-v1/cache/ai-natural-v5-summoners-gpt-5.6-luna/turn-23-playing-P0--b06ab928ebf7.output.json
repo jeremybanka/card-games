@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Deploy Cinderwing Finch to establish a blocker and future pressure; avoid unnecessary Spark spending afterward.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Cinderwing Finch",
-		"target": null
-	}
-}

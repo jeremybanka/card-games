@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Spend Spark through Pip to pressure the enemy Summoner before ending the invocation.",
-	"nextAction": {
-		"action": "usePower",
-		"target": "P1"
-	}
-}

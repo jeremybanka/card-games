@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Last Light",
+			"target": "P1:B1"
+		},
+		{
+			"action": "playCard",
+			"card": "Brasshorn Ibex",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 8 Spark to remove the Guard with Last Light, then establish Brasshorn Ibex as a threat. No attack is available this turn; retain 1 Spark."
+}

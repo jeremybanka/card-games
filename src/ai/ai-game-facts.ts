@@ -20,9 +20,21 @@ import {
 	passRecipientSeatIndex,
 	passSenderSeatIndex,
 } from "../game/seat-order.ts"
+import {
+	SUMMONERS_BATTLEFIELD_LIMIT,
+	SUMMONERS_STARTING_HEALTH,
+} from "../summoners/summoners-engine.ts"
+import {
+	SUMMONERS_KEYWORD_GLOSSARY,
+	summonersKeywordLink,
+} from "../summoners/summoners-glossary.ts"
+import type { SummonersKeyword } from "../summoners/summoners-types.ts"
 import { aiCardValue } from "./ai-card-value.ts"
 import type { AiGameKind, AiMemoryLedgerEntry } from "./ai-types.ts"
-import { summonersTargetReference } from "./summoners-ai-strategy.ts"
+import {
+	summonersLegalActionLines,
+	summonersTargetReference,
+} from "./summoners-ai-strategy.ts"
 
 type CommonAiGameContext = {
 	memoryLedger: AiMemoryLedgerEntry[]
@@ -115,38 +127,93 @@ function renderSummonersFacts(
 	const me = context.publicView.players.find(
 		(player) => player.id === context.playerId,
 	)
+	const usedKeywords = new Set<SummonersKeyword>()
+	for (const player of context.publicView.players) {
+		for (const being of player.battlefield) {
+			for (const keyword of being.keywords) usedKeywords.add(keyword)
+		}
+	}
+	for (const card of context.privateView.hand) {
+		for (const keyword of card.keywords ?? []) usedKeywords.add(keyword)
+		for (const keyword of card.grantedKeywords ?? []) usedKeywords.add(keyword)
+		for (const keyword of Object.keys(
+			SUMMONERS_KEYWORD_GLOSSARY,
+		) as SummonersKeyword[]) {
+			if (new RegExp(`\\b${keyword}\\b`, "i").test(card.rules)) {
+				usedKeywords.add(keyword)
+			}
+		}
+	}
+	const linkKeywords = (text: string): string => {
+		let linked = text
+		for (const keyword of usedKeywords) {
+			linked = linked.replace(
+				new RegExp(`\\b${keyword}\\b`, "gi"),
+				summonersKeywordLink(keyword),
+			)
+		}
+		return linked
+	}
 	const seats = context.publicView.players.flatMap((player, playerIndex) => {
-		const playerLine = `- P${playerIndex}${
+		const playerLines = [
+			`### P${playerIndex}${
 			player.id === context.playerId ? " (you)" : ""
-		} ${player.name}: life ${player.health}, Spark ${player.spark}/${
-			player.maxSpark
-		}, hand ${player.handCount}, deck ${player.deckCount}, ${
-			player.eliminated ? "eliminated" : "active"
-		}, Summoner ${player.summoner?.name ?? "unchosen"}.`
+		} — ${player.name}`,
+			"",
+			`- Deck: ${player.deck?.name ?? "unchosen"}`,
+			`- Life: ${player.health}/${SUMMONERS_STARTING_HEALTH}`,
+			`- Spark: ${player.spark}/${player.maxSpark}`,
+			`- Hand: ${player.handCount} cards`,
+			`- Deck: ${player.deckCount} cards`,
+			`- Discard: ${player.discardCount} cards`,
+			`- Status: ${player.eliminated ? "eliminated" : "active"}`,
+			`- Battlefield capacity: ${player.battlefield.length}/${SUMMONERS_BATTLEFIELD_LIMIT}`,
+			`- Summoner: ${
+				player.summoner === null
+					? "unchosen"
+					: `${player.summoner.name}, ${player.summoner.title}`
+			}`,
+			...(player.summoner === null
+				? []
+				: [
+						`- Power: ${player.summoner.power.name} — ${player.summoner.power.cost} Spark; ${linkKeywords(player.summoner.power.rules)}`,
+						`- Power status: ${
+							player.powerUsed ? "used this turn" : "unused this turn"
+						}`,
+					]),
+			"",
+			"Battlefield:",
+		]
 		const beings = player.battlefield.map(
 			(being, beingIndex) =>
-				`  - P${playerIndex}:B${beingIndex} ${being.card.name}: ${
+				`- **P${playerIndex}:B${beingIndex} — ${being.card.name}**: ${
 					being.attack
 				} Attack, ${being.energy - being.damage}/${being.energy} Energy, ${
 					being.ready ? "ready" : "weary"
-				}${being.keywords.length === 0 ? "" : `, ${being.keywords.join("/")}`}${
+				}${
+					being.keywords.length === 0
+						? ""
+						: `, ${being.keywords
+								.map((keyword) => summonersKeywordLink(keyword))
+								.join(", ")}`
+				}${
 					being.item === null ? "" : `, equipped ${being.item.name}`
 				}.`,
 		)
-		return [playerLine, ...(beings.length === 0 ? ["  - no Beings"] : beings)]
+		return [
+			...playerLines,
+			...(beings.length === 0 ? ["- no Beings"] : beings),
+			"",
+		]
 	})
 	const hand =
 		context.privateView.hand.length === 0
 			? ["- empty"]
 			: context.privateView.hand.map(
 					(card) =>
-						`- ${card.name}: ${card.cost} Spark, ${card.type}, target ${
+						`- **${card.name}** — ${card.cost} Spark, ${card.type}, target ${
 							card.targeting
-						}. ${card.rules}${
-							context.privateView.playableCardIds.includes(card.physicalId)
-								? " — COST/SPACE READY"
-								: ""
-						}`,
+						}. ${linkKeywords(card.rules)}`,
 				)
 	const myIndex = context.publicView.players.findIndex(
 		(player) => player.id === context.playerId,
@@ -164,38 +231,72 @@ function renderSummonersFacts(
 	])
 	const phaseInstruction =
 		context.publicView.phase === "lobby"
-			? `Choose a starter deck. Valid deck IDs: emberReliquary, outlandChorus, tidemarkMenagerie, verdantCompact. You are seat P${myIndex}.`
+			? [
+					"## Task",
+					"",
+					`Choose one starter deck for seat P${myIndex}.`,
+				]
 			: [
-					"Choose one action: play one COST/SPACE READY card with a legal target; attack with one ready Bn; use your unused affordable power; or endTurn.",
-					"Cards with target none require target null. Targeted cards and powers require one exact reference from the legend.",
-					"Attacks use your Bn index as attacker and must hit an enemy Guard when one exists.",
-				].join(" ")
+					"## Task",
+					"",
+					"Return one concise strategic plan and the complete ordered sequence of actions for this turn.",
+					"The final action must be `endTurn`. After each action, update Spark, readiness, damage, battlefield capacity, targets, and Guard restrictions before evaluating the next action.",
+				]
+	const glossary = [...usedKeywords]
+		.sort()
+		.flatMap((keyword) => [
+			`### ${keyword[0]?.toUpperCase()}${keyword.slice(1)}`,
+			"",
+			SUMMONERS_KEYWORD_GLOSSARY[keyword],
+			"",
+		])
 
 	return [
-		`Summoners, turn ${context.publicView.turnNumber}. Phase ${context.publicView.phase}. You are P${myIndex} (${me?.name ?? context.playerId}).`,
-		`Current player: ${
-			context.publicView.currentPlayerId === null
-				? "none"
-				: `P${context.publicView.players.findIndex(
-						(player) => player.id === context.publicView.currentPlayerId,
-					)}`
-		}.`,
+		`# Summoners — Turn ${context.publicView.turnNumber}`,
 		"",
-		"Public table:",
+		`You are **P${myIndex}, ${me?.name ?? context.playerId}**. ${
+			context.publicView.currentPlayerId === context.playerId
+				? "It is your turn."
+				: `Current player: ${
+						context.publicView.currentPlayerId === null
+							? "none"
+							: `P${context.publicView.players.findIndex(
+									(player) =>
+										player.id === context.publicView.currentPlayerId,
+								)}`
+					}.`
+		}`,
+		"",
+		"## Public table",
+		"",
 		...seats,
+		"## Your hand",
 		"",
-		"Your private hand:",
 		...hand,
 		"",
-		"Target legend:",
+		"## Stable character references",
+		"",
+		"These references remain bound to the same physical characters for the entire proposed sequence.",
+		`A newly summoned Being receives the next unused P${myIndex}:Bn reference in summon order.`,
+		"",
 		...targetLegend,
 		"",
-		phaseInstruction,
+		"## Recent public history",
 		"",
-		"Current plan:",
+		...context.publicView.recentHistory.map((event) => `- ${event}`),
+		"",
+		"## Strategic memory",
+		"",
 		context.previousPlan || "None.",
 		"",
+		"## Legal actions now",
+		"",
+		...summonersLegalActionLines(context),
+		"",
 		"Hidden-information boundary: opponent card values are unknown. Never name or infer them.",
+		"",
+		...phaseInstruction,
+		...(glossary.length === 0 ? [] : ["", "## Glossary", "", ...glossary]),
 	].join("\n")
 }
 

@@ -65,6 +65,8 @@ export type SummonersState = {
 	phase: "gameComplete" | "lobby" | "playing"
 	physicalCardIds: CardId[]
 	players: SummonersPlayer[]
+	recentHistory: string[]
+	revision: number
 	roomCode: string
 	statusMessage: string
 	turnNumber: number
@@ -74,7 +76,14 @@ export type SummonersState = {
 export class SummonersRuleError extends Error {}
 
 function copyState(state: SummonersState): SummonersState {
-	return structuredClone(state)
+	const next = structuredClone(state)
+	next.revision += 1
+	return next
+}
+
+function setStatus(state: SummonersState, message: string): void {
+	state.statusMessage = message
+	state.recentHistory = [...state.recentHistory.slice(-7), message]
 }
 
 function playerFor(state: SummonersState, playerId: PlayerId): SummonersPlayer {
@@ -212,6 +221,8 @@ export function toSummonersPublicGameView(
 		hostId: state.hostId,
 		phase: state.phase,
 		players: state.players.map((player) => publicPlayer(state, player)),
+		recentHistory: [...state.recentHistory],
+		revision: state.revision,
 		roomCode: state.roomCode,
 		statusMessage: state.statusMessage,
 		turnNumber: state.turnNumber,
@@ -230,6 +241,7 @@ export function toSummonersPrivatePlayerView(
 			hand: [],
 			playableCardIds: [],
 			playerId: null,
+			revision: state.revision,
 		}
 	}
 	return {
@@ -239,6 +251,7 @@ export function toSummonersPrivatePlayerView(
 			playerCanPlayCard(state, player, cardId),
 		),
 		playerId,
+		revision: state.revision,
 	}
 }
 
@@ -294,6 +307,8 @@ export function createSummonersGame(
 		phase: "lobby",
 		physicalCardIds,
 		players: [emptyPlayer({ id: hostId, name: hostName })],
+		recentHistory: ["Invite another Summoner and choose a starter deck."],
+		revision: 0,
 		roomCode,
 		statusMessage: "Invite another Summoner and choose a starter deck.",
 		turnNumber: 0,
@@ -323,10 +338,12 @@ export function joinSummonersGame(
 		throw new SummonersRuleError("This Conclave already has four Summoners.")
 	}
 	next.players.push(emptyPlayer({ id: playerId, name: playerName }, controller))
-	next.statusMessage =
+	setStatus(
+		next,
 		next.players.length < SUMMONERS_PLAYER_MINIMUM
 			? "Invite another Summoner and choose a starter deck."
-			: "Choose starter decks. The host begins when everyone is ready."
+			: "Choose starter decks. The host begins when everyone is ready.",
+	)
 	return next
 }
 
@@ -342,7 +359,10 @@ export function disconnectSummonersPlayer(
 		if (next.hostId === playerId) next.hostId = next.players[0]?.id ?? null
 	} else {
 		player.connected = false
-		next.statusMessage = `${player.name} slipped beyond the veil. Waiting for their return.`
+		setStatus(
+			next,
+			`${player.name} slipped beyond the veil. Waiting for their return.`,
+		)
 	}
 	return next
 }
@@ -362,9 +382,12 @@ export function selectSummonersDeck(
 	}
 	const next = copyState(state)
 	playerFor(next, playerId).deckId = deckId
-	next.statusMessage = `${playerFor(next, playerId).name} chose ${
-		summonersStarterDecks[deckId].name
-	}.`
+	setStatus(
+		next,
+		`${playerFor(next, playerId).name} chose ${
+			summonersStarterDecks[deckId].name
+		}.`,
+	)
 	return next
 }
 
@@ -374,12 +397,18 @@ function drawCard(state: SummonersState, player: SummonersPlayer): void {
 	if (cardId === undefined) {
 		player.fatigue += 1
 		player.health -= player.fatigue
-		state.statusMessage = `${player.name} has no cards left and suffers ${player.fatigue} fatigue.`
+		setStatus(
+			state,
+			`${player.name} has no cards left and suffers ${player.fatigue} fatigue.`,
+		)
 		return
 	}
 	if (player.hand.length >= SUMMONERS_HAND_LIMIT) {
 		player.discard.push(cardId)
-		state.statusMessage = `${player.name}'s full hand lets a card slip into the discard.`
+		setStatus(
+			state,
+			`${player.name}'s full hand lets a card slip into the discard.`,
+		)
 		return
 	}
 	player.hand.push(cardId)
@@ -402,17 +431,19 @@ function eliminateSpentSummoners(state: SummonersState): void {
 		player.battlefield = []
 		player.hand = []
 		player.deck = []
-		state.statusMessage = `${player.name} is unbound from the Conclave.`
+		setStatus(state, `${player.name} is unbound from the Conclave.`)
 	}
 	const survivors = activePlayers(state)
 	if (state.phase === "playing" && survivors.length <= 1) {
 		state.phase = "gameComplete"
 		state.currentPlayerId = null
 		state.winnerIds = survivors.map((player) => player.id)
-		state.statusMessage =
+		setStatus(
+			state,
 			survivors.length === 1
 				? `${survivors[0]?.name} stands as the last Summoner.`
-				: "The Conclave collapses with no Summoner standing."
+				: "The Conclave collapses with no Summoner standing.",
+		)
 	}
 }
 
@@ -443,7 +474,10 @@ function beginTurn(
 	if (drawAtStart) drawCard(state, player)
 	eliminateSpentSummoners(state)
 	if (state.phase === "playing") {
-		state.statusMessage = `${player.name}'s turn — ${player.spark} Spark burns bright.`
+		setStatus(
+			state,
+			`${player.name}'s turn — ${player.spark} Spark burns bright.`,
+		)
 	}
 }
 
@@ -503,6 +537,7 @@ export function startSummonersGame(
 	const next = copyState(state)
 	next.cardBlueprintById = {}
 	next.phase = "playing"
+	next.recentHistory = []
 	next.turnNumber = 1
 	next.winnerIds = []
 	const physicalCardIds = shuffled(next.physicalCardIds, random)
@@ -758,7 +793,7 @@ export function playSummonersCard(
 
 	resolveEffects(next, player, card.effects ?? [], target)
 	if (next.phase === "playing") {
-		next.statusMessage = `${player.name} played ${card.name}.`
+		setStatus(next, `${player.name} played ${card.name}.`)
 		if (player.eliminated) advanceTurn(next, playerId)
 	}
 	return next
@@ -809,7 +844,10 @@ export function attackSummoners(
 				player.health + attackerStats.attack,
 			)
 		}
-		next.statusMessage = `${definitionFor(next, attackerId).name} struck ${defender.name} for ${attackerStats.attack}.`
+		setStatus(
+			next,
+			`${definitionFor(next, attackerId).name} struck ${defender.name} for ${attackerStats.attack}.`,
+		)
 	} else {
 		const targetBeing = locateBeing(next, target).being
 		const targetStats = beingStats(next, targetBeing)
@@ -827,7 +865,10 @@ export function attackSummoners(
 				defender.health + targetStats.attack,
 			)
 		}
-		next.statusMessage = `${definitionFor(next, attackerId).name} battled ${definitionFor(next, targetBeing.cardId).name}.`
+		setStatus(
+			next,
+			`${definitionFor(next, attackerId).name} battled ${definitionFor(next, targetBeing.cardId).name}.`,
+		)
 	}
 	discardSpentBeings(next)
 	eliminateSpentSummoners(next)
@@ -858,7 +899,7 @@ export function useSummonerPower(
 	player.powerUsed = true
 	resolveEffects(next, player, summoner.power.effects, target)
 	if (next.phase === "playing") {
-		next.statusMessage = `${summoner.name} used ${summoner.power.name}.`
+		setStatus(next, `${summoner.name} used ${summoner.power.name}.`)
 		if (player.eliminated) advanceTurn(next, playerId)
 	}
 	return next
@@ -888,8 +929,13 @@ export function restartSummonersGame(
 	next.cardBlueprintById = {}
 	next.currentPlayerId = null
 	next.phase = "lobby"
-	next.statusMessage =
-		"Starter decks are remembered. The host may begin the rematch."
+	setStatus(
+		next,
+		"Starter decks are remembered. The host may begin the rematch.",
+	)
+	next.recentHistory = [
+		"Starter decks are remembered. The host may begin the rematch.",
+	]
 	next.turnNumber = 0
 	next.winnerIds = []
 	for (const player of next.players) {

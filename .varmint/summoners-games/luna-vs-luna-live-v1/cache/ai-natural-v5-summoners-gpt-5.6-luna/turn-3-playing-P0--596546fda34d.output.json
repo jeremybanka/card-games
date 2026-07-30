@@ -1,0 +1,23 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Cinderwing Finch",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend both Spark on the Rush Finch, then attack Luna Verdant directly with both ready Beings while avoiding an unfavorable trade into Seedling Scout."
+}

@@ -75,6 +75,8 @@ describe("Summoners authoritative engine", () => {
 
 		expect(publicView.phase).toBe("playing")
 		expect(publicView.currentPlayerId).toBe(adaId)
+		expect(publicView.revision).toBe(privateView.revision)
+		expect(publicView.revision).toBe(state.revision)
 		expect(publicView.players[0]).toMatchObject({
 			deckCount: 19,
 			handCount: 5,

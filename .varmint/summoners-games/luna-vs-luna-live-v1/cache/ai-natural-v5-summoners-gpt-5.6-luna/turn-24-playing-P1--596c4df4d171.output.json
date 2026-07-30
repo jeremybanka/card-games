@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Sudden Overgrowth",
+			"target": "P1:B0"
+		},
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend exactly 5 Spark while strengthening the existing Guard and healing Brindle; retain 5 Spark and end safely."
+}

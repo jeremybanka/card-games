@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Canopy Muster",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Play Canopy Muster for its draw and 1-point Summoner heal, then use Tender Growth on Brindle for 2 more healing. Retain 5 Spark and end the turn."
+}

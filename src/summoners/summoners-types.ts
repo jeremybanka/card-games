@@ -163,6 +163,8 @@ export type SummonersPublicGameView = {
 	hostId: PlayerId | null
 	phase: SummonersPhase
 	players: SummonersPublicPlayerView[]
+	recentHistory: string[]
+	revision: number
 	roomCode: string
 	statusMessage: string
 	turnNumber: number
@@ -174,6 +176,7 @@ export type SummonersPrivatePlayerView = {
 	hand: SummonersVisibleCard[]
 	playableCardIds: CardId[]
 	playerId: PlayerId | null
+	revision: number
 }
 
 export type SelectSummonersDeckClientEvents = {

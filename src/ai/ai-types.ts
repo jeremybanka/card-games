@@ -31,7 +31,7 @@ export type OhHellAiNextAction =
 	| { action: "playCard"; card: AiCardValue }
 	| { action: "submitBid"; bid: number }
 
-export type SummonersAiNextAction =
+export type SummonersAiAction =
 	| { action: "attack"; attacker: string; target: string }
 	| { action: "endTurn" }
 	| {
@@ -45,7 +45,7 @@ export type SummonersAiNextAction =
 export type AiNextActionByGame = {
 	hearts: HeartsAiNextAction
 	ohHell: OhHellAiNextAction
-	summoners: SummonersAiNextAction
+	summoners: SummonersAiAction[]
 }
 
 export type AiGameKind = keyof AiNextActionByGame

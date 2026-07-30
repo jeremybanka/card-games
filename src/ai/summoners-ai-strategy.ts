@@ -1,5 +1,6 @@
 import type { JSONSchema7 } from "ai"
 
+import type { ActionResult, CardId } from "../game/game-types.ts"
 import { SUMMONERS_DECK_IDS } from "../summoners/summoners-cards.ts"
 import type {
 	SummonersPublicPlayerView,
@@ -11,7 +12,7 @@ import type { AiGameStrategy } from "./ai-game-strategy.ts"
 import type { AiGameContextFor } from "./ai-game-facts.ts"
 import type {
 	AiTurnDecisionFor,
-	SummonersAiNextAction,
+	SummonersAiAction,
 } from "./ai-types.ts"
 
 const targetPattern = "^P[0-3](?::B[0-4])?$"
@@ -19,9 +20,9 @@ const targetPattern = "^P[0-3](?::B[0-4])?$"
 const summonersAiTurnDecisionJsonSchema: JSONSchema7 = {
 	additionalProperties: false,
 	properties: {
-		currentPlan: { type: "string" },
-		nextAction: {
-			anyOf: [
+		actions: {
+			items: {
+				anyOf: [
 				{
 					additionalProperties: false,
 					properties: {
@@ -50,7 +51,10 @@ const summonersAiTurnDecisionJsonSchema: JSONSchema7 = {
 					additionalProperties: false,
 					properties: {
 						action: { enum: ["attack"], type: "string" },
-						attacker: { pattern: "^B[0-4]$", type: "string" },
+						attacker: {
+							pattern: "^P[0-3]:B[0-4]$",
+							type: "string",
+						},
 						target: { pattern: targetPattern, type: "string" },
 					},
 					required: ["action", "attacker", "target"],
@@ -78,10 +82,15 @@ const summonersAiTurnDecisionJsonSchema: JSONSchema7 = {
 					required: ["action"],
 					type: "object",
 				},
-			],
+				],
+			},
+			maxItems: 24,
+			minItems: 1,
+			type: "array",
 		},
+		plan: { type: "string" },
 	},
-	required: ["currentPlan", "nextAction"],
+	required: ["plan", "actions"],
 	type: "object",
 }
 
@@ -202,6 +211,62 @@ function attackTargets(
 	return targets
 }
 
+export function summonersLegalActionLines(
+	context: AiGameContextFor<"summoners">,
+): string[] {
+	if (context.publicView.phase === "lobby") {
+		return SUMMONERS_DECK_IDS.map(
+			(deck) => `- Select deck \`${deck}\`.`,
+		)
+	}
+	const me = myPlayer(context)
+	const lines: string[] = []
+	for (const card of context.privateView.hand) {
+		if (!context.privateView.playableCardIds.includes(card.physicalId)) continue
+		const targets = targetsFor(context, card.targeting)
+		if (card.targeting === "none") {
+			lines.push(`- Play \`${card.name}\` with target \`null\`.`)
+		} else if (targets.length > 0) {
+			lines.push(
+				`- Play \`${card.name}\` targeting ${targets
+					.map(
+						(target) =>
+							`\`${summonersTargetReference(context, target)}\``,
+					)
+					.join(", ")}.`,
+			)
+		}
+	}
+	const myIndex = playerIndex(context, context.playerId)
+	const attackTargetRefs = attackTargets(context).map(
+		(target) => `\`${summonersTargetReference(context, target)}\``,
+	)
+	for (const [beingIndex, being] of me.battlefield.entries()) {
+		if (!being.ready || attackTargetRefs.length === 0) continue
+		lines.push(
+			`- Attack with \`P${myIndex}:B${beingIndex}\` targeting ${attackTargetRefs.join(", ")}.`,
+		)
+	}
+	const power = me.summoner?.power
+	if (power !== undefined && !me.powerUsed && me.spark >= power.cost) {
+		const targets = targetsFor(context, power.targeting)
+		if (power.targeting === "none") {
+			lines.push(`- Use \`${power.name}\` with target \`null\`.`)
+		} else if (targets.length > 0) {
+			lines.push(
+				`- Use \`${power.name}\` targeting ${targets
+					.map(
+						(target) =>
+							`\`${summonersTargetReference(context, target)}\``,
+					)
+					.join(", ")}.`,
+			)
+		}
+	}
+	lines.push("- End the turn.")
+	return lines
+}
+
 function myPlayer(
 	context: AiGameContextFor<"summoners">,
 ): SummonersPublicPlayerView {
@@ -232,10 +297,12 @@ function fallbackSummonersDecision(
 		const index = Math.max(0, playerIndex(context, context.playerId))
 		return {
 			currentPlan: "Choose a distinct starter philosophy, then learn its curve.",
-			nextAction: {
-				action: "selectDeck",
-				deck: SUMMONERS_DECK_IDS[index % SUMMONERS_DECK_IDS.length]!,
-			},
+			nextAction: [
+				{
+					action: "selectDeck",
+					deck: SUMMONERS_DECK_IDS[index % SUMMONERS_DECK_IDS.length]!,
+				},
+			],
 		}
 	}
 
@@ -245,11 +312,14 @@ function fallbackSummonersDecision(
 		return {
 			currentPlan:
 				"Turn ready Beings toward the opposing Summoner while respecting Guards.",
-			nextAction: {
-				action: "attack",
-				attacker: `B${readyAttacker}`,
-				target: summonersTargetReference(context, attackTarget),
-			},
+			nextAction: [
+				{
+					action: "attack",
+					attacker: `P${playerIndex(context, context.playerId)}:B${readyAttacker}`,
+					target: summonersTargetReference(context, attackTarget),
+				},
+				{ action: "endTurn" },
+			],
 		}
 	}
 
@@ -267,11 +337,14 @@ function fallbackSummonersDecision(
 		return {
 			currentPlan:
 				"Develop the strongest legal board presence, then convert it into pressure.",
-			nextAction: {
-				action: "playCard",
-				card: playable.name,
-				target: targetReferenceFor(context, playable.targeting) ?? null,
-			},
+			nextAction: [
+				{
+					action: "playCard",
+					card: playable.name,
+					target: targetReferenceFor(context, playable.targeting) ?? null,
+				},
+				{ action: "endTurn" },
+			],
 		}
 	}
 
@@ -289,20 +362,23 @@ function fallbackSummonersDecision(
 		return {
 			currentPlan:
 				"Use spare Spark through the Summoner before yielding the invocation.",
-			nextAction: { action: "usePower", target: powerTarget },
+			nextAction: [
+				{ action: "usePower", target: powerTarget },
+				{ action: "endTurn" },
+			],
 		}
 	}
 
 	return {
 		currentPlan:
 			"Preserve the remaining hand and pass priority when no profitable action remains.",
-		nextAction: { action: "endTurn" },
+		nextAction: [{ action: "endTurn" }],
 	}
 }
 
-function isLegalSummonersAction(
+function isLegalSummonersAtomicAction(
 	context: AiGameContextFor<"summoners">,
-	action: SummonersAiNextAction,
+	action: SummonersAiAction,
 ): boolean {
 	const me = myPlayer(context)
 	if (action.action === "selectDeck") {
@@ -331,7 +407,8 @@ function isLegalSummonersAction(
 			: action.target !== null && validTargets.includes(action.target)
 	}
 	if (action.action === "attack") {
-		const attacker = /^B(\d)$/.exec(action.attacker)
+		const myIndex = playerIndex(context, context.playerId)
+		const attacker = new RegExp(`^P${myIndex}:B(\\d)$`).exec(action.attacker)
 		const being =
 			attacker === null ? undefined : me.battlefield[Number(attacker[1])]
 		return (
@@ -351,24 +428,42 @@ function isLegalSummonersAction(
 		: action.target !== null && validTargets.includes(action.target)
 }
 
-function isSummonersDecision(input: unknown): input is AiTurnDecisionFor<"summoners"> {
-	if (typeof input !== "object" || input === null) return false
-	const decision = input as Record<string, unknown>
+function isLegalSummonersActionSequence(
+	context: AiGameContextFor<"summoners">,
+	actions: SummonersAiAction[],
+): boolean {
+	if (actions.length === 0) return false
+	if (context.publicView.phase === "lobby") {
+		return (
+			actions.length === 1 &&
+			actions[0]?.action === "selectDeck" &&
+			isLegalSummonersAtomicAction(context, actions[0])
+		)
+	}
 	if (
-		typeof decision.currentPlan !== "string" ||
-		typeof decision.nextAction !== "object" ||
-		decision.nextAction === null
+		actions.at(-1)?.action !== "endTurn" ||
+		actions.slice(0, -1).some((action) => action.action === "endTurn") ||
+		actions.some((action) => action.action === "selectDeck")
 	) {
 		return false
 	}
-	const action = decision.nextAction as Record<string, unknown>
+	const firstAction = actions[0]
+	return (
+		firstAction !== undefined &&
+		isLegalSummonersAtomicAction(context, firstAction)
+	)
+}
+
+function isSummonersAction(input: unknown): input is SummonersAiAction {
+	if (typeof input !== "object" || input === null) return false
+	const action = input as Record<string, unknown>
 	const validTarget = (target: unknown): boolean =>
 		typeof target === "string" && /^P[0-3](?::B[0-4])?$/.test(target)
 	switch (action.action) {
 		case "attack":
 			return (
 				typeof action.attacker === "string" &&
-				/^B[0-4]$/.test(action.attacker) &&
+				/^P[0-3]:B[0-4]$/.test(action.attacker) &&
 				validTarget(action.target)
 			)
 		case "endTurn":
@@ -393,86 +488,149 @@ function isSummonersDecision(input: unknown): input is AiTurnDecisionFor<"summon
 	}
 }
 
+function parseSummonersDecision(
+	input: unknown,
+):
+	| { ok: true; value: AiTurnDecisionFor<"summoners"> }
+	| { error: unknown; ok: false } {
+	if (typeof input !== "object" || input === null) {
+		return { error: new Error("Invalid Summoners AI decision."), ok: false }
+	}
+	const decision = input as Record<string, unknown>
+	if (
+		typeof decision.plan !== "string" ||
+		!Array.isArray(decision.actions) ||
+		decision.actions.length === 0 ||
+		!decision.actions.every(isSummonersAction)
+	) {
+		return { error: new Error("Invalid Summoners AI decision."), ok: false }
+	}
+	return {
+		ok: true,
+		value: {
+			currentPlan: decision.plan,
+			nextAction: decision.actions,
+		},
+	}
+}
+
 export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 	fallbackDecision: fallbackSummonersDecision,
-	isLegalAction: isLegalSummonersAction,
+	isLegalAction: isLegalSummonersActionSequence,
 	outputDescription:
-		"A legal Summoners action plus a concise plan for the current invocation.",
-	outputName: "summoners_turn_decision",
+		"A concise strategic plan and a complete ordered Summoners turn ending with endTurn.",
+	outputName: "summoners_turn_sequence",
 	outputSchema: summonersAiTurnDecisionJsonSchema,
-	parseDecision: (input) =>
-		isSummonersDecision(input)
-			? { ok: true, value: input }
-			: { error: new Error("Invalid Summoners AI decision."), ok: false },
+	parseDecision: parseSummonersDecision,
 	privateViewForStrategy: (view) => view,
-	submitAction: (socket, action, context) => {
-		switch (action.action) {
-			case "selectDeck":
-				return new Promise((resolve) => {
-					socket.emit("selectSummonersDeck", action.deck, resolve)
-				})
-			case "playCard": {
-				const card = context.privateView.hand.find(
-					(candidate) =>
-						candidate.name === action.card &&
-						context.privateView.playableCardIds.includes(
-							candidate.physicalId,
-						),
+	submitAction: async (socket, actions, context) => {
+		const usedCardIds = new Set<string>()
+		const boundBeingIds = new Map<string, CardId>()
+		for (const [ownerIndex, player] of context.publicView.players.entries()) {
+			for (const [beingIndex, being] of player.battlefield.entries()) {
+				boundBeingIds.set(
+					`P${ownerIndex}:B${beingIndex}`,
+					being.card.physicalId,
 				)
-				if (card === undefined) {
-					throw new Error("The AI selected a card outside its legal hand.")
-				}
-				return new Promise((resolve) => {
-					socket.emit(
-						"playSummonersCard",
-						card.physicalId,
-						action.target === null
-							? null
-							: resolveSummonersTargetReference(context, action.target),
-						resolve,
-					)
-				})
 			}
-			case "attack": {
-				const attackerIndex = Number(action.attacker.slice(1))
-				const attacker = myPlayer(context).battlefield[attackerIndex]
-				const target = resolveSummonersTargetReference(context, action.target)
-				if (attacker === undefined || target === null) {
-					throw new Error("The AI selected a missing combatant.")
-				}
-				return new Promise((resolve) => {
-					socket.emit(
-						"attackSummoners",
-						attacker.card.physicalId,
-						target,
-						resolve,
-					)
-				})
-			}
-			case "usePower":
-				return new Promise((resolve) => {
-					socket.emit(
-						"useSummonerPower",
-						action.target === null
-							? null
-							: resolveSummonersTargetReference(context, action.target),
-						resolve,
-					)
-				})
-			case "endTurn":
-				return new Promise((resolve) => {
-					socket.emit("endSummonersTurn", resolve)
-				})
 		}
-		throw new Error("Summoners cannot submit that AI action.")
+		const myIndex = playerIndex(context, context.playerId)
+		let nextOwnBeingIndex = myPlayer(context).battlefield.length
+		const resolveBoundTarget = (reference: string): SummonersTarget | null => {
+			const match = /^P(\d)(?::B(\d))?$/.exec(reference)
+			if (match === null) return null
+			const owner = context.publicView.players[Number(match[1])]
+			if (owner === undefined) return null
+			if (match[2] === undefined) {
+				return { kind: "summoner", playerId: owner.id }
+			}
+			const cardId = boundBeingIds.get(reference)
+			return cardId === undefined
+				? null
+				: { cardId, kind: "being", playerId: owner.id }
+		}
+		for (const action of actions) {
+			let result: ActionResult
+			switch (action.action) {
+				case "selectDeck":
+					result = await new Promise((resolve) => {
+						socket.emit("selectSummonersDeck", action.deck, resolve)
+					})
+					break
+				case "playCard": {
+					const card = context.privateView.hand.find(
+						(candidate) =>
+							candidate.name === action.card &&
+							!usedCardIds.has(candidate.physicalId),
+					)
+					if (card === undefined) {
+						throw new Error("The AI selected a card outside its legal hand.")
+					}
+					usedCardIds.add(card.physicalId)
+					result = await new Promise((resolve) => {
+						socket.emit(
+							"playSummonersCard",
+							card.physicalId,
+							action.target === null
+								? null
+								: resolveBoundTarget(action.target),
+							resolve,
+						)
+					})
+					if (result.ok && card.type === "being") {
+						boundBeingIds.set(
+							`P${myIndex}:B${nextOwnBeingIndex}`,
+							card.physicalId,
+						)
+						nextOwnBeingIndex += 1
+					}
+					break
+				}
+				case "attack": {
+					const attackerId = boundBeingIds.get(action.attacker)
+					const target = resolveBoundTarget(action.target)
+					if (attackerId === undefined || target === null) {
+						throw new Error("The AI selected a missing combatant.")
+					}
+					result = await new Promise((resolve) => {
+						socket.emit(
+							"attackSummoners",
+							attackerId,
+							target,
+							resolve,
+						)
+					})
+					break
+				}
+				case "usePower":
+					result = await new Promise((resolve) => {
+						socket.emit(
+							"useSummonerPower",
+							action.target === null
+								? null
+								: resolveBoundTarget(action.target),
+							resolve,
+						)
+					})
+					break
+				case "endTurn":
+					result = await new Promise((resolve) => {
+						socket.emit("endSummonersTurn", resolve)
+					})
+					break
+			}
+			if (!result.ok) return result
+		}
+		return { ok: true, roomCode: context.publicView.roomCode }
 	},
 	systemPrompt: [
 		"You are a strategic Summoners player in a living card game.",
-		"Choose exactly one action from the current legal possibilities.",
-		"Players are P0 through P3. Their Beings are Pn:B0 through Pn:B4. Your attackers are B0 through B4.",
+		"Propose one complete, ordered turn ending with endTurn. The server executes actions in order and validates each one authoritatively.",
+		"If an action becomes illegal, execution stops before it; completed earlier actions are not rolled back.",
+		"Players are P0 through P3. Their Beings are Pn:B0 through Pn:B4.",
+		"Character references remain bound to their current physical characters for the lifetime of the sequence.",
 		"Never invent hidden opponent card values. Opponent hands expose counts and opaque backs only.",
-		"Develop Beings, equip useful Items, spend Spark efficiently, respect Guards, and pressure an enemy Summoner.",
-		"Keep the plan terse and reusable across the rest of the invocation.",
+		"Spend Spark efficiently, respect Guards, account for simultaneous combat, and pursue a coherent turn-level plan.",
 	].join("\n"),
 	usesTurnGenerator: () => true,
 }

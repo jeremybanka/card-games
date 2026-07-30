@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Use the ready Rush Being to pressure the enemy Summoner immediately.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B0",
-		"target": "P1"
-	}
-}

@@ -1,6 +1,0 @@
-{
-	"currentPlan": "Endure this turn; gain Spark next turn, then equip Rootwoven Buckler to stabilize the Ox.",
-	"nextAction": {
-		"action": "endTurn"
-	}
-}

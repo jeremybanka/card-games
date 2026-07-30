@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Weaken Thornhare safely, then pressure with developed threats after Spark refresh.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Spark Toss",
-		"target": "P1:B0"
-	}
-}

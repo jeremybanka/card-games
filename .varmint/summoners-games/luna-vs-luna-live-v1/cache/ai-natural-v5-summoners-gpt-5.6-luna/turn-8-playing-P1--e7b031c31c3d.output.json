@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Sporecap Tender",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Play Sporecap Tender, using its summon effect to restore 2 life, then use Tender Growth on P1 for 2 more life. This spends all 4 Spark and ends at full life with a Being in play."
+}

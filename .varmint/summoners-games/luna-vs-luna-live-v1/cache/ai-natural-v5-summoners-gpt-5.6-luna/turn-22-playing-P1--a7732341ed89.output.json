@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Add Sporecap Tender as another Guard-capable body; preserve Ox for defense and attack next turn.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Sporecap Tender",
-		"target": null
-	}
-}

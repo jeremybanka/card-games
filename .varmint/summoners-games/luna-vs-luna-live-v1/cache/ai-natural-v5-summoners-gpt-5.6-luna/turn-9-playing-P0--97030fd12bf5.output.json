@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "Frontier Flareknife",
+			"target": "P0:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Pocket Ember to deal 1 damage, then spend the remaining 3 Spark on Frontier Flareknife to strengthen the existing Guard while preserving it. End with 0 Spark and one Being in play."
+}

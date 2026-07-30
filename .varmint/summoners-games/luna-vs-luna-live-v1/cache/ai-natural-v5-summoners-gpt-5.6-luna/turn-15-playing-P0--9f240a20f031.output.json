@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Equip Brasshorn Ibex, then attack Thornhare with the boosted attacker next action.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Frontier Flareknife",
-		"target": "P0:B1"
-	}
-}

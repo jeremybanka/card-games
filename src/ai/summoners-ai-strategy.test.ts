@@ -38,16 +38,18 @@ describe("Summoners AI strategy", () => {
 		}
 
 		const decision = fallbackAiDecision(context)
-		expect(decision.nextAction).toEqual({
-			action: "selectDeck",
-			deck: "emberReliquary",
-		})
+		expect(decision.nextAction).toEqual([
+			{
+				action: "selectDeck",
+				deck: "emberReliquary",
+			},
+		])
 		expect(aiGameStrategy("summoners").isLegalAction(
 			context,
 			decision.nextAction,
 		)).toBe(true)
 		const facts = renderAiGameFacts(context)
-		expect(facts).toContain("Valid deck IDs")
+		expect(facts).toContain("Select deck `emberReliquary`")
 		expect(facts).not.toContain("card::")
 	})
 
@@ -77,28 +79,78 @@ describe("Summoners AI strategy", () => {
 				decision.nextAction,
 			),
 		).toBe(true)
+		expect(
+			aiGameStrategy("summoners").isLegalAction(context, [
+				{ action: "endTurn" },
+				{ action: "endTurn" },
+			]),
+		).toBe(false)
 		const facts = renderAiGameFacts(context)
-		expect(facts).toContain("Your private hand:")
+		expect(facts).toContain("## Your hand")
+		expect(facts).toContain("## Legal actions now")
+		expect(facts).toContain("[Guard](#guard)")
+		expect(facts).toContain("### Guard")
+		expect(facts).not.toContain("### Leech")
+		expect(facts).toContain("Power status: unused this turn")
 		expect(facts).toContain("Hidden-information boundary")
 		expect(facts).not.toContain("card::")
 	})
 
-	it("rejects malformed model actions", () => {
+	it("parses a complete turn and rejects malformed model actions", () => {
 		const strategy = aiGameStrategy("summoners")
 		expect(
 			strategy.parseDecision({
-				currentPlan: "Invent a target.",
-				nextAction: {
-					action: "attack",
-					attacker: "the big one",
-					target: "the enemy",
-				},
+				actions: [
+					{
+						action: "playCard",
+						card: "Cinder Pup",
+						target: null,
+					},
+					{
+						action: "attack",
+						attacker: "P0:B0",
+						target: "P1",
+					},
+					{ action: "endTurn" },
+				],
+				plan: "Develop a rushing attacker and convert it into pressure.",
+			}),
+		).toEqual({
+			ok: true,
+			value: {
+				currentPlan:
+					"Develop a rushing attacker and convert it into pressure.",
+				nextAction: [
+					{
+						action: "playCard",
+						card: "Cinder Pup",
+						target: null,
+					},
+					{
+						action: "attack",
+						attacker: "P0:B0",
+						target: "P1",
+					},
+					{ action: "endTurn" },
+				],
+			},
+		})
+		expect(
+			strategy.parseDecision({
+				actions: [
+					{
+						action: "attack",
+						attacker: "the big one",
+						target: "the enemy",
+					},
+				],
+				plan: "Invent a target.",
 			}).ok,
 		).toBe(false)
 		expect(
 			strategy.parseDecision({
-				currentPlan: "Cheat.",
-				nextAction: { action: "peekAtOpponentHand" },
+				actions: [{ action: "peekAtOpponentHand" }],
+				plan: "Cheat.",
 			}).ok,
 		).toBe(false)
 	})

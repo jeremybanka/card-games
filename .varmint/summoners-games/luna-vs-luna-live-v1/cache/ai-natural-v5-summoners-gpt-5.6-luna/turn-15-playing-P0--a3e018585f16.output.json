@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Use Spark Toss on P1, then attack with Coalcoat Cub.",
-	"nextAction": {
-		"action": "usePower",
-		"target": "P1"
-	}
-}

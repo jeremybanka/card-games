@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Pressure the exposed enemy Summoner with Coalcoat Cub, then develop a Guard next action if possible.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B0",
-		"target": "P1"
-	}
-}

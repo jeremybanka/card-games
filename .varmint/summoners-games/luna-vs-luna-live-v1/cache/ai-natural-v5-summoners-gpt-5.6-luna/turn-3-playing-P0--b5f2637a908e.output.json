@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Use Rush Cub to pressure the enemy Summoner; preserve future threats.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B0",
-		"target": "P1"
-	}
-}

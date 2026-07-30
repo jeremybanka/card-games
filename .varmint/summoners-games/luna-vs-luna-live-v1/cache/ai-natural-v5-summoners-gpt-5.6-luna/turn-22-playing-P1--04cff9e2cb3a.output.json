@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Pressure P0 with Ox while preserving it as Guard.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B1",
-		"target": "P0"
-	}
-}

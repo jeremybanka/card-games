@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Attack P0 with the ready Guard, then recover Spark and develop the board.",
-	"nextAction": {
-		"action": "attack",
-		"attacker": "B1",
-		"target": "P0"
-	}
-}

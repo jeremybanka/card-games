@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Coalcoat Cub",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Coalcoat Cub with the available Spark to establish an immediate board presence; no legal attack target exists, so end the turn."
+}

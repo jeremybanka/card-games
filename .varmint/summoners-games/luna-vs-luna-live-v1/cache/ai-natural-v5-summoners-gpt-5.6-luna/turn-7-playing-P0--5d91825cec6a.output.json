@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Clear the exposed enemy Being now, then recover both Beings next turn and pressure the Summoner.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Wildfire Lesson",
-		"target": null
-	}
-}

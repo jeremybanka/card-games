@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Use Spark Toss to soften the enemy Summoner, then attack with Coalcoat Cub.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "Spark Toss",
-		"target": "P1"
-	}
-}

@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Kilnback Tortoise",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Deal 1 damage to P1 with Pocket Ember, then spend the remaining 2 Spark on a Guard to establish defense. End with 0 Spark and one Being in play."
+}

@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B1",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B2",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Tender Growth to restore P1 to full, then attack the undefended P0 with all ready Beings for 8 damage. Retain 8 Spark and avoid unnecessary plays."
+}
