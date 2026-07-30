@@ -1,0 +1,12 @@
+version: 1
+documents:
+  - path: ./node_modules/agents.yaml/AGENTS.md
+    description: A CLI for discovering and curating agent-readable documentation in agents.yaml.
+  - path: ./node_modules/atom.io/AGENTS.md
+    description: Versatile state engine for TypeScript applications.
+  - path: ./node_modules/lasertag/AGENTS.md
+    description: Zero-runtime structural CSS for JSX with CSS Modules.
+  - path: ./node_modules/varmint/AGENTS.md
+    description: Filesystem-backed fixtures for deterministic tests of external asynchronous work.
+  - path: ./node_modules/vite-plus/AGENTS.md
+    description: The unified toolchain for the web.

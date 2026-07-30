@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with 8D; preserve TD and JD while avoiding future tricks and point cards.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8D"
+	}
+}

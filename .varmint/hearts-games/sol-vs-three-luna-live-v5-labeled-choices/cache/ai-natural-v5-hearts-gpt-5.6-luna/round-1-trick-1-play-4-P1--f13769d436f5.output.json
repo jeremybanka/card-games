@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with the lowest club; avoid taking early tricks and preserve control.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4C"
+	}
+}

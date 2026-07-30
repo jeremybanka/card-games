@@ -1,8 +1,8 @@
 import { ArkErrors, type } from "arktype"
 import type { JSONSchema7 } from "ai"
 
-import { cardIdType } from "../game/game-actions.ts"
 import type { VisibleCard } from "../game/game-types.ts"
+import { aiCardValue, cardIdForAiValue } from "./ai-card-value.ts"
 import type { AiGameStrategy } from "./ai-game-strategy.ts"
 import type { AiGameContextFor } from "./ai-game-facts.ts"
 import type { AiTurnDecisionFor, OhHellAiNextAction } from "./ai-types.ts"
@@ -11,12 +11,11 @@ const ohHellAiTurnDecisionType = type({
 	currentPlan: "string",
 	nextAction: type({
 		action: "'playCard'",
-		cardId: cardIdType,
+		card: "string",
 	}).or({
 		action: "'submitBid'",
 		bid: "number.integer >= 0",
 	}),
-	observation: "string",
 })
 
 const ohHellAiTurnDecisionJsonSchema: JSONSchema7 = {
@@ -29,9 +28,9 @@ const ohHellAiTurnDecisionJsonSchema: JSONSchema7 = {
 					additionalProperties: false,
 					properties: {
 						action: { enum: ["playCard"], type: "string" },
-						cardId: { pattern: "^card::", type: "string" },
+						card: { pattern: "^(?:[2-9TJQKA])[CDHS]$", type: "string" },
 					},
-					required: ["action", "cardId"],
+					required: ["action", "card"],
 					type: "object",
 				},
 				{
@@ -45,16 +44,9 @@ const ohHellAiTurnDecisionJsonSchema: JSONSchema7 = {
 				},
 			],
 		},
-		observation: { type: "string" },
 	},
-	required: ["currentPlan", "nextAction", "observation"],
+	required: ["currentPlan", "nextAction"],
 	type: "object",
-}
-
-function fallbackObservation(context: AiGameContextFor<"ohHell">): string {
-	return context.publicView.currentTrick.length === 0
-		? "A new trick is ready."
-		: `${context.publicView.currentTrick.length} card(s) are visible in the current trick.`
 }
 
 function chooseOhHellBid(
@@ -88,7 +80,7 @@ function chooseOhHellPlay(
 			: cardStrength(left) - cardStrength(right),
 	)[0]
 	if (selected === undefined) throw new Error("The AI has no legal card.")
-	return { action: "playCard", cardId: selected.id }
+	return { action: "playCard", card: aiCardValue(selected) }
 }
 
 function fallbackOhHellDecision(
@@ -104,7 +96,6 @@ function fallbackOhHellDecision(
 				? "Make a conservative legal bid from the strength visible in this hand."
 				: "Target the exact bid: take tricks still needed, then shed strength and avoid extra tricks.",
 		nextAction,
-		observation: fallbackObservation(context),
 	}
 }
 
@@ -118,26 +109,30 @@ function isLegalOhHellAction(
 			context.privateView.legalBids.includes(action.bid)
 		)
 	}
+	const selected = context.privateView.cards.find(
+		(card) => aiCardValue(card) === action.card,
+	)
 	return (
 		context.publicView.phase === "playing" &&
-		context.privateView.playableCardIds.includes(action.cardId)
+		selected !== undefined &&
+		context.privateView.playableCardIds.includes(selected.id)
 	)
 }
 
 const commonPrompt = [
-	"Choose exactly one legal next action using an opaque card ID from the supplied hand.",
-	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S. Completed tricks encode Tn>winner followed by plays in order.",
-	"Card values uniquely identify deck cards, so history omits opaque IDs without losing strategic identity.",
+	"Choose exactly one legal next action.",
+	"Compact cards use rank then suit: T/J/Q/K/A and C/D/H/S.",
 	"Never infer or claim values for hidden opponent cards. Opponent hand counts are known; opponent card values are not.",
-	"For play, copy exactly the card:: ID inside brackets on a hand row labeled LEGAL; do not include brackets or the label.",
-	"Keep observation and plan terse; refer to cards by compact code and never repeat opaque IDs outside nextAction.",
+	"For play, treat each parenthesized legal-play label as authoritative tactical fact.",
+	"Use completed tricks and known voids as exact public memory.",
+	"For play, return exactly one listed legal card value.",
+	"Keep the plan terse.",
 ]
 
 export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 	fallbackDecision: fallbackOhHellDecision,
 	isLegalAction: isLegalOhHellAction,
-	outputDescription:
-		"A legal Oh Hell action plus a private observation and strategic plan.",
+	outputDescription: "A legal Oh Hell action plus a reusable strategic plan.",
 	outputName: "oh_hell_turn_decision",
 	outputSchema: ohHellAiTurnDecisionJsonSchema,
 	parseDecision: (input) => {
@@ -150,11 +145,15 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 				}
 	},
 	privateViewForStrategy: (view) => view,
-	submitAction: (socket, action) => {
+	submitAction: (socket, action, privateView) => {
 		switch (action.action) {
 			case "playCard":
 				return new Promise((resolve) => {
-					socket.emit("playCard", action.cardId, resolve)
+					socket.emit(
+						"playCard",
+						cardIdForAiValue(privateView.cards, action.card),
+						resolve,
+					)
 				})
 			case "submitBid":
 				return new Promise((resolve) => {
@@ -165,9 +164,12 @@ export const ohHellAiStrategy: AiGameStrategy<"ohHell"> = {
 	},
 	systemPrompt: [
 		"You are a strategic Oh Hell player seated at a private multiplayer table.",
-		"Success means: bid and win exactly the predicted number of tricks, obey turn order and follow-suit rules, account for trump, and return a concise observation and reusable plan.",
-		"For bidding, return one number listed among the legal bids.",
+		"Maximize total score by predicting and then winning exactly your bid.",
+		"Making your bid scores 10 plus the number of tricks won. Missing your bid scores only the number of tricks won.",
+		"Trump beats every non-trump card. Otherwise, the highest card of the led suit wins. Players must follow suit when able.",
+		"For bidding, estimate how many tricks the hand can reliably take. Account for trump strength, high cards, suit length, void potential, bidding position, and opponents' visible bids. Avoid counting the same source of strength twice.",
+		"For bidding, return one number listed among the legal bids and a short plan that can guide subsequent play.",
 		...commonPrompt,
 	].join("\n"),
-	usesTurnGenerator: (context) => context.publicView.phase !== "bidding",
+	usesTurnGenerator: () => true,
 }

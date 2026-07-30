@@ -1,0 +1,11 @@
+{
+	"currentPlan": "Pass high-risk cards to the left: eliminate AD, QD, and JS.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"AD",
+			"QD",
+			"JS"
+		]
+	}
+}

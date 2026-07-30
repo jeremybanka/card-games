@@ -1,5 +1,6 @@
 # wayfarer.quest
 
+- Consult `./agents.yaml` when working with outside dependencies.
 - This repository contains one Vite application; keep application code in
   `src/` and static assets in `public/`.
 - Prefer `.ts` and `.tsx` for source files and Node scripts. Do not create

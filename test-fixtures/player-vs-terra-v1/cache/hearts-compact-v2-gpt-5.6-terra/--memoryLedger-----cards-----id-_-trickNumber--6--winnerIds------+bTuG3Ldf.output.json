@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Lead low diamonds to lose control; avoid club winners until hearts open.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::1b068b35-be04-40f1-85e5-3059a092a79c"
-	},
-	"observation": "P0 has only exposed 2D; 8D is the lowest safe non-heart lead."
-}

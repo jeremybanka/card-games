@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Aim for zero; lead 2S and shed TS safely if spades are led.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

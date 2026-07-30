@@ -1,12 +1,14 @@
+import { createHash } from "node:crypto"
+
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText, jsonSchema, Output } from "ai"
+import { generateText, jsonSchema, type JSONSchema7, Output } from "ai"
 import type { CacheMode } from "varmint"
 import { Squirrel } from "varmint"
 
+import type { GameKind } from "../game/game-types.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
-import { legacyCompatibleCacheViews } from "./legacy-hearts-cache.ts"
 import type { AiModelId } from "./ai-models.ts"
 import {
 	createGuardedAiTurnGenerator,
@@ -35,6 +37,47 @@ export type OpenAiTurnGeneratorOptions = {
 	squirrel?: Squirrel
 }
 
+export type AiGenerationContract = {
+	modelId: AiModelId
+	output: {
+		description: string
+		name: string
+		schema: JSONSchema7
+	}
+	prompt: string
+	providerOptions: {
+		openai: {
+			reasoningEffort: "none" | "minimal" | "low" | "medium" | "high" | "xhigh"
+			textVerbosity: "low" | "medium" | "high"
+		}
+	}
+	system: string
+}
+
+export function aiGenerationContract(
+	gameKind: GameKind,
+	modelId: AiModelId,
+	prompt: string,
+): AiGenerationContract {
+	const strategy = aiGameStrategy(gameKind)
+	return {
+		modelId,
+		output: {
+			description: strategy.outputDescription,
+			name: strategy.outputName,
+			schema: strategy.outputSchema,
+		},
+		prompt,
+		providerOptions: {
+			openai: {
+				reasoningEffort: "low",
+				textVerbosity: "low",
+			},
+		},
+		system: strategy.systemPrompt,
+	}
+}
+
 function cacheMode(): CacheMode {
 	const configured = process.env.VARMINT_CACHE_MODE
 	if (
@@ -52,16 +95,38 @@ export const aiGeneratorSquirrel = new Squirrel(
 	process.env.VARMINT_CACHE_DIRECTORY?.trim() || ".varmint/hearts-ai",
 )
 
+export function promptFixtureKey(
+	context: AiGameContext,
+	contract: AiGenerationContract,
+): string {
+	const playerIndex = context.publicView.players.findIndex(
+		(player) => player.id === context.playerId,
+	)
+	const player = playerIndex === -1 ? context.playerId : `P${playerIndex}`
+	const readableKey =
+		context.publicView.phase === "playing"
+			? `round-${context.publicView.roundNumber}-trick-${
+					context.publicView.trickNumber + 1
+				}-play-${context.publicView.currentTrick.length + 1}-${player}`
+			: `round-${context.publicView.roundNumber}-${context.publicView.phase}-${player}`
+	const inputHash = createHash("sha256")
+		.update(JSON.stringify(contract))
+		.digest("hex")
+		.slice(0, 12)
+	return `${readableKey}--${inputHash}`
+}
+
 export function wrapAiGeneratorWithVarmint(
 	key: string,
+	modelId: AiModelId,
 	generate: AiTurnGenerator,
 	squirrel: Squirrel = aiGeneratorSquirrel,
 ): AiTurnGenerator {
-	const sourceContexts = new WeakMap<object, AiGameContext>()
+	const sourceContexts = new Map<string, AiGameContext>()
 	const wrapped = squirrel.add(
 		key,
-		async (cacheableContext: AiGameContext): Promise<AiTurnDecision> => {
-			const sourceContext = sourceContexts.get(cacheableContext)
+		async (prompt: string): Promise<AiTurnDecision> => {
+			const sourceContext = sourceContexts.get(prompt)
 			if (sourceContext === undefined) {
 				throw new Error("The AI cache input lost its source game context.")
 			}
@@ -69,31 +134,17 @@ export function wrapAiGeneratorWithVarmint(
 		},
 	)
 	return async (context) => {
-		const {
-			privateView: cacheablePrivateView,
-			publicView: cacheablePublicView,
-		} = legacyCompatibleCacheViews(context)
-		const cacheableContext = {
-			...context,
-			privateView: cacheablePrivateView,
-			publicView: cacheablePublicView,
-		} as AiGameContext
-		sourceContexts.set(cacheableContext, context)
+		const prompt = renderAiGameFacts(context)
+		const contract = aiGenerationContract(
+			context.publicView.gameKind,
+			modelId,
+			prompt,
+		)
+		sourceContexts.set(prompt, context)
 		try {
-			return await wrapped
-				.for(
-					JSON.stringify({
-						memoryLedger: context.memoryLedger,
-						observations: context.observations,
-						playerId: context.playerId,
-						previousPlan: context.previousPlan,
-						privateView: cacheablePrivateView,
-						publicView: cacheablePublicView,
-					}),
-				)
-				.get(cacheableContext)
+			return await wrapped.for(promptFixtureKey(context, contract)).get(prompt)
 		} finally {
-			sourceContexts.delete(cacheableContext)
+			sourceContexts.delete(prompt)
 		}
 	}
 }
@@ -139,28 +190,22 @@ export function createOpenAiTurnGenerator(
 			},
 			async (span) => {
 				const gameKind = context.publicView.gameKind
-				const renderedFacts = renderAiGameFacts(context)
-				const strategy = aiGameStrategy(gameKind)
-				const systemPrompt = strategy.systemPrompt
+				const prompt = renderAiGameFacts(context)
+				const contract = aiGenerationContract(gameKind, modelId, prompt)
 				span.event("ai.prompt.rendered", {
-					renderedFacts,
-					systemPrompt,
+					prompt,
+					systemPrompt: contract.system,
 				})
 				const result = await generateText({
 					model,
 					output: Output.object({
-						description: strategy.outputDescription,
-						name: strategy.outputName,
-						schema: jsonSchema<AiTurnDecision>(strategy.outputSchema),
+						description: contract.output.description,
+						name: contract.output.name,
+						schema: jsonSchema<AiTurnDecision>(contract.output.schema),
 					}),
-					prompt: renderedFacts,
-					providerOptions: {
-						openai: {
-							reasoningEffort: "low",
-							textVerbosity: "low",
-						},
-					},
-					system: systemPrompt,
+					prompt: contract.prompt,
+					providerOptions: contract.providerOptions,
+					system: contract.system,
 				})
 				span.event("ai.openai.response", {
 					finishReason: result.finishReason,
@@ -189,22 +234,30 @@ export function createOpenAiTurnGenerator(
 			},
 		)
 
-	const guarded = createGuardedAiTurnGenerator(
-		wrapAiGeneratorWithVarmint(
-			`hearts-compact-v2-${modelId}`,
-			generate,
-			options.squirrel,
-		),
-		{
-			onFallback: (details) => {
-				serverLogger.warn("ai.strategy.fallback", {
-					...details,
-					modelId,
-				})
-				options.onFallback?.(details)
-			},
+	const cachedGenerators = new Map<string, AiTurnGenerator>()
+	const cachedGenerate: AiTurnGenerator = (context) => {
+		const gameKind = context.publicView.gameKind
+		let cached = cachedGenerators.get(gameKind)
+		if (cached === undefined) {
+			cached = wrapAiGeneratorWithVarmint(
+				`ai-natural-v5-${gameKind}-${modelId}`,
+				modelId,
+				generate,
+				options.squirrel,
+			)
+			cachedGenerators.set(gameKind, cached)
+		}
+		return cached(context)
+	}
+	const guarded = createGuardedAiTurnGenerator(cachedGenerate, {
+		onFallback: (details) => {
+			serverLogger.warn("ai.strategy.fallback", {
+				...details,
+				modelId,
+			})
+			options.onFallback?.(details)
 		},
-	)
+	})
 
 	return async (context) =>
 		serverLogger.withSpan(

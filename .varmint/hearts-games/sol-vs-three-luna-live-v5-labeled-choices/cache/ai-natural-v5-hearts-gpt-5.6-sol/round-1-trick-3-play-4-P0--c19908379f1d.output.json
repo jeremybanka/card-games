@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Dump KC under AC; stay off lead and shed QS/AH safely.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KC"
+	}
+}

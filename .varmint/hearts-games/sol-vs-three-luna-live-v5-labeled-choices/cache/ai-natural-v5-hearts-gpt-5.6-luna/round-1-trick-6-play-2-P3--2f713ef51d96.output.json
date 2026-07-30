@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with QD; preserve AD as diamond control and avoid taking the trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QD"
+	}
+}

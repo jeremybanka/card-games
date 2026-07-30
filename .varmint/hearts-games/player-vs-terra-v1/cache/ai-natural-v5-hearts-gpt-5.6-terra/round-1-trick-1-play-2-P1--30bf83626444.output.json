@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Shed top spades; keep control in long clubs/diamonds.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3C"
+	}
+}

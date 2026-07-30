@@ -94,8 +94,8 @@ const roomCode = "ZVHB"
 const seed = "player-vs-terra-browser-v1"
 const humanId = "user::81957b70-e9f6-484f-b47e-03c6b325b18e" satisfies PlayerId
 const terraId = "user::a3e10227-a65a-4666-8db1-f511c8a8c567" satisfies PlayerId
-const cacheDirectory = resolve("test-fixtures/player-vs-terra-v1/cache")
-const terraCacheKey = "hearts-compact-v2-gpt-5.6-terra"
+const cacheDirectory = resolve(".varmint/hearts-games/player-vs-terra-v1/cache")
+const terraCacheKey = "ai-natural-v5-hearts-gpt-5.6-terra"
 
 const recordedHumanPlays = [
 	"2 of clubs",
@@ -253,6 +253,7 @@ async function startRealtimeTable(): Promise<RealtimeTable> {
 						const squirrel = new Squirrel("read", cacheDirectory)
 						const cachedGenerator = wrapAiGeneratorWithVarmint(
 							terraCacheKey,
+							"gpt-5.6-terra",
 							async (context) => {
 								cacheMisses.push(structuredClone(context))
 								throw new Error("Terra cache miss.")
@@ -1164,7 +1165,7 @@ describe("recorded player versus Terra table", () => {
 			expect(within(strategyLog).getAllByRole("article")).toHaveLength(27)
 			expect(within(strategyLog).getByText("PASS")).not.toBeNull()
 			expect(within(strategyLog).getByText("TRICK 26")).not.toBeNull()
-			expect(within(strategyLog).getAllByText("Saw")).toHaveLength(27)
+			expect(within(strategyLog).queryByText("Saw")).toBeNull()
 			expect(within(strategyLog).getAllByText("Thought")).toHaveLength(27)
 			expect(within(strategyLog).getAllByText("Did")).toHaveLength(27)
 			expect(strategyLog.textContent).not.toContain("card::")

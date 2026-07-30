@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard AD; there is no alternative legal play.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AD"
+	}
+}

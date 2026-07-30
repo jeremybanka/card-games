@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead ascending hearts; P0 must follow twice, then discard spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TH"
+	}
+}

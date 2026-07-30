@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead 2C; track clubs and avoid taking points while hearts remain intact.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2C"
+	}
+}

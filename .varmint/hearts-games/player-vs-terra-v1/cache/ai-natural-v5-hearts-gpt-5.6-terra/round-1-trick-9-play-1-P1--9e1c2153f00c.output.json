@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead lowest diamond; preserve clubs while P0 is void.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JD"
+	}
+}

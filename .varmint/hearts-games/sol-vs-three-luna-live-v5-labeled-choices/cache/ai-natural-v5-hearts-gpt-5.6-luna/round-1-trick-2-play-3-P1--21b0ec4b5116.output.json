@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play the lowest legal club; avoid taking points and preserve higher clubs.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TC"
+	}
+}

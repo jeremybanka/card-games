@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck low in spades; preserve high cards and avoid winning point-heavy tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6S"
+	}
+}

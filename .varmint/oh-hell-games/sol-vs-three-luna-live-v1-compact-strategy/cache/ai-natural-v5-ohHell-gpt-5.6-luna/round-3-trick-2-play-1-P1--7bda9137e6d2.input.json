@@ -1,0 +1,3 @@
+[
+	"Oh Hell, round 3 of 5, trick 2 of 3. Trump is clubs.\nYou are P1, playing 1st of 4. 2 tricks remain, including this one.\n\nTargets:\n- P0: bid 0, won 0 — on target; needs 0 more. 2 cards.\n- P1 (you): bid 1, won 1 — on target; needs 0 more. 2 cards.\n- P2: bid 1, won 0 — needs exactly 1. 2 cards.\n- P3: bid 2, won 0 — needs exactly 2. 2 cards.\n\nScores: P0 13, P1 10, P2 12, P3 14.\n\nCurrent trick:\nYou lead.\n\nYour hand: QD, KS.\nLegal plays:\n- QD (leads diamonds)\n- KS (leads spades)\n\nCompleted play:\n1. P3 AH, P0 9H, P1 AC, P2 3H. P1 won.\n\nKnown voids:\nP1 is void in hearts.\n\nCurrent plan:\nTake exactly one trick with AC, then avoid winning further tricks.\n\nChoose one legal card value."
+]

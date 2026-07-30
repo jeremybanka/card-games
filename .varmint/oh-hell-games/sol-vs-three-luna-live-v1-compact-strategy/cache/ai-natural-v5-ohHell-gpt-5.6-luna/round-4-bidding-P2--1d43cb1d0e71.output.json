@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1 for the likely trump trick; avoid relying on the low spade.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

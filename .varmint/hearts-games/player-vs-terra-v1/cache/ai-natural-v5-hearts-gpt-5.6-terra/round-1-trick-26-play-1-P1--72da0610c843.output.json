@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead AH; P0 discards last spade.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AH"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the low spade to avoid winning; preserve TS as a higher-spade exit.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4S"
+	}
+}

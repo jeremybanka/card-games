@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid zero; discard 7C without taking the trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7C"
+	}
+}

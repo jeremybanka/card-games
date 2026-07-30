@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low clubs; avoid control and shed spades when safely covered.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6C"
+	}
+}

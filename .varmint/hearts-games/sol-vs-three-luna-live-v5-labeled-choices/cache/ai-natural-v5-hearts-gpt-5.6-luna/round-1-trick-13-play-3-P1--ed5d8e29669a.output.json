@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play KH; it is forced and wins the heart trick, taking 1 point.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KH"
+	}
+}

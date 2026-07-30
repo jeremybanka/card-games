@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead hearts; P0 sheds remaining high spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KH"
+	}
+}

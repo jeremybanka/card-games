@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve bid 0; discard the forced club and avoid winning.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4C"
+	}
+}

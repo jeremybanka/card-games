@@ -1,0 +1,11 @@
+{
+	"currentPlan": "Pass dangerous high cards to reduce trick-taking risk: AC, KD, and JH.",
+	"nextAction": {
+		"action": "passCards",
+		"cards": [
+			"AC",
+			"KD",
+			"JH"
+		]
+	}
+}

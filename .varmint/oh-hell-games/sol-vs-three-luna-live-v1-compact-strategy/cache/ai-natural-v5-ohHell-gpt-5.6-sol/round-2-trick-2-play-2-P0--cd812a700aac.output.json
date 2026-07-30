@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at zero; discard highest safe diamond now, then shed 6D before 4D when possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8D"
+	}
+}

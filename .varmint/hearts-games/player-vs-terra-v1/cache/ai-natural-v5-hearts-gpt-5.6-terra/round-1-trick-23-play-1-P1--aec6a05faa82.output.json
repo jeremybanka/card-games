@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead hearts ascending; P0 has one lower heart then spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JH"
+	}
+}

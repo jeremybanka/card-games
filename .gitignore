@@ -5,9 +5,9 @@ coverage/
 .pnpm-home/
 .pnpm-store/
 .vite/
-.varmint/
-
 .env
 .env.*
 !.env.example
 *.log
+.varmint/**/analysis.json
+.varmint/**/assessment.md

@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Lead low clubs; avoid control and shed spades when safely covered.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::ff154d95-52ab-43ae-8952-e34354ba3d51"
-	},
-	"observation": "Lead 6C; hearts remain closed."
-}

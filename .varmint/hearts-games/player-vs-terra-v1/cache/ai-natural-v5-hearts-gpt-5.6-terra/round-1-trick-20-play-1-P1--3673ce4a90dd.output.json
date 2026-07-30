@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead hearts; P0’s hearts are lower and will become void, then may shed high spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8H"
+	}
+}

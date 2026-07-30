@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play the higher diamond now; retain TD as a safer future duck.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JD"
+	}
+}

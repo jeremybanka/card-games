@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with the lowest diamond; preserve AD/QD as later control cards and avoid taking points.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7D"
+	}
+}

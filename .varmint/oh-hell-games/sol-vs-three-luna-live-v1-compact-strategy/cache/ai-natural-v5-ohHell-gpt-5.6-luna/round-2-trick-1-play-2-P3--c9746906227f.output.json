@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take this trick with QH to fulfill my bid, then discard safely on later leads.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QH"
+	}
+}

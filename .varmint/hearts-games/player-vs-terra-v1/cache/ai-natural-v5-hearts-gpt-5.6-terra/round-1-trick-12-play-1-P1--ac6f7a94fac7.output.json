@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low spades to P0’s passed high spades; preserve heart exits.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7S"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Already over target; lead the forced KH and accept the outcome.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KH"
+	}
+}

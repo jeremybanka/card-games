@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Dump QS safely now; keep ducking, shed AH when safe, and track AS with P1.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QS"
+	}
+}

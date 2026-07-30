@@ -1,0 +1,7 @@
+{
+	"currentPlan": "AD forces P0 void discard; then manage heart winners.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AD"
+	}
+}

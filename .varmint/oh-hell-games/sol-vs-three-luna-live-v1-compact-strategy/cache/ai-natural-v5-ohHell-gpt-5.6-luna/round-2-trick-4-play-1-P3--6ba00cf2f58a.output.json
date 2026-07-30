@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead TS; it is forced, so avoid taking any further trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

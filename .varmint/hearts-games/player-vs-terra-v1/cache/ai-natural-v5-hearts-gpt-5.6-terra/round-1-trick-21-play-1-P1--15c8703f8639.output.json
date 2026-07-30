@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low hearts; P0 must follow with lower hearts before shedding spades.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9H"
+	}
+}

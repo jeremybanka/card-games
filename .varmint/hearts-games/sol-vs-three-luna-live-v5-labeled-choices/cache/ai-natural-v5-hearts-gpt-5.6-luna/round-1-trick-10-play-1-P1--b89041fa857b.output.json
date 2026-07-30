@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the point-free TD; avoid leading hearts while retaining them for safe discards.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TD"
+	}
+}

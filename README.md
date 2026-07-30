@@ -51,8 +51,8 @@ strategy. Without a key, AI seats remain fully playable through the deterministi
 strategic fallback. `VARMINT_CACHE_MODE` can be set to `read`, `write`, or
 `read-write` when recording or replaying generator results; it defaults to
 `off`. `VARMINT_CACHE_DIRECTORY` overrides the default
-`.varmint/hearts-ai` location when a recording should be saved as a tracked
-fixture.
+`.varmint/hearts-ai` fixture location. Varmint fixtures are committed so cache
+inputs and model outputs remain reviewable.
 
 Every AI is a separate Socket.IO player. It receives the same public projection
 and one private hand projection through atom.io realtime, stores them in its own
@@ -79,33 +79,47 @@ ordered action stream. Identity and deal generators are domain-separated so
 public opaque IDs do not expose the shuffle stream.
 
 The four-bot realtime end-to-end test uses the invariant
-`sol-vs-three-luna-v1` seed. It records a complete round with one Sol seat and
-three Luna seats into a temporary Varmint cache, then runs the same table again
-in read mode. The replay must execute no underlying generators and produce the
-same 56 intents, card values, winners, scores, and final authoritative state.
-Player secrets and observability span IDs remain cryptographically random
-because they are not game actions and must not be replayed.
+`sol-vs-three-luna-v1` seed and Sol/Luna seat metadata, but deliberately drives
+every seat with the same deterministic fallback strategy. It records a complete
+round into a temporary Varmint cache, then runs the same table again in read
+mode. This tests the record/replay mechanism, not model behavior. The replay
+must execute no underlying generators and produce the same 56 intents, card
+values, winners, scores, and final authoritative state. Player secrets and
+observability span IDs remain cryptographically random because they are not game
+actions and must not be replayed.
 
 Run `pnpm record:ai-game` with `OPENAI_API_KEY` in `.env` to record a real
 model-backed round under
-`.varmint/recordings/sol-vs-three-luna-live-v4-compact-ledger/`. Override the
-artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves the
-Varmint inputs and outputs plus an `analysis.json` containing rendered facts,
-raw model responses and usage, guarded decisions, fallback records, accepted
-actions, full server state, trick winners, and scores. It then performs a
-cache-only replay and requires the same decisions, actions, and final state
-without any model responses. Set `TEST_LOG_LEVEL=debug` when running the
-recorder to stream the same complete local spans exposed by the debug test
-commands.
+`.varmint/hearts-games/sol-vs-three-luna-live-v5-labeled-choices/`. Override the
+artifact directory name with `AI_GAME_RECORDING_NAME`. The command saves prompt
+strings directly as Varmint inputs and value-based outputs. Each fixture
+filename keeps its readable round/trick/player prefix and appends a SHA-256
+digest of the complete generation contract: model, rendered prompt, system
+prompt, structured-output contract, and provider reasoning settings. The
+recorder also writes an ignored, transient `analysis.json` containing model
+responses, usage, guarded decisions, accepted actions, and full server state
+for local inspection. It then performs a cache-only replay and requires the
+same decisions, actions, and final state without any model responses. Set
+`TEST_LOG_LEVEL=debug` when running the recorder to stream the same complete
+local spans exposed by the debug test commands. CI replays the checked-in v5
+Sol/Luna recording in strict `read` mode, requiring all 56 decisions to be
+cache hits with no model calls or fallbacks.
 
 The player-versus-Terra Testing Library test replays the browser recording in
-`test-fixtures/player-vs-terra-v1/` with the invariant
+`.varmint/hearts-games/player-vs-terra-v1/` with the invariant
 `player-vs-terra-browser-v1` seed. A simulated human uses the rendered controls
 to pass and play all 26 cards while Terra participates through its ordinary
 realtime boundary. The fixture contains 27 real Terra decisions. Replay uses a
 read-only Varmint cache with a throwing underlying generator and asserts that
 all 27 decisions are cache hits. In the recorded round, Terra captures every
 scoring card and shoots the moon, producing the final score Terra 0, Player 26.
+
+The Oh Hell realtime end-to-end test plays all five rounds of the
+`5, 4, 3, 2, 1` hand schedule. Its checked-in
+`.varmint/oh-hell-games/sol-vs-three-luna-live-v1-compact-strategy/` fixture
+contains 20 model bids and 60 model card plays. Run
+`pnpm record:oh-hell-ai-game` to replace it with a paid live recording; normal
+CI replays all 80 cached model outputs and verifies the final state.
 
 ## Observability
 
@@ -160,6 +174,11 @@ Clients receive two separate atom.io realtime projections:
 Hidden card values are absent from public state, acknowledgements, and room
 events. A private device secret prevents another client from reclaiming a
 publicly visible player ID.
+
+AI prompts and structured model outputs use literal private card values such as
+`QS` and `2H`. The AI's private server adapter resolves a selected value back to
+its current physical card ID before submitting the same authoritative action as
+a human client.
 
 ## Commands
 

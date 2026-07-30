@@ -1,8 +1,0 @@
-{
-	"currentPlan": "Lead hearts; P0 sheds remaining high spades.",
-	"nextAction": {
-		"action": "playCard",
-		"cardId": "card::7b2c4141-9e37-4adc-a5ba-3a8f80a88b1c"
-	},
-	"observation": "P0 is void hearts with KS/AS remaining."
-}

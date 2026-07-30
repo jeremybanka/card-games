@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead KS; P0 is known to hold QS and may win the trick, keeping control away from your hearts.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KS"
+	}
+}

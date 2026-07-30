@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck clubs now; avoid taking leads and shed QS/AH when safe.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3C"
+	}
+}

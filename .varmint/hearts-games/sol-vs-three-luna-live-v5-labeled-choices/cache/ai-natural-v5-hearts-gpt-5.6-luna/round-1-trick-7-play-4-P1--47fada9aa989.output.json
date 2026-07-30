@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with 2S; retain 3S for a safer future spade play and avoid taking tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2S"
+	}
+}

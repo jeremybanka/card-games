@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead KD to force P3’s known AD/QD to win, shedding the high diamond while hearts remain intact.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KD"
+	}
+}

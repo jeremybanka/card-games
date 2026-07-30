@@ -11,6 +11,7 @@
 		"**/coverage/**",
 		"**/dist/**",
 		"**/node_modules/**",
+		".varmint/**",
 		"test-fixtures/**"
 	],
 	"oxc": {

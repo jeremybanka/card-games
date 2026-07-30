@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with the lowest heart; avoid winning this point-free trick and retain higher hearts for safer discards.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3H"
+	}
+}

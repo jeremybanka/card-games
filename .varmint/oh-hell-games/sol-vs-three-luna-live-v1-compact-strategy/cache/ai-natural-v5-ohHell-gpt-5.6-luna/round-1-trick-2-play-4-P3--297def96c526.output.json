@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve AH as my likely winning trick; discard JC now.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JC"
+	}
+}

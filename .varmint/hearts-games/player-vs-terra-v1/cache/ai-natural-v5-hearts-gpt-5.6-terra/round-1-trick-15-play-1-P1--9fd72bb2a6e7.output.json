@@ -1,0 +1,7 @@
+{
+	"currentPlan": "P0 is void C/D; lead lowest club, then avoid taking further heart dumps if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8C"
+	}
+}

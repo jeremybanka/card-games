@@ -32,6 +32,7 @@ import {
 	passSenderSeatIndex,
 } from "../game/seat-order.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
+import { aiCardValue, cardIdForAiValue } from "./ai-card-value.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { createOpenAiTurnGenerator } from "./ai-generator.node.ts"
 import type { AiModelId } from "./ai-models.ts"
@@ -216,7 +217,6 @@ async function createAiPlayerRuntime(
 		lastAttemptedFingerprint = ""
 		silo.setState(state.aiMemoryLedgerAtom, [])
 		silo.setState(state.aiStrategyReviewTurnsAtom, [])
-		silo.setState(state.aiTurnObservationsAtom, [])
 		silo.setState(state.aiCurrentPlanAtom, "")
 		silo.setState(state.aiNextActionAtom, null)
 	}
@@ -266,10 +266,10 @@ async function createAiPlayerRuntime(
 		privateView: PrivatePlayerView,
 	): AiStrategyReviewAction => {
 		if (action.action === "passCards") {
-			const selectedIds = new Set(action.cardIds)
+			const selectedValues = new Set(action.cards)
 			return {
 				cards: privateView.cards
-					.filter((card) => selectedIds.has(card.id))
+					.filter((card) => selectedValues.has(aiCardValue(card)))
 					.map(({ rank, suit }) => ({ rank, suit })),
 				kind: "passCards",
 			}
@@ -278,7 +278,7 @@ async function createAiPlayerRuntime(
 			return { bid: action.bid, kind: "submitBid" }
 		}
 		const playedCard = privateView.cards.find(
-			(card) => card.id === action.cardId,
+			(card) => aiCardValue(card) === action.card,
 		)
 		if (playedCard === undefined) {
 			throw new Error("The AI review could not resolve its played card.")
@@ -336,21 +336,15 @@ async function createAiPlayerRuntime(
 					const turnKey = `round-${currentGame.roundNumber}-trick-${currentGame.trickNumber}`
 					silo.setState(state.aiCurrentPlanAtom, decision.currentPlan)
 					silo.setState(state.aiNextActionAtom, decision.nextAction)
-					silo.setState(state.aiTurnObservationsAtom, (observations) => [
-						...observations.slice(-23),
-						{ observation: decision.observation, turnKey },
-					])
 					span.event("ai.state.updated", {
 						currentPlan: decision.currentPlan,
 						nextAction: decision.nextAction,
-						observation: decision.observation,
-						observationJournal: silo.getState(state.aiTurnObservationsAtom),
 						turnKey,
 					})
 
 					const result = await aiGameStrategy(
 						gameAtStart.gameKind,
-					).submitAction(socket, decision.nextAction)
+					).submitAction(socket, decision.nextAction, privateViewAtStart)
 					if (result.ok && decision.nextAction.action === "passCards") {
 						const passMemory = registeredGameCapability<PassMemoryAdapter>(
 							gameAtStart.gameKind,
@@ -367,7 +361,9 @@ async function createAiPlayerRuntime(
 						const capturedPass = passMemory(
 							gameAtStart,
 							privateViewAtStart,
-							decision.nextAction.cardIds,
+							decision.nextAction.cards.map((card) =>
+								cardIdForAiValue(privateViewAtStart.cards, card),
+							),
 							options.playerId,
 						)
 						pendingPass = capturedPass.pendingPass
@@ -400,7 +396,6 @@ async function createAiPlayerRuntime(
 								decision.nextAction,
 								privateViewAtStart,
 							),
-							observation: decision.observation,
 							phase: reviewPhase,
 							plan: decision.currentPlan,
 							trickNumber: gameAtStart.trickNumber,

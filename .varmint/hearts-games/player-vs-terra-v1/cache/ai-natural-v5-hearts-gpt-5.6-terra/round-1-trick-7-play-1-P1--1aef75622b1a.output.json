@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low diamonds to lose control; avoid club winners until hearts open.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8D"
+	}
+}
