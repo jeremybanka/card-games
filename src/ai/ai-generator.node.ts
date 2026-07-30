@@ -5,7 +5,6 @@ import { generateText, jsonSchema, type JSONSchema7, Output } from "ai"
 import type { CacheMode } from "varmint"
 import { Squirrel } from "varmint"
 
-import type { GameKind } from "../game/game-types.ts"
 import { serverLogger } from "../observability/span-logger.node.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
@@ -16,7 +15,7 @@ import {
 	type AiGuardObserver,
 	type AiTurnGenerator,
 } from "./ai-strategy.ts"
-import type { AiTurnDecision } from "./ai-types.ts"
+import type { AiGameKind, AiTurnDecision } from "./ai-types.ts"
 
 export type AiModelResponseRecord = {
 	finishReason: string
@@ -55,7 +54,7 @@ export type AiGenerationContract = {
 }
 
 export function aiGenerationContract(
-	gameKind: GameKind,
+	gameKind: AiGameKind,
 	modelId: AiModelId,
 	prompt: string,
 ): AiGenerationContract {

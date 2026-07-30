@@ -1,7 +1,6 @@
 import type {
 	HeartsPrivatePlayerView,
 	HeartsPublicGameView,
-	GameKind,
 	OhHellPrivatePlayerView,
 	OhHellPublicGameView,
 	PlayerId,
@@ -22,7 +21,7 @@ import {
 	passSenderSeatIndex,
 } from "../game/seat-order.ts"
 import { aiCardValue } from "./ai-card-value.ts"
-import type { AiMemoryLedgerEntry } from "./ai-types.ts"
+import type { AiGameKind, AiMemoryLedgerEntry } from "./ai-types.ts"
 
 type CommonAiGameContext = {
 	memoryLedger: AiMemoryLedgerEntry[]
@@ -30,14 +29,14 @@ type CommonAiGameContext = {
 	previousPlan: string
 }
 
-export type AiGameContextFor<Kind extends GameKind> = CommonAiGameContext & {
+export type AiGameContextFor<Kind extends AiGameKind> = CommonAiGameContext & {
 	privateView: PrivatePlayerViewFor<Kind>
 	publicView: PublicGameViewFor<Kind>
 }
 
 export type AiGameContext = {
-	[Kind in GameKind]: AiGameContextFor<Kind>
-}[GameKind]
+	[Kind in AiGameKind]: AiGameContextFor<Kind>
+}[AiGameKind]
 
 type AiFactsAdapter<PublicView, PrivateView> = {
 	gameDetails: (
@@ -83,7 +82,7 @@ const aiFactsAdapters = {
 		title: "Oh Hell",
 	} satisfies AiFactsAdapter<OhHellPublicGameView, OhHellPrivatePlayerView>,
 } satisfies {
-	[Kind in GameKind]: AiFactsAdapter<
+	[Kind in AiGameKind]: AiFactsAdapter<
 		Extract<PublicGameView, { gameKind: Kind }>,
 		Extract<PrivatePlayerView, { gameKind: Kind }>
 	>

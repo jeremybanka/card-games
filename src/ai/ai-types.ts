@@ -1,5 +1,4 @@
 import type {
-	GameKind,
 	PassDirection,
 	PlayerId,
 	VisibleCard,
@@ -36,15 +35,16 @@ export type AiNextActionByGame = {
 	ohHell: OhHellAiNextAction
 }
 
-export type AiNextActionFor<Kind extends GameKind> = AiNextActionByGame[Kind]
-export type AiNextAction = AiNextActionFor<GameKind>
+export type AiGameKind = keyof AiNextActionByGame
+export type AiNextActionFor<Kind extends AiGameKind> = AiNextActionByGame[Kind]
+export type AiNextAction = AiNextActionFor<AiGameKind>
 
-export type AiTurnDecisionFor<Kind extends GameKind> = {
+export type AiTurnDecisionFor<Kind extends AiGameKind> = {
 	currentPlan: string
 	nextAction: AiNextActionFor<Kind>
 }
 
-export type AiTurnDecision = AiTurnDecisionFor<GameKind>
+export type AiTurnDecision = AiTurnDecisionFor<AiGameKind>
 
 export type HeartsPassMemoryEntry = {
 	cards: VisibleCard[]

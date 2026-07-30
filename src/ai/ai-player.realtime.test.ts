@@ -79,8 +79,8 @@ function privateView(
 
 function createBoundaryClient(emitAction: boolean) {
 	return function BoundaryClient() {
-		const game = usePullAtom(publicGameViewAtom)
-		const hand = usePullAtom(privatePlayerViewAtom)
+		const game = usePullAtom(publicGameViewAtom) as PublicGameView
+		const hand = usePullAtom(privatePlayerViewAtom) as PrivatePlayerView
 		const { socket } = useContext(
 			RealtimeContext as unknown as Context<{ socket: Socket | null }>,
 		)

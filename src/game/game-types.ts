@@ -1,4 +1,9 @@
 import type { AiModelId } from "../ai/ai-models.ts"
+import type {
+	SummonersClientEvents,
+	SummonersPrivatePlayerView,
+	SummonersPublicGameView,
+} from "../summoners/summoners-types.ts"
 import type { GameKind } from "./game-kinds.ts"
 import type { OhHellRules } from "./oh-hell-rules.ts"
 
@@ -127,8 +132,9 @@ export type OhHellPublicGameView = TrickTakingPublicGameFields & {
 }
 
 export type PublicGameView = HeartsPublicGameView | OhHellPublicGameView
+export type AnyPublicGameView = PublicGameView | SummonersPublicGameView
 export type PublicGameViewFor<Kind extends GameKind> = Extract<
-	PublicGameView,
+	AnyPublicGameView,
 	{ gameKind: Kind }
 >
 
@@ -161,8 +167,11 @@ export type OhHellPrivatePlayerView = TrickTakingPrivatePlayerFields & {
 export type PrivatePlayerView =
 	| HeartsPrivatePlayerView
 	| OhHellPrivatePlayerView
+export type AnyPrivatePlayerView =
+	| PrivatePlayerView
+	| SummonersPrivatePlayerView
 export type PrivatePlayerViewFor<Kind extends GameKind> = Extract<
-	PrivatePlayerView,
+	AnyPrivatePlayerView,
 	{ gameKind: Kind }
 >
 
@@ -249,7 +258,8 @@ export type OhHellClientEvents = AiSeatClientEvents &
 
 export type ClientToServerEvents = RoomClientEvents &
 	HeartsClientEvents &
-	OhHellClientEvents
+	OhHellClientEvents &
+	SummonersClientEvents
 
 export type ServerToClientEvents = {
 	roomClosed: (message: string) => void

@@ -5,21 +5,24 @@ import { registeredGameAdapter } from "../game/game-registry.ts"
 import type {
 	ActionResult,
 	ClientToServerEvents,
-	GameKind,
 	ServerToClientEvents,
 } from "../game/game-types.ts"
 import { heartsAiStrategy } from "./hearts-ai-strategy.ts"
 import type { AiGameContextFor } from "./ai-game-facts.ts"
 import { ohHellAiStrategy } from "./oh-hell-ai-strategy.ts"
-import type { AiNextActionFor, AiTurnDecisionFor } from "./ai-types.ts"
+import type {
+	AiGameKind,
+	AiNextActionFor,
+	AiTurnDecisionFor,
+} from "./ai-types.ts"
 
 export type AiActionSocket = Socket<ServerToClientEvents, ClientToServerEvents>
 
-export type AiDecisionParseResult<Kind extends GameKind> =
+export type AiDecisionParseResult<Kind extends AiGameKind> =
 	| { ok: true; value: AiTurnDecisionFor<Kind> }
 	| { error: unknown; ok: false }
 
-export type AiGameStrategy<Kind extends GameKind> = {
+export type AiGameStrategy<Kind extends AiGameKind> = {
 	fallbackDecision: (context: AiGameContextFor<Kind>) => AiTurnDecisionFor<Kind>
 	isLegalAction: (
 		context: AiGameContextFor<Kind>,
@@ -45,10 +48,10 @@ const strategies = {
 	hearts: heartsAiStrategy,
 	ohHell: ohHellAiStrategy,
 } as const satisfies {
-	[Kind in GameKind]: AiGameStrategy<Kind>
+	[Kind in AiGameKind]: AiGameStrategy<Kind>
 }
 
-export function aiGameStrategy<Kind extends GameKind>(
+export function aiGameStrategy<Kind extends AiGameKind>(
 	gameKind: Kind,
 ): AiGameStrategy<Kind> {
 	return registeredGameAdapter<AiGameStrategy<Kind>>(gameKind, strategies)

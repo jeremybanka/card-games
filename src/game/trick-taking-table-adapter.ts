@@ -5,7 +5,6 @@ import {
 } from "./game-registry.ts"
 import { passRecipientSeatIndex } from "./seat-order.ts"
 import type {
-	GameKind,
 	HeartsPublicGameView,
 	OhHellPublicGameView,
 	PassDirection,
@@ -13,7 +12,7 @@ import type {
 	PublicPlayerView,
 } from "./game-types.ts"
 
-type PublicGameViewFor<Kind extends GameKind> = Extract<
+type PublicGameViewFor<Kind extends PublicGameView["gameKind"]> = Extract<
 	PublicGameView,
 	{ gameKind: Kind }
 >
@@ -87,7 +86,9 @@ const gameTableAdapters = {
 			} trump`,
 	} satisfies TrickTakingTableAdapter<OhHellPublicGameView>,
 } as const satisfies {
-	[Kind in GameKind]: TrickTakingTableAdapter<PublicGameViewFor<Kind>>
+	[Kind in PublicGameView["gameKind"]]: TrickTakingTableAdapter<
+		PublicGameViewFor<Kind>
+	>
 }
 
 const passingTableAdapters = {
@@ -106,9 +107,9 @@ const passingTableAdapters = {
 			)
 		},
 	} satisfies PassingTableAdapter<HeartsPublicGameView>,
-} satisfies Partial<Record<GameKind, unknown>>
+} satisfies Partial<Record<PublicGameView["gameKind"], unknown>>
 
-const autoPlayTableGames = new Set<GameKind>(["hearts"])
+const autoPlayTableGames = new Set<PublicGameView["gameKind"]>(["hearts"])
 
 export function trickTakingTableAdapter(
 	view: PublicGameView,

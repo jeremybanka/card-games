@@ -10,7 +10,6 @@ import type {
 } from "./game/game-types.ts"
 import { orderedTrickReviewPlays } from "./game-presentation.ts"
 import { registeredGameAdapter } from "./game/game-registry.ts"
-import type { GameKind } from "./game/game-types.ts"
 import css from "./GameTransitions.module.css"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 
@@ -25,7 +24,7 @@ const transitionRules = {
 		showsLeftoverAward: false,
 	},
 } as const satisfies Record<
-	GameKind,
+	PublicGameView["gameKind"],
 	{ ruleText: string; showsLeftoverAward: boolean }
 >
 
@@ -76,10 +75,9 @@ function TrickReview({
 }): VNode {
 	const continueButton = useRef<HTMLButtonElement>(null)
 	const winner = game.players.find((player) => player.id === trick.winnerId)
-	const rules = registeredGameAdapter<(typeof transitionRules)[GameKind]>(
-		game.gameKind,
-		transitionRules,
-	)
+	const rules = registeredGameAdapter<
+		(typeof transitionRules)[PublicGameView["gameKind"]]
+	>(game.gameKind, transitionRules)
 	const orderedPlays = orderedTrickReviewPlays(trick)
 	const middle = (orderedPlays.length - 1) / 2
 	const title = `${winner?.name ?? "The high card"} takes the trick`

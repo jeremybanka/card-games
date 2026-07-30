@@ -1,5 +1,6 @@
 import { setState } from "atom.io"
 import { useO } from "atom.io/react"
+import { usePullAtom } from "atom.io/realtime-react"
 import type { VNode } from "preact"
 
 import {
@@ -20,7 +21,23 @@ import { GameTable } from "./GameTable.tsx"
 import { gameSocket } from "./game-socket.ts"
 import { gameCatalog, isGameKind } from "./game/game-catalog.ts"
 import { GAME_KINDS } from "./game/game-kinds.ts"
+import { publicGameViewAtom } from "./game/game-state-atoms.ts"
+import { SummonersTable } from "./SummonersTable.tsx"
 import css from "./AppShell.module.css"
+
+function RoomGameTable({ onLeave }: { onLeave: () => void }): VNode {
+	const publicGame = usePullAtom(publicGameViewAtom)
+
+	return (
+		<room-game-table>
+			{publicGame.gameKind === "summoners" ? (
+				<SummonersTable socket={gameSocket} onLeave={onLeave} />
+			) : (
+				<GameTable socket={gameSocket} onLeave={onLeave} />
+			)}
+		</room-game-table>
+	)
+}
 
 export function AppShell(): VNode {
 	const connectionState = useO(connectionStateAtom)
@@ -34,9 +51,8 @@ export function AppShell(): VNode {
 	if (roomSession !== null) {
 		return (
 			<app-shell className={css.class}>
-				<GameTable
+				<RoomGameTable
 					key={`${roomSession.roomCode}:${roomSession.generation}`}
-					socket={gameSocket}
 					onLeave={() => {
 						gameSocket.emit("leaveRoom", () => {})
 						clearRoomSession()
@@ -65,7 +81,7 @@ export function AppShell(): VNode {
 					<lobby-heading>
 						<small>WAYFARER</small>
 						<h1>Card Games</h1>
-						<p>A private table for Hearts or Oh Hell.</p>
+						<p>Classic tricks and strange new invocations.</p>
 					</lobby-heading>
 					<form
 						onSubmit={(event) => {

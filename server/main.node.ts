@@ -51,6 +51,8 @@ import {
 } from "./game-controller.node.ts"
 import { heartsGame } from "./hearts-game.node.ts"
 import { ohHellGame } from "./oh-hell-game.node.ts"
+import { prepareRoomConnection } from "./room-connection.node.ts"
+import { summonersGame } from "./summoners-game.node.ts"
 import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
 
 const SERVER_PORT = Number.parseInt(process.env.PORT ?? "8787", 10)
@@ -259,7 +261,13 @@ function connectPlayerToRoom(
 	playerId: PlayerId,
 	playerName: string,
 ): void {
-	leaveCurrentRoom(playerId)
+	prepareRoomConnection({
+		connections: room.connections,
+		currentRoomCode: roomCodeByPlayer.get(playerId),
+		leaveCurrentRoom: () => leaveCurrentRoom(playerId),
+		nextRoomCode: roomCode,
+		playerId,
+	})
 	const playerController = aiModelsByPlayer.has(playerId)
 		? {
 				aiModel: aiModelsByPlayer.get(playerId) as AiModelId,
@@ -378,6 +386,7 @@ function createRoomFactory<
 const createGameRoom = {
 	hearts: createRoomFactory(heartsGame),
 	ohHell: createRoomFactory(ohHellGame),
+	summoners: createRoomFactory(summonersGame),
 } satisfies Record<
 	GameKind,
 	(roomCode: string, hostId: PlayerId, hostName: string) => StoredRoom
