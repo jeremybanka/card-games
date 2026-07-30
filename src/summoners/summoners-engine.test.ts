@@ -83,6 +83,9 @@ describe("Summoners authoritative engine", () => {
 			spark: 1,
 		})
 		expect(publicView.players[0]).not.toHaveProperty("hand")
+		expect(publicView.players[0]?.handCardIds).toEqual(state.players[0]?.hand)
+		expect(publicView.players[0]?.handCardIds).toHaveLength(5)
+		expect(publicView.players[0]?.handCardIds[0]).toMatch(/^card::/)
 		expect(privateView.hand).toHaveLength(5)
 		expect(privateView.hand[0]).toMatchObject({
 			name: expect.any(String),

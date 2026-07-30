@@ -14,11 +14,11 @@ type SummonersCardSnapshot = {
 }
 
 const cardSelector =
-	"summoners-card[data-card-id]:not([data-motion-flight]), equipped-item[data-card-id]"
+	"summoners-card[data-card-id]:not([data-motion-flight]), summoners-card-back[data-card-id]:not([data-motion-flight]), equipped-item[data-card-id]"
 
 function cardZone(element: HTMLElement): SummonersCardZone {
 	if (element.matches("equipped-item")) return "equipped"
-	if (element.closest("player-hand") !== null) return "hand"
+	if (element.closest("player-hand, opponent-hand") !== null) return "hand"
 	if (element.closest("player-battlefield, opponent-battlefield") !== null) {
 		return "battlefield"
 	}
@@ -214,6 +214,18 @@ export function observeSummonersCardMotion(root: HTMLElement): () => void {
 		for (const [cardId, before] of pending) {
 			if (current.has(cardId)) continue
 			reportedMotion = { cardId, kind: "cast" }
+			animateVanishingCard(root, before)
+		}
+		for (const [cardId, before] of snapshots) {
+			if (
+				current.has(cardId) ||
+				pending.has(cardId) ||
+				before.zone !== "hand" ||
+				!before.element.matches("summoners-card-back")
+			) {
+				continue
+			}
+			reportedMotion ??= { cardId, kind: "cast" }
 			animateVanishingCard(root, before)
 		}
 		if (reportedMotion !== null) {

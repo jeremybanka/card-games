@@ -1,8 +1,8 @@
 import { setState } from "atom.io"
 import { myUserKeyAtom } from "atom.io/realtime-client"
 import { usePullAtom } from "atom.io/realtime-react"
-import type { VNode } from "preact"
-import { useEffect, useMemo, useState } from "preact/hooks"
+import type { JSX, VNode } from "preact"
+import { useEffect, useMemo, useRef, useState } from "preact/hooks"
 
 import { actionErrorAtom } from "./client-state.ts"
 import type { GameSocket } from "./game-socket.ts"
@@ -22,6 +22,11 @@ import {
 	useSummonersCardMotion,
 } from "./summoners/summoners-card-motion.ts"
 import { summonersHandCardLayout } from "./summoners/summoners-hand-layout.ts"
+import {
+	closestSummonersHandCard,
+	summonersHandCardAtPoint,
+	summonersHandCardCandidates,
+} from "./summoners/summoners-hand-interaction.ts"
 import type {
 	SummonersCardDefinition,
 	SummonersPublicBeing,
@@ -41,6 +46,19 @@ type Selection =
 	| { cardId: CardId; kind: "card"; targeting: SummonersTargeting }
 	| { cardId: CardId; kind: "attacker"; targeting: "anyEnemy" }
 	| { kind: "power"; targeting: SummonersTargeting }
+
+type HandDragState = {
+	cardId: CardId
+	dragging: boolean
+	x: number
+	y: number
+}
+
+type PointerOrigin = {
+	pointerId: number
+	x: number
+	y: number
+}
 
 const elementMarks: Record<SummonersCardDefinition["element"], string> = {
 	air: "AIR",
@@ -202,12 +220,14 @@ function BattlefieldBeing({
 	being,
 	disabled,
 	onClick,
+	ownerId,
 	selected,
 	targetable,
 }: {
 	being: SummonersPublicBeing
 	disabled: boolean
 	onClick: () => void
+	ownerId: PlayerId
 	selected: boolean
 	targetable: boolean
 }): VNode {
@@ -215,6 +235,9 @@ function BattlefieldBeing({
 		<battlefield-being
 			data-ready={being.ready || undefined}
 			data-selected={selected || undefined}
+			data-summoners-target-card-id={being.card.physicalId}
+			data-summoners-target-kind="being"
+			data-summoners-target-player-id={ownerId}
 			data-targetable={targetable || undefined}
 		>
 			<SummonersCard
@@ -246,6 +269,32 @@ function BattlefieldBeing({
 				)}
 			</being-state>
 		</battlefield-being>
+	)
+}
+
+function OpponentHand({
+	cardIds,
+	playerName,
+}: {
+	cardIds: CardId[]
+	playerName: string
+}): VNode {
+	return (
+		<opponent-hand aria-label={`${playerName}'s hand: ${cardIds.length} cards`}>
+			{cardIds.map((cardId, index) => (
+				<summoners-card-back
+					aria-hidden="true"
+					data-card-id={cardId}
+					key={cardId}
+					style={{
+						"--back-angle": `${(index - (cardIds.length - 1) / 2) * 3}deg`,
+						"--back-index": index,
+					}}
+				>
+					<span>✦</span>
+				</summoners-card-back>
+			))}
+		</opponent-hand>
 	)
 }
 
@@ -481,8 +530,12 @@ export function SummonersTable({
 	const pulledPrivateView = usePullAtom(privatePlayerViewAtom)
 	const myPlayerId = usePullAtom(myUserKeyAtom) as PlayerId | null
 	const [selection, setSelection] = useState<Selection | null>(null)
+	const [handDrag, setHandDrag] = useState<HandDragState | null>(null)
+	const [hoveredHandCardId, setHoveredHandCardId] = useState<CardId | null>(null)
 	const [rulesOpen, setRulesOpen] = useState(false)
 	const [tableRoot, setTableRoot] = useState<HTMLElement | null>(null)
+	const handDragRef = useRef<HandDragState | null>(null)
+	const pointerOrigin = useRef<PointerOrigin | null>(null)
 
 	const game = pulledGame.gameKind === "summoners" ? pulledGame : null
 	const privateView =
@@ -502,6 +555,10 @@ export function SummonersTable({
 
 	useEffect(() => {
 		setSelection(null)
+		setHandDrag(null)
+		handDragRef.current = null
+		setHoveredHandCardId(null)
+		pointerOrigin.current = null
 	}, [game?.currentPlayerId, game?.phase])
 
 	useEffect(() => {
@@ -593,6 +650,97 @@ export function SummonersTable({
 		)
 	}
 
+	const cardSelection = (card: SummonersVisibleCard): Selection => ({
+		cardId: card.physicalId,
+		kind: "card",
+		targeting: card.targeting,
+	})
+
+	const targetAtPoint = (
+		card: SummonersVisibleCard,
+		clientX: number,
+		clientY: number,
+	): SummonersTarget | null | undefined => {
+		const element = document.elementFromPoint(clientX, clientY)
+		if (!(element instanceof Element)) return undefined
+		const targetElement = element.closest<HTMLElement>(
+			"[data-summoners-target-kind]",
+		)
+		if (targetElement !== null) {
+			const playerId = targetElement.dataset.summonersTargetPlayerId as
+				| PlayerId
+				| undefined
+			if (playerId === undefined) return undefined
+			const target =
+				targetElement.dataset.summonersTargetKind === "being"
+					? {
+							cardId: targetElement.dataset
+								.summonersTargetCardId as CardId,
+							kind: "being" as const,
+							playerId,
+						}
+					: { kind: "summoner" as const, playerId }
+			const owner = playersById.get(playerId)
+			return owner !== undefined &&
+				targetMatchesSelection(
+					cardSelection(card),
+					target,
+					myPlayerId,
+					owner,
+				)
+				? target
+				: undefined
+		}
+		if (card.targeting !== "none") return undefined
+		if (card.type === "being") {
+			return element.closest("player-battlefield") === null ? undefined : null
+		}
+		return element.closest("conclave-field") === null ? undefined : null
+	}
+
+	const finishHandDrag = (
+		event: JSX.TargetedPointerEvent<HTMLElement>,
+		cancelled = false,
+	): void => {
+		const origin = pointerOrigin.current
+		const drag = handDragRef.current
+		if (origin === null || origin.pointerId !== event.pointerId) return
+		if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+			event.currentTarget.releasePointerCapture?.(event.pointerId)
+		}
+		pointerOrigin.current = null
+		const dragged =
+			drag !== null &&
+			(drag.dragging ||
+				Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 8)
+		if (!cancelled && dragged && drag !== null) {
+			const card = privateView.hand.find(
+				(candidate) => candidate.physicalId === drag.cardId,
+			)
+			if (card !== undefined) {
+				const target = targetAtPoint(card, event.clientX, event.clientY)
+				if (target !== undefined) {
+					if (tableRoot !== null) {
+						capturePendingSummonersCardMotion(tableRoot, card.physicalId)
+					}
+					socket.emit(
+						"playSummonersCard",
+						card.physicalId,
+						target,
+						(result) =>
+							handleResult(result, () => {
+								setSelection(null)
+							}),
+					)
+				}
+			}
+		}
+		setHandDrag(null)
+		handDragRef.current = null
+		setHoveredHandCardId(null)
+		if (cancelled || dragged) setSelection(null)
+	}
+
 	const chooseOwnBeing = (being: SummonersPublicBeing): void => {
 		const target = targetForBeing(myPlayerId, being.card.physicalId)
 		if (targetMatchesSelection(selection, target, myPlayerId, myPlayer)) {
@@ -670,6 +818,12 @@ export function SummonersTable({
 			className={css.class}
 			data-my-turn={myTurn || undefined}
 			data-phase={game.phase}
+			onPointerCancel={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+				finishHandDrag(event, true)
+			}
+			onPointerUp={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+				finishHandDrag(event)
+			}
 			ref={setTableRoot}
 		>
 			<summoners-header>
@@ -721,6 +875,8 @@ export function SummonersTable({
 								style={{ "--deck-accent": opponent.deck?.accent }}
 							>
 								<opponent-summoner
+									data-summoners-target-kind="summoner"
+									data-summoners-target-player-id={opponent.id}
 									data-targetable={summonerTargetable || undefined}
 								>
 									<button
@@ -762,6 +918,7 @@ export function SummonersTable({
 													disabled={!targetable}
 													key={being.card.physicalId}
 													onClick={() => submitTarget(target)}
+													ownerId={opponent.id}
 													selected={false}
 													targetable={targetable}
 												/>
@@ -769,6 +926,10 @@ export function SummonersTable({
 										})
 									)}
 								</opponent-battlefield>
+								<OpponentHand
+									cardIds={opponent.handCardIds}
+									playerName={opponent.name}
+								/>
 							</opponent-realm>
 						)
 					})}
@@ -802,6 +963,8 @@ export function SummonersTable({
 				<player-realm style={{ "--deck-accent": myPlayer.deck?.accent }}>
 					<player-summoner
 						data-current={myTurn || undefined}
+						data-summoners-target-kind="summoner"
+						data-summoners-target-player-id={myPlayerId}
 						data-targetable={
 							targetMatchesSelection(
 								selection,
@@ -853,7 +1016,10 @@ export function SummonersTable({
 							</button>
 						</power-button>
 					</player-summoner>
-					<player-battlefield aria-label="Your battlefield">
+					<player-battlefield
+						aria-label="Your battlefield"
+						data-summoners-dropzone="battlefield"
+					>
 						{myPlayer.battlefield.length === 0 ? (
 							<empty-field>Summon a Being to begin your warband.</empty-field>
 						) : (
@@ -879,6 +1045,7 @@ export function SummonersTable({
 										}
 										key={being.card.physicalId}
 										onClick={() => chooseOwnBeing(being)}
+										ownerId={myPlayerId}
 										selected={selected}
 										targetable={targetable}
 									/>
@@ -909,7 +1076,81 @@ export function SummonersTable({
 						End turn →
 					</button>
 				</hand-heading>
-				<player-hand aria-label="Your cards">
+				<player-hand
+					aria-label="Your cards"
+					data-card-active={handDrag?.dragging || undefined}
+					data-hover-active={hoveredHandCardId !== null || undefined}
+				>
+					<hand-hit-surface
+						aria-hidden="true"
+						onPointerCancel={(
+							event: JSX.TargetedPointerEvent<HTMLElement>,
+						) => finishHandDrag(event, true)}
+						onPointerDown={(
+							event: JSX.TargetedPointerEvent<HTMLElement>,
+						) => {
+							const candidate = summonersHandCardAtPoint(
+								summonersHandCardCandidates(event.currentTarget),
+								event.clientX,
+								event.clientY,
+							)
+							const cardId = candidate?.dataset.cardId as CardId | undefined
+							const card = privateView.hand.find(
+								(item) => item.physicalId === cardId,
+							)
+							if (card === undefined) return
+							pointerOrigin.current = {
+								pointerId: event.pointerId,
+								x: event.clientX,
+								y: event.clientY,
+							}
+							event.currentTarget.setPointerCapture?.(event.pointerId)
+							setSelection(cardSelection(card))
+							setHoveredHandCardId(card.physicalId)
+							const nextDrag = {
+								cardId: card.physicalId,
+								dragging: false,
+								x: 0,
+								y: 0,
+							}
+							handDragRef.current = nextDrag
+							setHandDrag(nextDrag)
+						}}
+						onPointerLeave={() => {
+							if (pointerOrigin.current === null) {
+								setHoveredHandCardId(null)
+							}
+						}}
+						onPointerMove={(
+							event: JSX.TargetedPointerEvent<HTMLElement>,
+						) => {
+							const origin = pointerOrigin.current
+							if (origin === null) {
+								const candidate = closestSummonersHandCard(
+									summonersHandCardCandidates(event.currentTarget),
+									event.clientX,
+								)
+								setHoveredHandCardId(
+									(candidate?.dataset.cardId as CardId | undefined) ?? null,
+								)
+								return
+							}
+							const drag = handDragRef.current
+							if (origin.pointerId !== event.pointerId || drag === null) {
+								return
+							}
+							const x = event.clientX - origin.x
+							const y = event.clientY - origin.y
+							const dragging = drag.dragging || Math.hypot(x, y) > 8
+							const nextDrag = { ...drag, dragging, x, y }
+							handDragRef.current = nextDrag
+							setHandDrag(nextDrag)
+							if (dragging) setHoveredHandCardId(null)
+						}}
+						onPointerUp={(
+							event: JSX.TargetedPointerEvent<HTMLElement>,
+						) => finishHandDrag(event)}
+					/>
 					{privateView.hand.map((card, index) => {
 						const layout = summonersHandCardLayout(
 							privateView.hand.length,
@@ -917,10 +1158,26 @@ export function SummonersTable({
 						)
 						return (
 							<summoners-hand-card
+								data-disabled={
+									!myTurn ||
+										!privateView.playableCardIds.includes(card.physicalId) ||
+										undefined
+								}
+								data-dragging={
+									handDrag?.cardId === card.physicalId &&
+										handDrag.dragging
+										? true
+										: undefined
+								}
 								data-card-id={card.physicalId}
 								data-hand-angle={layout.angle}
+								data-hovered={
+									hoveredHandCardId === card.physicalId || undefined
+								}
 								key={card.physicalId}
 								style={{
+									"--drag-x": `${handDrag?.cardId === card.physicalId ? handDrag.x : 0}px`,
+									"--drag-y": `${handDrag?.cardId === card.physicalId ? handDrag.y : 0}px`,
 									"--fan-index": index,
 									"--hand-angle": `${layout.angle}deg`,
 									left: `${layout.left}%`,

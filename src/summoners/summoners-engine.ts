@@ -158,6 +158,7 @@ function publicPlayer(
 		discardCount: player.discard.length,
 		eliminated: player.eliminated,
 		fatigue: player.fatigue,
+		handCardIds: [...player.hand],
 		handCount: player.hand.length,
 		health: player.health,
 		id: player.id,

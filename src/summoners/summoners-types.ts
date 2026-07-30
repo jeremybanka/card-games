@@ -138,6 +138,7 @@ export type SummonersPublicPlayerView = {
 	discardCount: number
 	eliminated: boolean
 	fatigue: number
+	handCardIds: CardId[]
 	handCount: number
 	health: number
 	id: PlayerId
