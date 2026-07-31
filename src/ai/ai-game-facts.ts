@@ -121,9 +121,7 @@ function aiFactsAdapter(
 	>(context.publicView.gameKind, aiFactsAdapters)
 }
 
-function renderSummonersFacts(
-	context: AiGameContextFor<"summoners">,
-): string {
+function renderSummonersFacts(context: AiGameContextFor<"summoners">): string {
 	const me = context.publicView.players.find(
 		(player) => player.id === context.playerId,
 	)
@@ -131,6 +129,7 @@ function renderSummonersFacts(
 	for (const player of context.publicView.players) {
 		for (const being of player.battlefield) {
 			for (const keyword of being.keywords) usedKeywords.add(keyword)
+			for (const keyword of being.triggeredKeywords) usedKeywords.add(keyword)
 		}
 	}
 	for (const card of context.privateView.hand) {
@@ -157,8 +156,8 @@ function renderSummonersFacts(
 	const seats = context.publicView.players.flatMap((player, playerIndex) => {
 		const playerLines = [
 			`### P${playerIndex}${
-			player.id === context.playerId ? " (you)" : ""
-		} — ${player.name}`,
+				player.id === context.playerId ? " (you)" : ""
+			} — ${player.name}`,
 			"",
 			`- Deck: ${player.deck?.name ?? "unchosen"}`,
 			`- Life: ${player.health}/${SUMMONERS_STARTING_HEALTH}`,
@@ -196,8 +195,12 @@ function renderSummonersFacts(
 						: `, ${being.keywords
 								.map((keyword) => summonersKeywordLink(keyword))
 								.join(", ")}`
-				}${
-					being.item === null ? "" : `, equipped ${being.item.name}`
+				}${being.item === null ? "" : `, equipped ${being.item.name}`}${
+					being.triggeredKeywords.length === 0
+						? ""
+						: `, ${being.triggeredKeywords
+								.map((keyword) => summonersKeywordLink(keyword))
+								.join(", ")} already triggered this turn`
 				}.`,
 		)
 		return [
@@ -231,16 +234,12 @@ function renderSummonersFacts(
 	])
 	const phaseInstruction =
 		context.publicView.phase === "lobby"
-			? [
-					"## Task",
-					"",
-					`Choose one starter deck for seat P${myIndex}.`,
-				]
+			? ["## Task", "", `Choose one starter deck for seat P${myIndex}.`]
 			: [
 					"## Task",
 					"",
 					"Return one concise strategic plan and the complete ordered sequence of actions for this turn.",
-					"The final action must be `endTurn`. After each action, update Spark, readiness, damage, battlefield capacity, targets, and Guard restrictions before evaluating the next action.",
+					"The final action must be `endTurn`. After each action, update Spark, readiness, damage, battlefield capacity, targets, Guard restrictions, and once-per-turn keyword triggers before evaluating the next action.",
 				]
 	const glossary = [...usedKeywords]
 		.sort()
@@ -261,8 +260,7 @@ function renderSummonersFacts(
 						context.publicView.currentPlayerId === null
 							? "none"
 							: `P${context.publicView.players.findIndex(
-									(player) =>
-										player.id === context.publicView.currentPlayerId,
+									(player) => player.id === context.publicView.currentPlayerId,
 								)}`
 					}.`
 		}`,
@@ -947,10 +945,10 @@ export function renderAiGameFacts(context: AiGameContext): string {
 	return context.publicView.gameKind === "summoners"
 		? renderSummonersFacts(context as AiGameContextFor<"summoners">)
 		: context.publicView.gameKind === "hearts"
-		? renderHeartsFacts(context as AiGameContextFor<"hearts">)
-		: context.publicView.phase === "bidding"
-			? renderOhHellBiddingFacts(context as AiGameContextFor<"ohHell">)
-			: context.publicView.phase === "playing"
-				? renderOhHellPlayingFacts(context as AiGameContextFor<"ohHell">)
-				: renderLegacyGameFacts(context as TrickTakingAiGameContext)
+			? renderHeartsFacts(context as AiGameContextFor<"hearts">)
+			: context.publicView.phase === "bidding"
+				? renderOhHellBiddingFacts(context as AiGameContextFor<"ohHell">)
+				: context.publicView.phase === "playing"
+					? renderOhHellPlayingFacts(context as AiGameContextFor<"ohHell">)
+					: renderLegacyGameFacts(context as TrickTakingAiGameContext)
 }

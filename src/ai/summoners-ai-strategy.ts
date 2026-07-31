@@ -10,10 +10,7 @@ import type {
 } from "../summoners/summoners-types.ts"
 import type { AiGameStrategy } from "./ai-game-strategy.ts"
 import type { AiGameContextFor } from "./ai-game-facts.ts"
-import type {
-	AiTurnDecisionFor,
-	SummonersAiAction,
-} from "./ai-types.ts"
+import type { AiTurnDecisionFor, SummonersAiAction } from "./ai-types.ts"
 
 const targetPattern = "^P[0-3](?::B[0-4])?$"
 
@@ -23,65 +20,65 @@ const summonersAiTurnDecisionJsonSchema: JSONSchema7 = {
 		actions: {
 			items: {
 				anyOf: [
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["selectDeck"], type: "string" },
-						deck: { enum: [...SUMMONERS_DECK_IDS], type: "string" },
-					},
-					required: ["action", "deck"],
-					type: "object",
-				},
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["playCard"], type: "string" },
-						card: { type: "string" },
-						target: {
-							anyOf: [
-								{ pattern: targetPattern, type: "string" },
-								{ type: "null" },
-							],
+					{
+						additionalProperties: false,
+						properties: {
+							action: { enum: ["selectDeck"], type: "string" },
+							deck: { enum: [...SUMMONERS_DECK_IDS], type: "string" },
 						},
+						required: ["action", "deck"],
+						type: "object",
 					},
-					required: ["action", "card", "target"],
-					type: "object",
-				},
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["attack"], type: "string" },
-						attacker: {
-							pattern: "^P[0-3]:B[0-4]$",
-							type: "string",
+					{
+						additionalProperties: false,
+						properties: {
+							action: { enum: ["playCard"], type: "string" },
+							card: { type: "string" },
+							target: {
+								anyOf: [
+									{ pattern: targetPattern, type: "string" },
+									{ type: "null" },
+								],
+							},
 						},
-						target: { pattern: targetPattern, type: "string" },
+						required: ["action", "card", "target"],
+						type: "object",
 					},
-					required: ["action", "attacker", "target"],
-					type: "object",
-				},
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["usePower"], type: "string" },
-						target: {
-							anyOf: [
-								{ pattern: targetPattern, type: "string" },
-								{ type: "null" },
-							],
+					{
+						additionalProperties: false,
+						properties: {
+							action: { enum: ["attack"], type: "string" },
+							attacker: {
+								pattern: "^P[0-3]:B[0-4]$",
+								type: "string",
+							},
+							target: { pattern: targetPattern, type: "string" },
 						},
+						required: ["action", "attacker", "target"],
+						type: "object",
 					},
-					required: ["action", "target"],
-					type: "object",
-				},
-				{
-					additionalProperties: false,
-					properties: {
-						action: { enum: ["endTurn"], type: "string" },
+					{
+						additionalProperties: false,
+						properties: {
+							action: { enum: ["usePower"], type: "string" },
+							target: {
+								anyOf: [
+									{ pattern: targetPattern, type: "string" },
+									{ type: "null" },
+								],
+							},
+						},
+						required: ["action", "target"],
+						type: "object",
 					},
-					required: ["action"],
-					type: "object",
-				},
+					{
+						additionalProperties: false,
+						properties: {
+							action: { enum: ["endTurn"], type: "string" },
+						},
+						required: ["action"],
+						type: "object",
+					},
 				],
 			},
 			maxItems: 24,
@@ -98,7 +95,9 @@ function playerIndex(
 	context: AiGameContextFor<"summoners">,
 	playerId: string,
 ): number {
-	return context.publicView.players.findIndex((player) => player.id === playerId)
+	return context.publicView.players.findIndex(
+		(player) => player.id === playerId,
+	)
 }
 
 export function summonersTargetReference(
@@ -215,9 +214,7 @@ export function summonersLegalActionLines(
 	context: AiGameContextFor<"summoners">,
 ): string[] {
 	if (context.publicView.phase === "lobby") {
-		return SUMMONERS_DECK_IDS.map(
-			(deck) => `- Select deck \`${deck}\`.`,
-		)
+		return SUMMONERS_DECK_IDS.map((deck) => `- Select deck \`${deck}\`.`)
 	}
 	const me = myPlayer(context)
 	const lines: string[] = []
@@ -229,10 +226,7 @@ export function summonersLegalActionLines(
 		} else if (targets.length > 0) {
 			lines.push(
 				`- Play \`${card.name}\` targeting ${targets
-					.map(
-						(target) =>
-							`\`${summonersTargetReference(context, target)}\``,
-					)
+					.map((target) => `\`${summonersTargetReference(context, target)}\``)
 					.join(", ")}.`,
 			)
 		}
@@ -255,10 +249,7 @@ export function summonersLegalActionLines(
 		} else if (targets.length > 0) {
 			lines.push(
 				`- Use \`${power.name}\` targeting ${targets
-					.map(
-						(target) =>
-							`\`${summonersTargetReference(context, target)}\``,
-					)
+					.map((target) => `\`${summonersTargetReference(context, target)}\``)
 					.join(", ")}.`,
 			)
 		}
@@ -273,7 +264,8 @@ function myPlayer(
 	const player = context.publicView.players.find(
 		(candidate) => candidate.id === context.playerId,
 	)
-	if (player === undefined) throw new Error("The AI is not seated at this table.")
+	if (player === undefined)
+		throw new Error("The AI is not seated at this table.")
 	return player
 }
 
@@ -296,7 +288,8 @@ function fallbackSummonersDecision(
 	if (context.publicView.phase === "lobby") {
 		const index = Math.max(0, playerIndex(context, context.playerId))
 		return {
-			currentPlan: "Choose a distinct starter philosophy, then learn its curve.",
+			currentPlan:
+				"Choose a distinct starter philosophy, then learn its curve.",
 			nextAction: [
 				{
 					action: "selectDeck",
@@ -571,9 +564,7 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 						socket.emit(
 							"playSummonersCard",
 							card.physicalId,
-							action.target === null
-								? null
-								: resolveBoundTarget(action.target),
+							action.target === null ? null : resolveBoundTarget(action.target),
 							resolve,
 						)
 					})
@@ -593,12 +584,7 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 						throw new Error("The AI selected a missing combatant.")
 					}
 					result = await new Promise((resolve) => {
-						socket.emit(
-							"attackSummoners",
-							attackerId,
-							target,
-							resolve,
-						)
+						socket.emit("attackSummoners", attackerId, target, resolve)
 					})
 					break
 				}
@@ -606,9 +592,7 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 					result = await new Promise((resolve) => {
 						socket.emit(
 							"useSummonerPower",
-							action.target === null
-								? null
-								: resolveBoundTarget(action.target),
+							action.target === null ? null : resolveBoundTarget(action.target),
 							resolve,
 						)
 					})
@@ -630,7 +614,7 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 		"Players are P0 through P3. Their Beings are Pn:B0 through Pn:B4.",
 		"Character references remain bound to their current physical characters for the lifetime of the sequence.",
 		"Never invent hidden opponent card values. Opponent hands expose counts and opaque backs only.",
-		"Spend Spark efficiently, respect Guards, account for simultaneous combat, and pursue a coherent turn-level plan.",
+		"Spend Spark efficiently, respect Guards, account for simultaneous combat and once-per-turn keyword triggers, and pursue a coherent turn-level plan.",
 	].join("\n"),
 	usesTurnGenerator: () => true,
 }

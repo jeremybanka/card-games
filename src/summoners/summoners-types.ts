@@ -24,7 +24,14 @@ export type SummonersElement =
 	| "water"
 	| "wood"
 
-export type SummonersKeyword = "guard" | "leech" | "rush"
+export type SummonersKeyword =
+	| "blaze"
+	| "current"
+	| "guard"
+	| "leech"
+	| "molt"
+	| "rooted"
+	| "rush"
 
 export type SummonersTarget =
 	| {
@@ -132,6 +139,7 @@ export type SummonersPublicBeing = {
 	item: SummonersVisibleCard | null
 	keywords: SummonersKeyword[]
 	ready: boolean
+	triggeredKeywords: SummonersKeyword[]
 }
 
 export type SummonersPhase = "gameComplete" | "lobby" | "playing"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import type { CardId, PlayerId } from "../game/game-types.ts"
+import type { SummonersDeckId } from "./summoners-types.ts"
 import {
 	SUMMONERS_DECK_IDS,
 	summonersCardCatalog,
@@ -30,11 +31,14 @@ function physicalCardIds(): CardId[] {
 	return createSummonersPhysicalCardIds(() => `summoners-${index++}`)
 }
 
-function twoPlayerGame(): SummonersState {
+function twoPlayerGame(
+	adaDeck: SummonersDeckId = "emberReliquary",
+	beaDeck: SummonersDeckId = "verdantCompact",
+): SummonersState {
 	let state = createSummonersGame("MYTH", adaId, "Ada", physicalCardIds())
 	state = joinSummonersGame(state, beaId, "Bea")
-	state = selectSummonersDeck(state, adaId, "emberReliquary")
-	state = selectSummonersDeck(state, beaId, "verdantCompact")
+	state = selectSummonersDeck(state, adaId, adaDeck)
+	state = selectSummonersDeck(state, beaId, beaDeck)
 	return startSummonersGame(state, adaId, () => 0.375)
 }
 
@@ -74,9 +78,9 @@ describe("Summoners card set", () => {
 		expect(summonersCardCatalog["rootwoven-buckler"]).toMatchObject({
 			energy: 2,
 		})
-		expect(
-			summonersCardCatalog["rootwoven-buckler"].grantedKeywords,
-		).toBeUndefined()
+		expect(summonersCardCatalog["rootwoven-buckler"].grantedKeywords).toEqual([
+			"rooted",
+		])
 		expect(summonersCardCatalog["green-reprisal"].effects).toEqual([
 			{ amount: 4, kind: "damage", recipient: "target" },
 		])
@@ -186,6 +190,127 @@ describe("Summoners authoritative engine", () => {
 			playerId: beaId,
 		})
 		expect(healed.players[1]?.battlefield[0]?.damage).toBe(1)
+	})
+
+	it("lets Blaze ready a Being once when its Summoner spends the last Spark", () => {
+		let state = twoPlayerGame()
+		let ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const ibexId = moveCardToHand(state, ada, "brasshorn-ibex")
+		state = playSummonersCard(state, adaId, ibexId, null)
+		state = endSummonersTurn(state, adaId)
+		state = endSummonersTurn(state, beaId)
+
+		state = attackSummoners(state, adaId, ibexId, {
+			kind: "summoner",
+			playerId: beaId,
+		})
+		ada = state.players[0] as SummonersPlayer
+		ada.spark = 1
+		const firstSparkId = moveCardToHand(state, ada, "spark-toss")
+		state = playSummonersCard(state, adaId, firstSparkId, {
+			kind: "summoner",
+			playerId: beaId,
+		})
+		expect(state.players[0]?.battlefield[0]).toMatchObject({
+			ready: true,
+			triggeredKeywords: ["blaze"],
+		})
+
+		state = attackSummoners(state, adaId, ibexId, {
+			kind: "summoner",
+			playerId: beaId,
+		})
+		ada = state.players[0] as SummonersPlayer
+		ada.spark = 1
+		const secondSparkId = moveCardToHand(state, ada, "spark-toss")
+		state = playSummonersCard(state, adaId, secondSparkId, {
+			kind: "summoner",
+			playerId: beaId,
+		})
+		expect(state.players[0]?.battlefield[0]?.ready).toBe(false)
+	})
+
+	it("lets Current turn only the first bonus draw into another attack", () => {
+		let state = twoPlayerGame("tidemarkMenagerie", "emberReliquary")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const stoatId = moveCardToHand(state, ada, "icicle-stoat")
+		const lensId = moveCardToHand(state, ada, "tideglass-lens")
+		state = playSummonersCard(state, adaId, stoatId, null)
+		state = playSummonersCard(state, adaId, lensId, {
+			cardId: stoatId,
+			kind: "being",
+			playerId: adaId,
+		})
+		expect(state.players[0]?.battlefield[0]).toMatchObject({
+			ready: true,
+			triggeredKeywords: ["current"],
+		})
+
+		state = attackSummoners(state, adaId, stoatId, {
+			kind: "summoner",
+			playerId: beaId,
+		})
+		state = useSummonerPower(state, adaId, null)
+		expect(state.players[0]?.battlefield[0]?.ready).toBe(false)
+	})
+
+	it("lets Molt permanently strengthen a Being after one survived combat", () => {
+		let state = twoPlayerGame("outlandChorus", "emberReliquary")
+		let ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const parasiteId = moveCardToHand(state, ada, "velvet-parasite")
+		state = playSummonersCard(state, adaId, parasiteId, null)
+		state = endSummonersTurn(state, adaId)
+
+		const bea = state.players[1] as SummonersPlayer
+		bea.spark = 10
+		const tortoiseId = moveCardToHand(state, bea, "kilnback-tortoise")
+		state = playSummonersCard(state, beaId, tortoiseId, null)
+		state = endSummonersTurn(state, beaId)
+
+		state = attackSummoners(state, adaId, parasiteId, {
+			cardId: tortoiseId,
+			kind: "being",
+			playerId: beaId,
+		})
+		expect(
+			toSummonersPublicGameView(state).players[0]?.battlefield[0],
+		).toMatchObject({
+			attack: 4,
+			energy: 5,
+			triggeredKeywords: ["molt"],
+		})
+
+		ada = state.players[0] as SummonersPlayer
+		ada.battlefield[0]!.ready = true
+		state = attackSummoners(state, adaId, parasiteId, {
+			cardId: tortoiseId,
+			kind: "being",
+			playerId: beaId,
+		})
+		expect(
+			toSummonersPublicGameView(state).players[0]?.battlefield[0],
+		).toMatchObject({
+			attack: 4,
+			energy: 5,
+		})
+	})
+
+	it("lets a ready Rooted defender recover as its Summoner ends the turn", () => {
+		let state = twoPlayerGame("verdantCompact", "emberReliquary")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const mouseId = moveCardToHand(state, ada, "barkhide-mouse")
+		state = playSummonersCard(state, adaId, mouseId, null)
+		state.players[0]!.battlefield[0]!.damage = 3
+
+		state = endSummonersTurn(state, adaId)
+		expect(state.players[0]?.battlefield[0]?.damage).toBe(3)
+		state = endSummonersTurn(state, beaId)
+		state = endSummonersTurn(state, adaId)
+		expect(state.players[0]?.battlefield[0]?.damage).toBe(1)
 	})
 
 	it("validates targeted Items, Spells, and once-per-turn Summoner powers", () => {

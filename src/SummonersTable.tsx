@@ -361,7 +361,15 @@ function BattlefieldBeing({
 					</equipped-item>
 				)}
 				{being.keywords.length === 0 ? null : (
-					<keyword-row>{being.keywords.join(" · ")}</keyword-row>
+					<keyword-row>
+						{being.keywords
+							.map((keyword) =>
+								being.triggeredKeywords.includes(keyword)
+									? `${keyword} used`
+									: keyword,
+							)
+							.join(" · ")}
+					</keyword-row>
 				)}
 			</being-state>
 		</battlefield-being>
@@ -480,6 +488,16 @@ function RulesCodex({ onClose }: { onClose: () => void }): VNode {
 							<dd>This Being may attack on the turn it is summoned.</dd>
 							<dt>Leech</dt>
 							<dd>Its Summoner restores life equal to its combat damage.</dd>
+							<dt>Blaze</dt>
+							<dd>Your first spend down to 0 Spark readies this Being.</dd>
+							<dt>Current</dt>
+							<dd>Your first bonus draw each turn readies this Being.</dd>
+							<dt>Molt</dt>
+							<dd>The first combat it survives each turn gives it +1/+1.</dd>
+							<dt>Rooted</dt>
+							<dd>
+								A ready, damaged Being restores 2 Energy as your turn ends.
+							</dd>
 							<dt>Fatigue</dt>
 							<dd>
 								Drawing from an empty deck deals 1, then 2, then 3 damage, and

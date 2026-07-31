@@ -71,6 +71,14 @@ the chosen opponent's battlefield.
 - **Rush:** this Being enters ready and may attack immediately.
 - **Leech:** after this Being deals combat damage, restore that much life to its
   Summoner, up to 24.
+- **Blaze:** the first time each turn this Being's Summoner spends their last
+  Spark, ready this Being.
+- **Current:** the first time each turn this Being's Summoner draws a card
+  outside the start-of-turn draw, ready this Being.
+- **Molt:** the first time each turn this Being survives combat with another
+  Being, it gets +1 Attack and +1 Energy while it remains on the battlefield.
+- **Rooted:** at the end of its Summoner's turn, if this Being is ready and
+  damaged, restore 2 Energy to it.
 
 ## Summoner powers
 
@@ -83,29 +91,33 @@ each of that player's turns.
 
 **Pip, Last Lamplighter** · Fire and Iron
 
-An aggressive deck of Rush Beings, direct damage, and hot equipment. Pip's
+An aggressive deck of Rush and Blaze Beings, direct damage, and hot equipment.
+Blaze rewards sequencing attacks before spending the final Spark. Pip's
 **Pocket Ember** costs 2 Spark and deals 1 damage to any enemy.
 
 ### Verdant Compact
 
 **Brindle, Mossmother** · Leaf, Wood, and Slime
 
-Durable Beings, Guard, healing, and permanent growth. Brindle's **Tender
-Growth** costs 2 Spark and restores 2 Energy to a friendly Being.
+Durable Beings, Guard, healing, and permanent growth. Rooted Beings trade an
+attack for end-of-turn recovery. Brindle's **Tender Growth** costs 2 Spark and
+restores 2 Energy to a friendly Being.
 
 ### Tidemark Menagerie
 
 **Nix of the Blue Mile** · Water, Ice, and Air
 
 Card draw, efficient Beings, and effects that return enemy Beings to hand.
-Nix's **Read the Current** costs 2 Spark and draws a card.
+Current turns the first bonus draw into a second attack. Nix's **Read the
+Current** costs 2 Spark and draws a card.
 
 ### Outland Chorus
 
 **Vesper, Many-Eyed** · Ether and Bone
 
-Leech, self-damage, mutation, and stolen tempo. Vesper's **Private Thought**
-costs 2 Spark, deals 1 damage to an enemy Summoner, and restores 1 life.
+Leech, self-damage, mutation, and stolen tempo. Molt rewards choosing combats
+that its changing Beings can survive. Vesper's **Private Thought** costs 2
+Spark, deals 1 damage to an enemy Summoner, and restores 1 life.
 
 The canonical deck lists and card text live in
 `src/summoners/summoners-cards.ts`; every starter contains 24 physical cards.

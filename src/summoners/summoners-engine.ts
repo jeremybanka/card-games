@@ -9,6 +9,7 @@ import type {
 	SummonersCardDefinition,
 	SummonersDeckId,
 	SummonersEffect,
+	SummonersKeyword,
 	SummonersPrivatePlayerView,
 	SummonersPublicBeing,
 	SummonersPublicGameView,
@@ -36,6 +37,7 @@ type SummonersBeing = {
 	energyBonus: number
 	itemCardId: CardId | null
 	ready: boolean
+	triggeredKeywords: SummonersKeyword[]
 }
 
 export type SummonersPlayer = {
@@ -151,6 +153,7 @@ function publicBeing(
 		item:
 			being.itemCardId === null ? null : visibleCard(state, being.itemCardId),
 		ready: being.ready,
+		triggeredKeywords: [...being.triggeredKeywords],
 	}
 }
 
@@ -391,8 +394,8 @@ export function selectSummonersDeck(
 	return next
 }
 
-function drawCard(state: SummonersState, player: SummonersPlayer): void {
-	if (player.eliminated) return
+function drawCard(state: SummonersState, player: SummonersPlayer): boolean {
+	if (player.eliminated) return false
 	const cardId = player.deck.shift()
 	if (cardId === undefined) {
 		player.fatigue += 1
@@ -401,7 +404,7 @@ function drawCard(state: SummonersState, player: SummonersPlayer): void {
 			state,
 			`${player.name} has no cards left and suffers ${player.fatigue} fatigue.`,
 		)
-		return
+		return false
 	}
 	if (player.hand.length >= SUMMONERS_HAND_LIMIT) {
 		player.discard.push(cardId)
@@ -409,9 +412,88 @@ function drawCard(state: SummonersState, player: SummonersPlayer): void {
 			state,
 			`${player.name}'s full hand lets a card slip into the discard.`,
 		)
-		return
+		return true
 	}
 	player.hand.push(cardId)
+	return true
+}
+
+function beingHasKeyword(
+	state: SummonersState,
+	being: SummonersBeing,
+	keyword: SummonersKeyword,
+): boolean {
+	return beingStats(state, being).keywords.includes(keyword)
+}
+
+function triggerReadyKeyword(
+	state: SummonersState,
+	player: SummonersPlayer,
+	keyword: "blaze" | "current",
+): void {
+	const triggered: string[] = []
+	for (const being of player.battlefield) {
+		if (
+			!beingHasKeyword(state, being, keyword) ||
+			being.triggeredKeywords.includes(keyword)
+		) {
+			continue
+		}
+		being.triggeredKeywords.push(keyword)
+		being.ready = true
+		triggered.push(definitionFor(state, being.cardId).name)
+	}
+	if (triggered.length > 0) {
+		setStatus(
+			state,
+			`${triggered.join(" and ")} ${
+				triggered.length === 1 ? "readies" : "ready"
+			} with ${keyword === "blaze" ? "Blaze" : "the Current"}.`,
+		)
+	}
+}
+
+function triggerMolt(state: SummonersState, being: SummonersBeing): void {
+	if (
+		!beingHasKeyword(state, being, "molt") ||
+		being.triggeredKeywords.includes("molt") ||
+		being.damage >= beingStats(state, being).energy
+	) {
+		return
+	}
+	being.triggeredKeywords.push("molt")
+	being.attackBonus += 1
+	being.energyBonus += 1
+	setStatus(
+		state,
+		`${definitionFor(state, being.cardId).name} Molts into a stronger shape.`,
+	)
+}
+
+function restoreRootedBeings(
+	state: SummonersState,
+	player: SummonersPlayer,
+): void {
+	const restored: string[] = []
+	for (const being of player.battlefield) {
+		if (
+			!being.ready ||
+			being.damage === 0 ||
+			!beingHasKeyword(state, being, "rooted")
+		) {
+			continue
+		}
+		being.damage = Math.max(0, being.damage - 2)
+		restored.push(definitionFor(state, being.cardId).name)
+	}
+	if (restored.length > 0) {
+		setStatus(
+			state,
+			`${restored.join(" and ")} ${
+				restored.length === 1 ? "restores" : "restore"
+			} 2 Energy while Rooted.`,
+		)
+	}
 }
 
 function activePlayers(state: SummonersState): SummonersPlayer[] {
@@ -467,6 +549,11 @@ function beginTurn(
 	player: SummonersPlayer,
 	drawAtStart: boolean,
 ): void {
+	for (const seatedPlayer of state.players) {
+		for (const being of seatedPlayer.battlefield) {
+			being.triggeredKeywords = []
+		}
+	}
 	player.maxSpark = Math.min(SUMMONERS_MAXIMUM_SPARK, player.maxSpark + 1)
 	player.spark = player.maxSpark
 	player.powerUsed = false
@@ -679,7 +766,9 @@ function resolveEffect(
 		}
 		case "draw": {
 			for (let count = 0; count < effect.count; count += 1) {
-				drawCard(state, actingPlayer)
+				if (drawCard(state, actingPlayer)) {
+					triggerReadyKeyword(state, actingPlayer, "current")
+				}
 			}
 			break
 		}
@@ -776,6 +865,7 @@ export function playSummonersCard(
 			energyBonus: 0,
 			itemCardId: null,
 			ready: card.keywords?.includes("rush") ?? false,
+			triggeredKeywords: [],
 		})
 	} else if (card.type === "item") {
 		if (target?.kind !== "being") {
@@ -793,6 +883,9 @@ export function playSummonersCard(
 
 	resolveEffects(next, player, card.effects ?? [], target)
 	if (next.phase === "playing") {
+		if (card.cost > 0 && player.spark === 0) {
+			triggerReadyKeyword(next, player, "blaze")
+		}
 		setStatus(next, `${player.name} played ${card.name}.`)
 		if (player.eliminated) advanceTurn(next, playerId)
 	}
@@ -869,6 +962,8 @@ export function attackSummoners(
 			next,
 			`${definitionFor(next, attackerId).name} battled ${definitionFor(next, targetBeing.cardId).name}.`,
 		)
+		triggerMolt(next, attacker)
+		triggerMolt(next, targetBeing)
 	}
 	discardSpentBeings(next)
 	eliminateSpentSummoners(next)
@@ -899,6 +994,7 @@ export function useSummonerPower(
 	player.powerUsed = true
 	resolveEffects(next, player, summoner.power.effects, target)
 	if (next.phase === "playing") {
+		if (player.spark === 0) triggerReadyKeyword(next, player, "blaze")
 		setStatus(next, `${summoner.name} used ${summoner.power.name}.`)
 		if (player.eliminated) advanceTurn(next, playerId)
 	}
@@ -910,7 +1006,8 @@ export function endSummonersTurn(
 	playerId: PlayerId,
 ): SummonersState {
 	const next = copyState(state)
-	requireTurn(next, playerId)
+	const player = requireTurn(next, playerId)
+	restoreRootedBeings(next, player)
 	advanceTurn(next, playerId)
 	return next
 }
