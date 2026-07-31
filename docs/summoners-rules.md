@@ -91,7 +91,7 @@ An aggressive deck of Rush Beings, direct damage, and hot equipment. Pip's
 **Brindle, Mossmother** · Leaf, Wood, and Slime
 
 Durable Beings, Guard, healing, and permanent growth. Brindle's **Tender
-Growth** costs 2 Spark and restores 2 life to a friendly character.
+Growth** costs 2 Spark and restores 2 Energy to a friendly Being.
 
 ### Tidemark Menagerie
 

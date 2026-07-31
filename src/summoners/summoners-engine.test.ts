@@ -65,6 +65,22 @@ describe("Summoners card set", () => {
 			}
 		}
 	})
+
+	it("keeps Verdant's efficient defenses within their tuned thresholds", () => {
+		expect(summonersCardCatalog["barkhide-mouse"]).toMatchObject({
+			attack: 1,
+			energy: 4,
+		})
+		expect(summonersCardCatalog["rootwoven-buckler"]).toMatchObject({
+			energy: 2,
+		})
+		expect(
+			summonersCardCatalog["rootwoven-buckler"].grantedKeywords,
+		).toBeUndefined()
+		expect(summonersCardCatalog["green-reprisal"].effects).toEqual([
+			{ amount: 4, kind: "damage", recipient: "target" },
+		])
+	})
 })
 
 describe("Summoners authoritative engine", () => {
@@ -147,6 +163,29 @@ describe("Summoners authoritative engine", () => {
 			playerId: beaId,
 		})
 		expect(battled.players[1]?.battlefield[0]?.damage).toBe(2)
+	})
+
+	it("limits Tender Growth to repairing a friendly Being", () => {
+		let state = endSummonersTurn(twoPlayerGame(), adaId)
+		const bea = state.players[1] as SummonersPlayer
+		bea.spark = 10
+		const mouseId = moveCardToHand(state, bea, "barkhide-mouse")
+		state = playSummonersCard(state, beaId, mouseId, null)
+		state.players[1]!.battlefield[0]!.damage = 3
+
+		expect(() =>
+			useSummonerPower(state, beaId, {
+				kind: "summoner",
+				playerId: beaId,
+			}),
+		).toThrow("not a legal target")
+
+		const healed = useSummonerPower(state, beaId, {
+			cardId: mouseId,
+			kind: "being",
+			playerId: beaId,
+		})
+		expect(healed.players[1]?.battlefield[0]?.damage).toBe(1)
 	})
 
 	it("validates targeted Items, Spells, and once-per-turn Summoner powers", () => {

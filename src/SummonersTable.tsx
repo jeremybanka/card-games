@@ -32,6 +32,12 @@ import {
 	summonersHandCardAtPoint,
 	summonersHandCardCandidates,
 } from "./summoners/summoners-hand-interaction.ts"
+import {
+	SUMMONERS_KEYWORD_GLOSSARY,
+	summonersCardKeywords,
+	summonersKeywordLabel,
+} from "./summoners/summoners-glossary.ts"
+import { summonersTargetFromElements } from "./summoners/summoners-target-interaction.ts"
 import type {
 	SummonersCardDefinition,
 	SummonersPublicBeing,
@@ -52,7 +58,7 @@ type Selection =
 	| { cardId: CardId; kind: "attacker"; targeting: "anyEnemy" }
 	| { kind: "power"; targeting: SummonersTargeting }
 
-type HandDragState = {
+type CardDragState = {
 	cardId: CardId
 	dragging: boolean
 	x: number
@@ -162,28 +168,54 @@ function SummonersCard({
 	compact = false,
 	disabled = false,
 	onClick,
+	onPointerCancel,
+	onPointerDown,
+	onPointerMove,
+	onPointerUp,
 	selected = false,
+	tooltipSide = "right",
 }: {
 	card: SummonersVisibleCard
 	compact?: boolean
 	disabled?: boolean
 	onClick: () => void
+	onPointerCancel?:
+		| ((event: JSX.TargetedPointerEvent<HTMLElement>) => void)
+		| undefined
+	onPointerDown?:
+		| ((event: JSX.TargetedPointerEvent<HTMLElement>) => void)
+		| undefined
+	onPointerMove?:
+		| ((event: JSX.TargetedPointerEvent<HTMLElement>) => void)
+		| undefined
+	onPointerUp?:
+		| ((event: JSX.TargetedPointerEvent<HTMLElement>) => void)
+		| undefined
 	selected?: boolean
+	tooltipSide?: "left" | "right" | undefined
 }): VNode {
+	const keywords = summonersCardKeywords(card)
+	const tooltipId = `summoners-keywords-${card.physicalId}`
 	return (
 		<summoners-card
 			data-card-id={card.physicalId}
 			data-compact={compact || undefined}
 			data-element={card.element}
 			data-selected={selected || undefined}
+			data-tooltip-side={tooltipSide}
 			data-type={card.type}
 		>
 			<button
 				type="button"
+				aria-describedby={keywords.length === 0 ? undefined : tooltipId}
 				aria-label={`${card.name}, ${card.cost} Spark, ${card.rules}`}
 				aria-pressed={selected}
 				disabled={disabled}
 				onClick={onClick}
+				onPointerCancel={onPointerCancel}
+				onPointerDown={onPointerDown}
+				onPointerMove={onPointerMove}
+				onPointerUp={onPointerUp}
 			>
 				<card-frame>
 					<card-cost aria-label={`${card.cost} Spark`}>{card.cost}</card-cost>
@@ -198,69 +230,128 @@ function SummonersCard({
 					</card-rules>
 					{card.type === "being" ? (
 						<card-combat>
-							<strong aria-label={`${card.attack ?? 0} Attack`}>
-								{card.attack ?? 0}
-							</strong>
-							<strong aria-label={`${card.energy ?? 0} Energy`}>
-								{card.energy ?? 0}
-							</strong>
+							<combat-stat data-kind="attack">
+								<small>ATK</small>
+								<strong aria-label={`${card.attack ?? 0} Attack`}>
+									{card.attack ?? 0}
+								</strong>
+							</combat-stat>
+							<combat-stat data-kind="energy">
+								<small>NRG</small>
+								<strong aria-label={`${card.energy ?? 0} Energy`}>
+									{card.energy ?? 0}
+								</strong>
+							</combat-stat>
 						</card-combat>
 					) : card.type === "item" ? (
 						<card-combat>
-							<strong aria-label={`${card.attack ?? 0} Attack bonus`}>
-								+{card.attack ?? 0}
-							</strong>
-							<strong aria-label={`${card.energy ?? 0} Energy bonus`}>
-								+{card.energy ?? 0}
-							</strong>
+							<combat-stat data-kind="attack">
+								<small>ATK</small>
+								<strong aria-label={`${card.attack ?? 0} Attack bonus`}>
+									+{card.attack ?? 0}
+								</strong>
+							</combat-stat>
+							<combat-stat data-kind="energy">
+								<small>NRG</small>
+								<strong aria-label={`${card.energy ?? 0} Energy bonus`}>
+									+{card.energy ?? 0}
+								</strong>
+							</combat-stat>
 						</card-combat>
 					) : null}
 				</card-frame>
 			</button>
+			{keywords.length === 0 ? null : (
+				<card-keyword-tooltip id={tooltipId} role="tooltip">
+					{keywords.map((keyword) => (
+						<p key={keyword}>
+							<strong>{summonersKeywordLabel(keyword)}.</strong>{" "}
+							<span>{SUMMONERS_KEYWORD_GLOSSARY[keyword]}</span>
+						</p>
+					))}
+				</card-keyword-tooltip>
+			)}
 		</summoners-card>
 	)
 }
 
 function BattlefieldBeing({
 	being,
+	drag,
 	disabled,
 	onClick,
+	onPointerCancel,
+	onPointerDown,
+	onPointerMove,
+	onPointerUp,
 	ownerId,
 	selected,
 	targetable,
+	tooltipSide,
 }: {
 	being: SummonersPublicBeing
+	drag?: CardDragState | null
 	disabled: boolean
 	onClick: () => void
+	onPointerCancel?: (event: JSX.TargetedPointerEvent<HTMLElement>) => void
+	onPointerDown?: (event: JSX.TargetedPointerEvent<HTMLElement>) => void
+	onPointerMove?: (event: JSX.TargetedPointerEvent<HTMLElement>) => void
+	onPointerUp?: (event: JSX.TargetedPointerEvent<HTMLElement>) => void
 	ownerId: PlayerId
 	selected: boolean
 	targetable: boolean
+	tooltipSide?: "left" | "right"
 }): VNode {
 	return (
 		<battlefield-being
+			data-attacker-dragging={drag?.dragging || undefined}
 			data-ready={being.ready || undefined}
 			data-selected={selected || undefined}
 			data-summoners-target-card-id={being.card.physicalId}
 			data-summoners-target-kind="being"
 			data-summoners-target-player-id={ownerId}
 			data-targetable={targetable || undefined}
+			style={{
+				"--being-drag-x": `${drag?.x ?? 0}px`,
+				"--being-drag-y": `${drag?.y ?? 0}px`,
+			}}
 		>
 			<SummonersCard
 				card={being.card}
 				compact
 				disabled={disabled}
 				onClick={onClick}
+				onPointerCancel={onPointerCancel}
+				onPointerDown={onPointerDown}
+				onPointerMove={onPointerMove}
+				onPointerUp={onPointerUp}
 				selected={selected}
+				tooltipSide={tooltipSide}
 			/>
-			<being-state>
-				<being-attack aria-label={`${being.attack} Attack`}>
-					{being.attack}
-				</being-attack>
-				<being-energy
-					aria-label={`${being.energy - being.damage} of ${being.energy} Energy`}
-				>
-					{being.energy - being.damage}/{being.energy}
-				</being-energy>
+			<being-state
+				key={`${being.card.physicalId}:${being.damage}:${being.ready}:${being.item?.physicalId ?? "bare"}`}
+			>
+				<being-vitals>
+					<being-attack aria-label={`${being.attack} Attack`}>
+						<small>ATK</small>
+						<strong>{being.attack}</strong>
+					</being-attack>
+					<being-energy
+						aria-label={`${being.energy - being.damage} of ${being.energy} Energy`}
+						data-wounded={being.damage > 0 || undefined}
+						style={{
+							"--energy-fill": `${Math.max(
+								0,
+								((being.energy - being.damage) / being.energy) * 100,
+							)}%`,
+						}}
+					>
+						<small>ENERGY</small>
+						<strong>
+							{being.energy - being.damage}/{being.energy}
+						</strong>
+					</being-energy>
+				</being-vitals>
 				{being.item === null ? null : (
 					<equipped-item
 						data-card-id={being.item.physicalId}
@@ -549,11 +640,7 @@ function SummonersLobby({
 								<button
 									type="button"
 									onClick={() =>
-										socket.emit(
-											"assignAiSeat",
-											selectedAiModel,
-											handleResult,
-										)
+										socket.emit("assignAiSeat", selectedAiModel, handleResult)
 									}
 								>
 									Invite AI Summoner
@@ -584,12 +671,18 @@ export function SummonersTable({
 	const pulledPrivateView = usePullAtom(privatePlayerViewAtom)
 	const myPlayerId = usePullAtom(myUserKeyAtom) as PlayerId | null
 	const [selection, setSelection] = useState<Selection | null>(null)
-	const [handDrag, setHandDrag] = useState<HandDragState | null>(null)
-	const [hoveredHandCardId, setHoveredHandCardId] = useState<CardId | null>(null)
+	const [handDrag, setHandDrag] = useState<CardDragState | null>(null)
+	const [attackerDrag, setAttackerDrag] = useState<CardDragState | null>(null)
+	const [hoveredHandCardId, setHoveredHandCardId] = useState<CardId | null>(
+		null,
+	)
 	const [rulesOpen, setRulesOpen] = useState(false)
 	const [tableRoot, setTableRoot] = useState<HTMLElement | null>(null)
-	const handDragRef = useRef<HandDragState | null>(null)
+	const handDragRef = useRef<CardDragState | null>(null)
+	const attackerDragRef = useRef<CardDragState | null>(null)
 	const pointerOrigin = useRef<PointerOrigin | null>(null)
+	const attackerPointerOrigin = useRef<PointerOrigin | null>(null)
+	const suppressBeingClick = useRef(new Set<CardId>())
 
 	const game = pulledGame.gameKind === "summoners" ? pulledGame : null
 	const privateView =
@@ -610,9 +703,13 @@ export function SummonersTable({
 	useEffect(() => {
 		setSelection(null)
 		setHandDrag(null)
+		setAttackerDrag(null)
 		handDragRef.current = null
+		attackerDragRef.current = null
 		setHoveredHandCardId(null)
 		pointerOrigin.current = null
+		attackerPointerOrigin.current = null
+		suppressBeingClick.current.clear()
 	}, [game?.currentPlayerId, game?.phase])
 
 	useEffect(() => {
@@ -651,6 +748,11 @@ export function SummonersTable({
 		game.currentPlayerId === myPlayerId &&
 		!myPlayer.eliminated
 	const opponents = game.players.filter((player) => player.id !== myPlayerId)
+	const currentPlayer = game.players.find(
+		(player) => player.id === game.currentPlayerId,
+	)
+	const aiThinking =
+		game.phase === "playing" && !myTurn && currentPlayer?.kind === "ai"
 	const selectedCardIsPlayable =
 		selectedCard !== null &&
 		privateView.playableCardIds.includes(selectedCard.physicalId)
@@ -710,42 +812,43 @@ export function SummonersTable({
 		targeting: card.targeting,
 	})
 
-	const targetAtPoint = (
+	const selectedTargetAtPoint = (
+		activeSelection: Selection,
+		clientX: number,
+		clientY: number,
+	): SummonersTarget | undefined => {
+		const targetElements = [
+			...document.querySelectorAll<HTMLElement>("[data-summoners-target-kind]"),
+		].filter((element) => {
+			const rect = element.getBoundingClientRect()
+			return (
+				clientX >= rect.left &&
+				clientX <= rect.right &&
+				clientY >= rect.top &&
+				clientY <= rect.bottom
+			)
+		})
+		const target = summonersTargetFromElements(targetElements)
+		if (target !== undefined) {
+			const owner = playersById.get(target.playerId)
+			return owner !== undefined &&
+				targetMatchesSelection(activeSelection, target, myPlayerId, owner)
+				? target
+				: undefined
+		}
+		return undefined
+	}
+
+	const cardTargetAtPoint = (
 		card: SummonersVisibleCard,
 		clientX: number,
 		clientY: number,
 	): SummonersTarget | null | undefined => {
+		const target = selectedTargetAtPoint(cardSelection(card), clientX, clientY)
+		if (target !== undefined) return target
+		if (card.targeting !== "none") return undefined
 		const element = document.elementFromPoint(clientX, clientY)
 		if (!(element instanceof Element)) return undefined
-		const targetElement = element.closest<HTMLElement>(
-			"[data-summoners-target-kind]",
-		)
-		if (targetElement !== null) {
-			const playerId = targetElement.dataset.summonersTargetPlayerId as
-				| PlayerId
-				| undefined
-			if (playerId === undefined) return undefined
-			const target =
-				targetElement.dataset.summonersTargetKind === "being"
-					? {
-							cardId: targetElement.dataset
-								.summonersTargetCardId as CardId,
-							kind: "being" as const,
-							playerId,
-						}
-					: { kind: "summoner" as const, playerId }
-			const owner = playersById.get(playerId)
-			return owner !== undefined &&
-				targetMatchesSelection(
-					cardSelection(card),
-					target,
-					myPlayerId,
-					owner,
-				)
-				? target
-				: undefined
-		}
-		if (card.targeting !== "none") return undefined
 		if (card.type === "being") {
 			return element.closest("player-battlefield") === null ? undefined : null
 		}
@@ -772,19 +875,15 @@ export function SummonersTable({
 				(candidate) => candidate.physicalId === drag.cardId,
 			)
 			if (card !== undefined) {
-				const target = targetAtPoint(card, event.clientX, event.clientY)
+				const target = cardTargetAtPoint(card, event.clientX, event.clientY)
 				if (target !== undefined) {
 					if (tableRoot !== null) {
 						capturePendingSummonersCardMotion(tableRoot, card.physicalId)
 					}
-					socket.emit(
-						"playSummonersCard",
-						card.physicalId,
-						target,
-						(result) =>
-							handleResult(result, () => {
-								setSelection(null)
-							}),
+					socket.emit("playSummonersCard", card.physicalId, target, (result) =>
+						handleResult(result, () => {
+							setSelection(null)
+						}),
 					)
 				}
 			}
@@ -795,7 +894,119 @@ export function SummonersTable({
 		if (cancelled || dragged) setSelection(null)
 	}
 
+	const startAttackerDrag = (
+		being: SummonersPublicBeing,
+		event: JSX.TargetedPointerEvent<HTMLElement>,
+	): void => {
+		if (!myTurn || !being.ready) return
+		suppressBeingClick.current.delete(being.card.physicalId)
+		attackerPointerOrigin.current = {
+			pointerId: event.pointerId,
+			x: event.clientX,
+			y: event.clientY,
+		}
+		event.currentTarget.setPointerCapture?.(event.pointerId)
+		const nextDrag = {
+			cardId: being.card.physicalId,
+			dragging: false,
+			x: 0,
+			y: 0,
+		}
+		attackerDragRef.current = nextDrag
+		setAttackerDrag(nextDrag)
+		setSelection({
+			cardId: being.card.physicalId,
+			kind: "attacker",
+			targeting: "anyEnemy",
+		})
+	}
+
+	const moveAttackerDrag = (
+		event: JSX.TargetedPointerEvent<HTMLElement>,
+	): void => {
+		const origin = attackerPointerOrigin.current
+		const drag = attackerDragRef.current
+		if (
+			origin === null ||
+			drag === null ||
+			origin.pointerId !== event.pointerId
+		) {
+			return
+		}
+		const x = event.clientX - origin.x
+		const y = event.clientY - origin.y
+		const dragging = drag.dragging || Math.hypot(x, y) > 8
+		const nextDrag = { ...drag, dragging, x, y }
+		attackerDragRef.current = nextDrag
+		setAttackerDrag(nextDrag)
+	}
+
+	const finishAttackerDrag = (
+		being: SummonersPublicBeing,
+		event: JSX.TargetedPointerEvent<HTMLElement>,
+		cancelled = false,
+	): void => {
+		const origin = attackerPointerOrigin.current
+		const drag = attackerDragRef.current
+		if (
+			origin === null ||
+			drag === null ||
+			origin.pointerId !== event.pointerId
+		) {
+			return
+		}
+		if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+			event.currentTarget.releasePointerCapture?.(event.pointerId)
+		}
+		const dragged =
+			drag.dragging ||
+			Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 8
+		if (dragged) {
+			suppressBeingClick.current.add(being.card.physicalId)
+			window.setTimeout(() => {
+				suppressBeingClick.current.delete(being.card.physicalId)
+			}, 1_000)
+		}
+		if (!cancelled && dragged) {
+			const activeSelection = {
+				cardId: being.card.physicalId,
+				kind: "attacker",
+				targeting: "anyEnemy",
+			} satisfies Selection
+			const target = selectedTargetAtPoint(
+				activeSelection,
+				event.clientX,
+				event.clientY,
+			)
+			if (target !== undefined) {
+				socket.emit(
+					"attackSummoners",
+					being.card.physicalId,
+					target,
+					(result) => handleResult(result, () => setSelection(null)),
+				)
+			}
+		}
+		attackerPointerOrigin.current = null
+		attackerDragRef.current = null
+		setAttackerDrag(null)
+		if (cancelled || dragged) setSelection(null)
+	}
+
+	const finishActiveAttackerDrag = (
+		event: JSX.TargetedPointerEvent<HTMLElement>,
+		cancelled = false,
+	): void => {
+		const cardId = attackerDragRef.current?.cardId
+		if (cardId === undefined) return
+		const being = myPlayer.battlefield.find(
+			(candidate) => candidate.card.physicalId === cardId,
+		)
+		if (being !== undefined) finishAttackerDrag(being, event, cancelled)
+	}
+
 	const chooseOwnBeing = (being: SummonersPublicBeing): void => {
+		if (suppressBeingClick.current.delete(being.card.physicalId)) return
 		const target = targetForBeing(myPlayerId, being.card.physicalId)
 		if (targetMatchesSelection(selection, target, myPlayerId, myPlayer)) {
 			submitTarget(target)
@@ -872,12 +1083,15 @@ export function SummonersTable({
 			className={css.class}
 			data-my-turn={myTurn || undefined}
 			data-phase={game.phase}
-			onPointerCancel={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+			onPointerCancel={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
 				finishHandDrag(event, true)
-			}
-			onPointerUp={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+				finishActiveAttackerDrag(event, true)
+			}}
+			onPointerMove={moveAttackerDrag}
+			onPointerUp={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
 				finishHandDrag(event)
-			}
+				finishActiveAttackerDrag(event)
+			}}
 			ref={setTableRoot}
 		>
 			<summoners-header>
@@ -955,7 +1169,7 @@ export function SummonersTable({
 									{opponent.battlefield.length === 0 ? (
 										<empty-field>no Beings</empty-field>
 									) : (
-										opponent.battlefield.map((being) => {
+										opponent.battlefield.map((being, index) => {
 											const target = targetForBeing(
 												opponent.id,
 												being.card.physicalId,
@@ -975,6 +1189,11 @@ export function SummonersTable({
 													ownerId={opponent.id}
 													selected={false}
 													targetable={targetable}
+													tooltipSide={
+														index >= opponent.battlefield.length / 2
+															? "left"
+															: "right"
+													}
 												/>
 											)
 										})
@@ -989,24 +1208,42 @@ export function SummonersTable({
 					})}
 				</opponent-realms>
 
-				<action-channel aria-live="polite">
-					<action-copy>
+				<action-channel
+					aria-live="polite"
+					data-thinking={aiThinking || undefined}
+				>
+					<action-copy key={`${game.turnNumber}:${game.statusMessage}`}>
 						<small>
 							{game.phase === "gameComplete"
 								? "CONCLAVE DECIDED"
-								: selection === null
-									? "CONCLAVE"
-									: "CHOOSE A TARGET"}
+								: aiThinking
+									? "OPPONENT’S INVOCATION"
+									: !myTurn
+										? "THE TABLE TURNS"
+										: selection === null
+											? "CONCLAVE"
+											: "CHOOSE A TARGET"}
 						</small>
 						<strong>
 							{game.phase === "gameComplete"
 								? game.statusMessage
-								: selectionInstruction(selection, selectedCard)}
+								: aiThinking
+									? `${currentPlayer?.name ?? "Luna"} is considering the field…`
+									: !myTurn
+										? `Awaiting ${currentPlayer?.name ?? "another Summoner"}’s invocation.`
+										: selectionInstruction(selection, selectedCard)}
 						</strong>
 						{game.phase === "gameComplete" ? null : (
 							<span>{game.statusMessage}</span>
 						)}
 					</action-copy>
+					{aiThinking ? (
+						<thinking-mark aria-label="Luna is thinking">
+							<i />
+							<i />
+							<i />
+						</thinking-mark>
+					) : null}
 					{selection === null ? null : (
 						<button type="button" onClick={() => setSelection(null)}>
 							Cancel
@@ -1077,7 +1314,7 @@ export function SummonersTable({
 						{myPlayer.battlefield.length === 0 ? (
 							<empty-field>Summon a Being to begin your warband.</empty-field>
 						) : (
-							myPlayer.battlefield.map((being) => {
+							myPlayer.battlefield.map((being, index) => {
 								const target = targetForBeing(myPlayerId, being.card.physicalId)
 								const targetable = targetMatchesSelection(
 									selection,
@@ -1091,6 +1328,11 @@ export function SummonersTable({
 								return (
 									<BattlefieldBeing
 										being={being}
+										drag={
+											attackerDrag?.cardId === being.card.physicalId
+												? attackerDrag
+												: null
+										}
 										disabled={
 											!(
 												targetable ||
@@ -1099,9 +1341,20 @@ export function SummonersTable({
 										}
 										key={being.card.physicalId}
 										onClick={() => chooseOwnBeing(being)}
+										onPointerCancel={(event) =>
+											finishAttackerDrag(being, event, true)
+										}
+										onPointerDown={(event) => startAttackerDrag(being, event)}
+										onPointerMove={moveAttackerDrag}
+										onPointerUp={(event) => finishAttackerDrag(being, event)}
 										ownerId={myPlayerId}
 										selected={selected}
 										targetable={targetable}
+										tooltipSide={
+											index >= myPlayer.battlefield.length / 2
+												? "left"
+												: "right"
+										}
 									/>
 								)
 							})
@@ -1137,12 +1390,10 @@ export function SummonersTable({
 				>
 					<hand-hit-surface
 						aria-hidden="true"
-						onPointerCancel={(
-							event: JSX.TargetedPointerEvent<HTMLElement>,
-						) => finishHandDrag(event, true)}
-						onPointerDown={(
-							event: JSX.TargetedPointerEvent<HTMLElement>,
-						) => {
+						onPointerCancel={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+							finishHandDrag(event, true)
+						}
+						onPointerDown={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
 							const candidate = summonersHandCardAtPoint(
 								summonersHandCardCandidates(event.currentTarget),
 								event.clientX,
@@ -1175,9 +1426,7 @@ export function SummonersTable({
 								setHoveredHandCardId(null)
 							}
 						}}
-						onPointerMove={(
-							event: JSX.TargetedPointerEvent<HTMLElement>,
-						) => {
+						onPointerMove={(event: JSX.TargetedPointerEvent<HTMLElement>) => {
 							const origin = pointerOrigin.current
 							if (origin === null) {
 								const candidate = closestSummonersHandCard(
@@ -1201,9 +1450,9 @@ export function SummonersTable({
 							setHandDrag(nextDrag)
 							if (dragging) setHoveredHandCardId(null)
 						}}
-						onPointerUp={(
-							event: JSX.TargetedPointerEvent<HTMLElement>,
-						) => finishHandDrag(event)}
+						onPointerUp={(event: JSX.TargetedPointerEvent<HTMLElement>) =>
+							finishHandDrag(event)
+						}
 					/>
 					{privateView.hand.map((card, index) => {
 						const layout = summonersHandCardLayout(
@@ -1214,12 +1463,11 @@ export function SummonersTable({
 							<summoners-hand-card
 								data-disabled={
 									!myTurn ||
-										!privateView.playableCardIds.includes(card.physicalId) ||
-										undefined
+									!privateView.playableCardIds.includes(card.physicalId) ||
+									undefined
 								}
 								data-dragging={
-									handDrag?.cardId === card.physicalId &&
-										handDrag.dragging
+									handDrag?.cardId === card.physicalId && handDrag.dragging
 										? true
 										: undefined
 								}
@@ -1249,6 +1497,9 @@ export function SummonersTable({
 										selection?.kind === "card" &&
 										selection.cardId === card.physicalId &&
 										selectedCardIsPlayable
+									}
+									tooltipSide={
+										index >= privateView.hand.length / 2 ? "left" : "right"
 									}
 								/>
 							</summoners-hand-card>
