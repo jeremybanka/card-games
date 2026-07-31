@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 0; lead 2S and try to shed TS under a higher spade.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

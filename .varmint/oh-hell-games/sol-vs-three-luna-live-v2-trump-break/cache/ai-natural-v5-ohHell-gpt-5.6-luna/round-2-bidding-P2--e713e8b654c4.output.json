@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1; lead a king later when advantageous, avoiding overtricks with the other high cards.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

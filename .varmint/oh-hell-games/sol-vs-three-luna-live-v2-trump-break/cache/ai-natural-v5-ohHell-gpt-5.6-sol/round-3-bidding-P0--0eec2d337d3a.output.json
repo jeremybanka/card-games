@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Aim for zero; shed low cards and avoid leading the 9H unless safe.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

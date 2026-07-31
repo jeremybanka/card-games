@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take one reliable trick with AC; avoid risking QD or KS unless favorable.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

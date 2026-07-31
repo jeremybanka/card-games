@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Avoid winning; lead the low diamond, hoping an opponent takes it.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8D"
+	}
+}

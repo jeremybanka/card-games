@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard 6S; preserve AH for the final heart lead and target.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6S"
+	}
+}

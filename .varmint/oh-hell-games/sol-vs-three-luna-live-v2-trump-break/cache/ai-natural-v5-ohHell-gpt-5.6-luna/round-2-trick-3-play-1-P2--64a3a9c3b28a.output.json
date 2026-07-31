@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead low to avoid taking another trick; save the higher club as protection.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8C"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 0; avoid winning and shed 5H safely.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5H"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Ruff the heart lead to secure exactly 1 trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4C"
+	}
+}

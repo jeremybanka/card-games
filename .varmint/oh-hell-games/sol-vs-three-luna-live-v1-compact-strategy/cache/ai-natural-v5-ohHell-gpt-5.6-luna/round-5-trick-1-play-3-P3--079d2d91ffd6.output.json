@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Preserve bid 0 by discarding 6S; do not win the trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6S"
-	}
-}

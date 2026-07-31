@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Take exactly one trick with AC, then avoid winning further tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AC"
-	}
-}

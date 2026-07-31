@@ -69,7 +69,7 @@ const invariantSeed = "oh-hell-sol-vs-three-luna-v1"
 const liveInvariantSeed = "oh-hell-sol-vs-three-luna-live-v1"
 const liveRecordingName =
 	process.env.OH_HELL_AI_GAME_RECORDING_NAME?.trim() ||
-	"sol-vs-three-luna-live-v1-compact-strategy"
+	"sol-vs-three-luna-live-v2-trump-break"
 const liveCacheMode: CacheMode =
 	process.env.OH_HELL_AI_GAME_CACHE_MODE === "read" ? "read" : "write"
 const bots = [
@@ -548,7 +548,7 @@ describe("four-bot deterministic realtime Oh Hell game", () => {
 			process.cwd(),
 			".varmint",
 			"oh-hell-games",
-			"sol-vs-three-luna-live-v1-compact-strategy",
+			"sol-vs-three-luna-live-v2-trump-break",
 			"cache",
 		)
 		const decisions: LiveDecisionRecord[] = []
@@ -567,15 +567,10 @@ describe("four-bot deterministic realtime Oh Hell game", () => {
 
 		expect(decisions).toHaveLength(80)
 		expect(modelResponses).toHaveLength(0)
-		expect(fallbacks).toHaveLength(1)
-		expect(fallbacks[0]).toMatchObject({
-			modelId: "gpt-5.6-luna",
-			reason: "illegal_action",
-			sequence: 67,
-		})
+		expect(fallbacks).toEqual([])
 		expect(replayed.cacheOutputCount).toBe(80)
 		expect(replayed.finalState.players.map((player) => player.score)).toEqual([
-			33, 32, 36, 34,
+			42, 44, 46, 23,
 		])
 		expect(replayed.finalState.winnerIds).toEqual([bots[2].id])
 	}, 20_000)

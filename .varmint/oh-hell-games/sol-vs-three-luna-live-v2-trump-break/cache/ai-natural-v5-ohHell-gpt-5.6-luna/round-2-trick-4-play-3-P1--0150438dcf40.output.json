@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay on bid zero by discarding 7C; it cannot win.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7C"
+	}
+}

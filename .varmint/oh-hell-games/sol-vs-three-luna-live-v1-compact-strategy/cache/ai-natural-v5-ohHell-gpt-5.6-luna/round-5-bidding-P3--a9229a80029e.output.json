@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 0; 6S is unlikely to win a trick unless spades are led and opponents cannot beat it.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 0
-	}
-}

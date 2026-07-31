@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Use 9S to seek the one remaining trick; if it wins, avoid taking more.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9S"
+	}
+}

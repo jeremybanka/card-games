@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with QH; KH remains winning, allowing a needy opponent to take the final trick if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QH"
+	}
+}

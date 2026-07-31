@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play 2D now; preserve 3C to seek my required trump trick later.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "2D"
-	}
-}

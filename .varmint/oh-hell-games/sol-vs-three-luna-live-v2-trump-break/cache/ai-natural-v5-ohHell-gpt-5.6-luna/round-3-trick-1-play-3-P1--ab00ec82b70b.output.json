@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take exactly one trick now with the unbeatable club ace, then avoid winning later.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AC"
+	}
+}

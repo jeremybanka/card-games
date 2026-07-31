@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 1; lead a king to target one reliable trick, preserving the other for a later opportunity.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 1
-	}
-}

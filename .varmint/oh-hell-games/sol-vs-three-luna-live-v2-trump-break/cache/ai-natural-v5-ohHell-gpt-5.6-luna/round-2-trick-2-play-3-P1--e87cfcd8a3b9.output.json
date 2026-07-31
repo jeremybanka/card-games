@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid zero; shed the guaranteed losing spade.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "5S"
+	}
+}

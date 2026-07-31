@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead KS and hope an opponent overtakes; avoid winning the final trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "KS"
-	}
-}

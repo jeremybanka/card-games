@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid zero; discard the spade under the 9S, preserving clubs for future safe discards.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5S"
-	}
-}

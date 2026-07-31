@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 0; avoid winning, especially with 4C, and shed safely when possible.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

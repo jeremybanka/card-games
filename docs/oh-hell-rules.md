@@ -12,6 +12,9 @@ exercising changing hand sizes.
   not make the total of all bids equal the number of available tricks.
 - Players must follow the led suit when able. Trump beats non-trump; otherwise
   the highest card of the led suit wins. The trick winner leads next.
+- In this variant, trump may not be led until a trump has been played to an
+  earlier trick, breaking trump. A player whose hand contains only trump may
+  lead it before then.
 - Making a bid exactly scores 10 plus the bid. Missing scores one point for
   every trick actually won.
 - After five rounds, the highest cumulative score wins. Equal high scores are

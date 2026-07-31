@@ -116,7 +116,7 @@ scoring card and shoots the moon, producing the final score Terra 0, Player 26.
 
 The Oh Hell realtime end-to-end test plays all five rounds of the
 `5, 4, 3, 2, 1` hand schedule. Its checked-in
-`.varmint/oh-hell-games/sol-vs-three-luna-live-v1-compact-strategy/` fixture
+`.varmint/oh-hell-games/sol-vs-three-luna-live-v2-trump-break/` fixture
 contains 20 model bids and 60 model card plays. Run
 `pnpm record:oh-hell-ai-game` to replace it with a paid live recording; normal
 CI replays all 80 cached model outputs and verifies the final state.

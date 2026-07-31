@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play 8S for the needed trick; if it holds, shed JD/KH and avoid further wins.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "8S"
-	}
-}

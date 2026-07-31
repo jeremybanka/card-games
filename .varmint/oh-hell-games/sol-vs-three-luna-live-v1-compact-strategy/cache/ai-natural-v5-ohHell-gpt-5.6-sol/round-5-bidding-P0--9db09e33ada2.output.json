@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid the forced 1; win with TS only if it is the highest spade or opponents cannot beat the led suit.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 1
-	}
-}

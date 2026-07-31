@@ -7,13 +7,14 @@ import {
 	joinOhHellGame,
 	legalBidsFor,
 	OH_HELL_HAND_SCHEDULE,
+	playableOhHellCardIdsFor,
 	playOhHellCard,
 	startNextOhHellRound,
 	submitOhHellBid,
 	toOhHellPrivatePlayerView,
 	toOhHellPublicGameView,
 } from "./oh-hell-engine.ts"
-import type { PlayerId } from "./game-types.ts"
+import type { CardId, PlayerId } from "./game-types.ts"
 
 const ADA = "user::ada" satisfies PlayerId
 const BEA = "user::bea" satisfies PlayerId
@@ -85,6 +86,88 @@ describe("Oh Hell engine", () => {
 				playOhHellCard(state, follower?.id as PlayerId, offSuit),
 			).toThrow("follow suit")
 		}
+	})
+
+	it("requires trump to be broken before it is led unless only trump remains", () => {
+		let state = dealOhHellRound(
+			table(),
+			createSeededRandom("oh-hell-unbroken-trump").next,
+		)
+		state = bidRound(state)
+		const leaderId = state.currentPlayerId as PlayerId
+		const leader = state.players.find((player) => player.id === leaderId)
+		const trumpSuit = state.trumpSuit
+		if (leader === undefined || trumpSuit === null) {
+			throw new Error("The trump restriction fixture needs a leader and trump.")
+		}
+		const trumpCardId = leader.hand[0] as CardId
+		const nonTrumpCardId = leader.hand[1] as CardId
+		state.cardValues[trumpCardId] = { rank: 14, suit: trumpSuit }
+		state.cardValues[nonTrumpCardId] = {
+			rank: 2,
+			suit: trumpSuit === "clubs" ? "diamonds" : "clubs",
+		}
+
+		expect(playableOhHellCardIdsFor(state, leaderId)).not.toContain(trumpCardId)
+		expect(() => playOhHellCard(state, leaderId, trumpCardId)).toThrow(
+			"cannot lead trump",
+		)
+
+		for (const cardId of leader.hand) {
+			const card = state.cardValues[cardId]
+			if (card === undefined) throw new Error("The dealt card needs a value.")
+			state.cardValues[cardId] = {
+				...card,
+				suit: trumpSuit,
+			}
+		}
+		expect(playableOhHellCardIdsFor(state, leaderId)).toEqual(leader.hand)
+		expect(() => playOhHellCard(state, leaderId, trumpCardId)).not.toThrow()
+	})
+
+	it("allows a trick winner to lead trump after it has been broken", () => {
+		let state = dealOhHellRound(
+			table(),
+			createSeededRandom("oh-hell-broken-trump").next,
+		)
+		state = bidRound(state)
+		const leaderId = state.currentPlayerId as PlayerId
+		const leader = state.players.find((player) => player.id === leaderId)
+		const trumpSuit = state.trumpSuit
+		const brokenTrumpCardId = state.trumpCardId
+		if (
+			leader === undefined ||
+			trumpSuit === null ||
+			brokenTrumpCardId === null
+		) {
+			throw new Error("The broken-trump fixture needs a leader and trump.")
+		}
+		const trumpCardId = leader.hand[0] as CardId
+		const nonTrumpCardId = leader.hand[1] as CardId
+		state.cardValues[trumpCardId] = {
+			rank: 14,
+			suit: trumpSuit,
+		}
+		state.cardValues[nonTrumpCardId] = {
+			rank: 2,
+			suit: state.trumpSuit === "clubs" ? "diamonds" : "clubs",
+		}
+		state.completedTricks = [
+			{
+				leftoverAward: null,
+				plays: [
+					{
+						cardId: brokenTrumpCardId,
+						playerId: leaderId,
+					},
+				],
+				winnerId: leaderId,
+			},
+		]
+		state.trickNumber = 1
+
+		expect(playableOhHellCardIdsFor(state, leaderId)).toContain(trumpCardId)
+		expect(() => playOhHellCard(state, leaderId, trumpCardId)).not.toThrow()
 	})
 
 	it("keeps hidden values private and remaps stable physical IDs each deal", () => {

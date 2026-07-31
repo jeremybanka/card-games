@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid zero; continue shedding cards that cannot win tricks.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7D"
+	}
+}

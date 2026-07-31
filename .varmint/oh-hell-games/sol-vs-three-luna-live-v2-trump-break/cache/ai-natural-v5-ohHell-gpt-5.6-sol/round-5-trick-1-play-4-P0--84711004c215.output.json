@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard TS; it cannot beat P2's trump, so the bid will be missed.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

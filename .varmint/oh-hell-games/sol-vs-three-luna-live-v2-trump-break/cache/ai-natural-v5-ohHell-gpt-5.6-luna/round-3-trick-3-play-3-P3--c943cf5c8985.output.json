@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play the only legal card; this trick cannot reach your target.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AH"
+	}
+}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard JC; P3 already wins, so remain exactly on bid.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "JC"
-	}
-}

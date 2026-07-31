@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 2; preserve AD and TS as likely winners, and shed low cards first.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8C"
+	}
+}

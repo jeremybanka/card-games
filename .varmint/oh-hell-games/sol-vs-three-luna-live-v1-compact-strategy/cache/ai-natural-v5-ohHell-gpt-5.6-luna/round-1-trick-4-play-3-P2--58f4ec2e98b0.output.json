@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Duck with 2D; preserve 3C for the final trick if it can win.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "2D"
-	}
-}

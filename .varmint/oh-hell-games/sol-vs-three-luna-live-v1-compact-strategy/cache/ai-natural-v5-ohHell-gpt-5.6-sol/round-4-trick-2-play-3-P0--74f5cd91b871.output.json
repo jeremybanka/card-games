@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Stay at zero; discard TS, which cannot beat the club lead.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TS"
-	}
-}

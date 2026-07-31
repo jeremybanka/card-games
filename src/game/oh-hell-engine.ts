@@ -302,7 +302,20 @@ export function playableOhHellCardIdsFor(
 	if (state.phase !== "playing" || state.currentPlayerId !== id) return []
 	const hand = state.players[playerIndex(state, id)]?.hand ?? []
 	const lead = state.currentTrick[0]
-	if (!lead) return [...hand]
+	if (!lead) {
+		const trumpWasPlayed = state.completedTricks.some((trick) =>
+			trick.plays.some(
+				(play) => value(state, play.cardId).suit === state.trumpSuit,
+			),
+		)
+		if (!trumpWasPlayed) {
+			const nonTrump = hand.filter(
+				(cardId) => value(state, cardId).suit !== state.trumpSuit,
+			)
+			if (nonTrump.length > 0) return nonTrump
+		}
+		return [...hand]
+	}
 	const suit = value(state, lead.cardId).suit
 	const following = hand.filter((cardId) => value(state, cardId).suit === suit)
 	return following.length > 0 ? following : [...hand]
@@ -360,7 +373,10 @@ export function playOhHellCard(
 	cardId: CardId,
 ): OhHellState {
 	const { next } = beginCardPlay(state, id, cardId, {
-		illegalCardError: () => new OhHellRuleError("You must follow suit."),
+		illegalCardError: () =>
+			new OhHellRuleError(
+				"You must follow suit, and cannot lead trump until it has been broken unless your hand contains only trump.",
+			),
 		inactiveRoundError: () =>
 			new OhHellRuleError("The round is not ready for play."),
 		notInHandError: () => new OhHellRuleError("That card is not in your hand."),

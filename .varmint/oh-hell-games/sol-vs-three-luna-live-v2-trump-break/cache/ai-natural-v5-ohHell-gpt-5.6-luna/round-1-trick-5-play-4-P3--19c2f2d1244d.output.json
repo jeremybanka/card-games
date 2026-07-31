@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play AH; AS wins, giving P2 the needed trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AH"
+	}
+}

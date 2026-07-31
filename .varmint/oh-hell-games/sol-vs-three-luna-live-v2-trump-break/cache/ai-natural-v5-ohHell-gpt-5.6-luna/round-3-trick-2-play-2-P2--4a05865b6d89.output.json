@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play 2D under QD; preserve 3C for the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2D"
+	}
+}

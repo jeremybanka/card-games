@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 0; shed the 9H early and play low, avoiding accidental wins.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 0
-	}
-}

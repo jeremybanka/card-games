@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve zero bid; discard safely and take no trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4D"
+	}
+}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Take this final trick to meet my bid exactly.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AH"
-	}
-}

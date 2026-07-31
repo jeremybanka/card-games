@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve zero bid; shed the higher diamond on this guaranteed loss.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6D"
+	}
+}

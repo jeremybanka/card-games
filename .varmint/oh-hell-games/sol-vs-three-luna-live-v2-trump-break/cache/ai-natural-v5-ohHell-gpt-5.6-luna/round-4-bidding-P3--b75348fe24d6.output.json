@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Avoid taking tricks; discard safely and preserve the zero.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

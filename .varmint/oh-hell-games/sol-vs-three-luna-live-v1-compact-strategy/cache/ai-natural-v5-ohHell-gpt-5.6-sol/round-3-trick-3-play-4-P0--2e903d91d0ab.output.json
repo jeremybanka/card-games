@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Maintain bid 0 by discarding; 3D cannot win against the trump.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3D"
-	}
-}

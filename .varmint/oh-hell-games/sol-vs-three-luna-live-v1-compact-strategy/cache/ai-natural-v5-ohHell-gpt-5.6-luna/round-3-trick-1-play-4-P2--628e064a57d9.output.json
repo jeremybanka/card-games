@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Preserve 3C as my likely winning trump; discard 3H here while AC already controls the trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "3H"
-	}
-}

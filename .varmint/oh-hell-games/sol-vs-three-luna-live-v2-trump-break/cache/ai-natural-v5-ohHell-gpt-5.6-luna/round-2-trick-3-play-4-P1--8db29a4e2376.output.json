@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay on bid zero; shed the lower club and retain 7C for the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "4C"
+	}
+}

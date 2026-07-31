@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Aim for zero; lead 2S and keep TS as the safer final discard.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "2S"
-	}
-}

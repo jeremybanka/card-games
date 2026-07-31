@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning further tricks; lead the lower club and shed the final card if possible.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "8C"
-	}
-}

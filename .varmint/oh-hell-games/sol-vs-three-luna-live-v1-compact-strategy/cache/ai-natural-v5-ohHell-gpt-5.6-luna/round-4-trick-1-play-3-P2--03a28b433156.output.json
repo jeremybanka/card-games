@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Take this trick with the trump, then discard the low spade if possible to finish on exactly one.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TC"
-	}
-}
