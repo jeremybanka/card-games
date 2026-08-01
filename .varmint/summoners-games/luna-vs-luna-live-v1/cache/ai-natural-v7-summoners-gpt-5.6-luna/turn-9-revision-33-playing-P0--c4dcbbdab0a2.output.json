@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack the Summoner with Brasshorn Ibex for 4; this advances the lethal race, while using Pocket Ember or a card first would delay damage and attacks remain available afterward.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B2",
+		"target": "P1"
+	},
+	"turnObjective": "Deal at least 7 damage to Luna Verdant this turn and win before spending resources on nonlethal value."
+}

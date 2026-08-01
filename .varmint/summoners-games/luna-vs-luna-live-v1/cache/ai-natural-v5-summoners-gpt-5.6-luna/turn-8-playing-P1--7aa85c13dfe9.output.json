@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 2 Spark on Tender Growth: Seedling Scout reaches 3 growth, gains +1 Attack and +1 Energy, and is restored. Attack Luna Ember for 4 damage, then end with Scout weary."
+}

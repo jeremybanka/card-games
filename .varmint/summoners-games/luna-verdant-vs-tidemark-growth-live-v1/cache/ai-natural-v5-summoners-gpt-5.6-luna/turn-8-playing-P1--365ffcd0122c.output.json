@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Riverjaw Newt",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Riverjaw Newt to establish a Current Being for future turns, preserving 1 Spark since no other legal action fits."
+}

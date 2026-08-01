@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Coalcoat Cub has already used its Rush attack; no further legal action remains, so end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

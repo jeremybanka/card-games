@@ -1,0 +1,9 @@
+{
+	"actionReason": "Play Brasshorn Ibex for 3 Spark to trigger Blaze and gain an immediate attacker; this is more damage than spending 2 Spark on Pocket Ember and preserving no follow-up pressure.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Brasshorn Ibex",
+		"target": null
+	},
+	"turnObjective": "Convert this turn's Spark and Rush attackers into maximum immediate damage while preserving board."
+}

@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Cancerous Bloom",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Private Thought for guaranteed damage, then cast Cancerous Bloom for another 4 damage. This spends all 7 Spark and leaves no battlefield or Guard considerations."
+}

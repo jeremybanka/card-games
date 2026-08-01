@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Marrow Hound",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack first with the ready Leech Being for pressure, then spend both Spark on Marrow Hound to develop the board before ending the turn."
+}

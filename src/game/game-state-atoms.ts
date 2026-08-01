@@ -3,9 +3,9 @@ import { atom, atomFamily, selectorFamily } from "atom.io"
 import {
 	EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 	EMPTY_HEARTS_PUBLIC_GAME_VIEW,
+	type AnyPrivatePlayerView,
+	type AnyPublicGameView,
 	type PlayerId,
-	type PrivatePlayerView,
-	type PublicGameView,
 } from "./game-types.ts"
 import {
 	gameCatalog,
@@ -23,7 +23,7 @@ export const gameStateAtoms = atomFamily<GameState, string>({
 })
 
 export const publicGameViewProjectionSelectors = selectorFamily<
-	PublicGameView,
+	AnyPublicGameView,
 	string
 >({
 	key: "publicGameViewProjection",
@@ -36,7 +36,7 @@ export const publicGameViewProjectionSelectors = selectorFamily<
 })
 
 export const privatePlayerViewProjectionSelectors = selectorFamily<
-	PrivatePlayerView,
+	AnyPrivatePlayerView,
 	[roomCode: string, playerId: PlayerId]
 >({
 	key: "privatePlayerViewProjection",
@@ -48,12 +48,12 @@ export const privatePlayerViewProjectionSelectors = selectorFamily<
 		},
 })
 
-export const publicGameViewAtom = atom<PublicGameView>({
+export const publicGameViewAtom = atom<AnyPublicGameView>({
 	key: "publicGameView",
 	default: EMPTY_HEARTS_PUBLIC_GAME_VIEW,
 })
 
-export const privatePlayerViewAtom = atom<PrivatePlayerView>({
+export const privatePlayerViewAtom = atom<AnyPrivatePlayerView>({
 	key: "privatePlayerView",
 	default: EMPTY_HEARTS_PRIVATE_PLAYER_VIEW,
 })

@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack with Cinderwing Finch to deal its 3 damage to Luna Verdant; ending the turn would forgo the final available attack, and there are no other profitable actions.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B1",
+		"target": "P1"
+	},
+	"turnObjective": "Clear P1’s battlefield and maximize damage to Luna Verdant this turn."
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Equip Finch, attack the Scout, then spend the last Spark to trigger Blaze for a second attack on Luna Verdant.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Frontier Flareknife",
+		"target": "P0:B0"
+	}
+}

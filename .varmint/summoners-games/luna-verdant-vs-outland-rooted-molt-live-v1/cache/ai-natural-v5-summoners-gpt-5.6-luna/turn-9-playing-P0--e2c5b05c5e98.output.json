@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack P1 directly with the Staff-equipped Scout for 2 damage; Leech restores Luna to 23. Preserve Spark and avoid unnecessary combat."
+}

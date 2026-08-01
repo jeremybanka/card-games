@@ -1,0 +1,7 @@
+{
+	"actionReason": "End the turn because the audit shows no ready attackers, playable cards, Tend actions, or affordable power, and no damaged ready Rooted Being can recover; there are no profitable alternatives.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Deploy Coalcoat Cub and use its Rush attack to pressure the opposing Summoner."
+}

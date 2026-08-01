@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Play Coalcoat Cub now to use its Rush attack this turn and preserve future options.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Coalcoat Cub",
+		"target": null
+	}
+}

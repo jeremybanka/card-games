@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "The planned 9-Spark line has already resolved; only End Turn is currently legal. Preserve the remaining 1 Spark."
+}

@@ -1,0 +1,9 @@
+{
+	"actionReason": "Play Seedling Scout to establish a Being and preserve future growth options; ending now would waste the available Spark and the only legal board-development action.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Seedling Scout",
+		"target": null
+	},
+	"turnObjective": "Establish a durable growth engine while developing the board efficiently."
+}

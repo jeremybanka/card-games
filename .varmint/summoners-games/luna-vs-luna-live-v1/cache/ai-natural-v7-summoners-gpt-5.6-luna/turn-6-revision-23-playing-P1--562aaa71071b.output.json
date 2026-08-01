@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack Luna Ember for 2 now; tending would improve Sporecap Tender but forgoes the ready Scout’s immediate pressure and the stated stabilization plan.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P1:B0",
+		"target": "P0"
+	},
+	"turnObjective": "Stabilize life total while developing the board and using Seedling Scout’s ready attack for pressure."
+}

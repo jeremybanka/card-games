@@ -1,0 +1,9 @@
+{
+	"actionReason": "Play Sporecap Tender rather than an Old Orchard Tender to immediately restore 2 life while developing a Being, preserving 2 Spark for Tender Growth afterward.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Sporecap Tender",
+		"target": null
+	},
+	"turnObjective": "Stabilize life total while developing a Being and converting remaining Spark into growth."
+}

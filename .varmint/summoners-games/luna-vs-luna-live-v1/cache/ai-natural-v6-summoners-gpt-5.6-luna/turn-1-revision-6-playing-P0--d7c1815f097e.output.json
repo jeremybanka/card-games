@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Use Coalcoat Cub’s Rush to deal damage now, then reassess after combat.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1"
+	}
+}

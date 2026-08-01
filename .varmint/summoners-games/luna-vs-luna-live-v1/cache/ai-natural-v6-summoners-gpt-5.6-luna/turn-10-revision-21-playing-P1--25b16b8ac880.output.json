@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Develop two Tenders this turn, then use Tend to concentrate growth and trigger Orchard’s draw while preserving future growth options.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Old Orchard Tender",
+		"target": null
+	}
+}

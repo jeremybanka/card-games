@@ -1,0 +1,23 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Skysail Harness",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip the Minnow for +1 Attack, then use its Current-triggered extra readiness to attack twice for 4 total damage. Preserve Spark and avoid spending the Summoner power."
+}

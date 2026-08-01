@@ -142,14 +142,14 @@ export const heartsAiStrategy: AiGameStrategy<"hearts"> = {
 		Reflect.deleteProperty(strategicView, "passReceipt")
 		return strategicView
 	},
-	submitAction: (socket, action, privateView) => {
+	submitAction: (socket, action, context) => {
 		switch (action.action) {
 			case "passCards":
 				return new Promise((resolve) => {
 					socket.emit(
 						"passCards",
 						action.cards.map((card) =>
-							cardIdForAiValue(privateView.cards, card),
+							cardIdForAiValue(context.privateView.cards, card),
 						),
 						resolve,
 					)
@@ -158,7 +158,7 @@ export const heartsAiStrategy: AiGameStrategy<"hearts"> = {
 				return new Promise((resolve) => {
 					socket.emit(
 						"playCard",
-						cardIdForAiValue(privateView.cards, action.card),
+						cardIdForAiValue(context.privateView.cards, action.card),
 						resolve,
 					)
 				})

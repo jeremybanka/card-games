@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Cinderwing Finch",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend both Spark to summon the Rush Finch, then use its immediate attack on the opposing summoner for 2 damage. Preserve Coalcoat Cub and finish the turn."
+}

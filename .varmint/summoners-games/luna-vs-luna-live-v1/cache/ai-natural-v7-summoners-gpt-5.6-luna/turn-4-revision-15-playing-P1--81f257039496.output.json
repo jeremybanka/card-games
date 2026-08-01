@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack Luna Ember for 3 with the grown Scout; attacking the 1-Energy Rush Beings trades away pressure while they are already weary, and ending would waste the Scout’s ready attack.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P1:B0",
+		"target": "P0"
+	},
+	"turnObjective": "Grow Seedling Scout and convert its readiness into immediate pressure before ending the turn."
+}

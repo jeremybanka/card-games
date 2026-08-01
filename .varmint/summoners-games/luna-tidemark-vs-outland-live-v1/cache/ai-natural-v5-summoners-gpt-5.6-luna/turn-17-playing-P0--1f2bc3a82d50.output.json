@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Riverjaw Newt’s first attack to trigger Molt while surviving, attack with the Rush Courier, then use Read the Current to draw and ready the Newt for its bonus attack. The second Newt attack finishes Velvet Parasite; preserve 7 Spark."
+}

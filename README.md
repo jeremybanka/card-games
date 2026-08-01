@@ -1,7 +1,9 @@
-# Wayfarer Hearts
+# Wayfarer Card Games
 
-A mobile-first, realtime multiplayer implementation of the classic trick-taking
-game Hearts. One table supports two, three, or four players.
+A mobile-first realtime card table for Hearts, Oh Hell, and Summoners. Every
+game supports two, three, or four players through the same private room flow.
+Summoners is an original multiplayer Living Card Game set in a strange frontier
+of cute critters, elemental craft, and alarming magic.
 
 The client is a single [Vite](https://vite.dev/) application built with
 [Preact](https://preactjs.com/). The room server uses
@@ -40,11 +42,23 @@ instance-specific directory.
 Open the Vite URL on two to four devices or browser profiles. One player creates
 a table and shares its four-letter room code; the others join with that code.
 
+## Summoners
+
+Summoners players choose one of four complete 24-card starter decks, then play
+Beings, equip Items, cast Spells, use their leader power, and attack any rival
+in a last-Summoner-standing match. Spark grows and refills each turn; combat
+damage persists; Guard, Rush, Leech, and escalating fatigue make up the compact
+first-edition keyword set.
+
+The room server owns turn order, physical-card identity, hidden hands, targets,
+resource costs, combat, and elimination. The full first-edition rules and
+starter overview are in [docs/summoners-rules.md](./docs/summoners-rules.md).
+
 ## AI seats
 
-Before dealing, the room owner can fill open seats with GPT-5.6 Sol, Terra, or
-Luna opponents. Terra is the balanced default; Sol prioritizes strategic
-quality, and Luna prioritizes speed and cost.
+Before dealing Hearts or Oh Hell, the room owner can fill open seats with
+GPT-5.6 Sol, Terra, or Luna opponents. Terra is the balanced default; Sol
+prioritizes strategic quality, and Luna prioritizes speed and cost.
 
 Copy `.env.example` to `.env` and set `OPENAI_API_KEY` to enable model-generated
 strategy. Without a key, AI seats remain fully playable through the deterministic
@@ -145,7 +159,7 @@ the realtime boundary. API keys, authorization values, cookies, passwords,
 tokens, and player secrets are redacted recursively. Set `LOG_LEVEL` to
 `debug`, `info`, `warn`, or `error`; the default is `info`.
 
-## Rules
+## Hearts rules
 
 - Four players use the standard 52-card, 13-card-hand game.
 - Three players remove the two of diamonds and receive 17 cards each.
@@ -160,9 +174,10 @@ tokens, and player secrets are redacted recursively. Set `LOG_LEVEL` to
 
 ## Information boundaries
 
-The server owns the complete card mapping and validates every action. Each room
-has 52 stable, opaque physical card IDs, but the server scrambles their
-relationship to suits and ranks on every deal.
+The server owns complete physical-card mappings and validates every action.
+Trick-taking rooms have 52 stable, opaque physical IDs; Summoners rooms have 96.
+The server scrambles each ID's relationship to card values whenever it deals or
+starts a new Conclave.
 
 Clients receive two separate atom.io realtime projections:
 

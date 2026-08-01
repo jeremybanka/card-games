@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Tender Growth first: spend both Spark to grow Seedling Scout and restore its Energy, raising it to 2 Attack. Then attack P1 for immediate summoner pressure; end with the Scout weary."
+}

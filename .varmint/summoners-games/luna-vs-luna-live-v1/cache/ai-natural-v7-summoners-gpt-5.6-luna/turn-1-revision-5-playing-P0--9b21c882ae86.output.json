@@ -1,0 +1,9 @@
+{
+	"actionReason": "Play Coalcoat Cub to convert the expiring Spark into an immediate Rush attacker; ending the turn would waste the only playable card and Spark.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Coalcoat Cub",
+		"target": null
+	},
+	"turnObjective": "Deploy Coalcoat Cub and use its Rush attack to pressure the opposing Summoner."
+}

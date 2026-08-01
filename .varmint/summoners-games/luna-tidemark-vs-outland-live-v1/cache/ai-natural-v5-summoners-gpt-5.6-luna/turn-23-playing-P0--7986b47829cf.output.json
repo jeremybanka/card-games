@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Glacier Ram",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Glacier Ram",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Establish two Guards to absorb both opposing attacks while preserving 2 Spark as advised. Avoid drawing from the empty deck and avoid spending on an attacker without improving immediate defense."
+}

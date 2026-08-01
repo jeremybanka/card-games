@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Icicle Stoat",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Icicle Stoat to establish a Being for future turns, then end the turn. This spends 2 Spark; the remaining 1 Spark cannot be used on any currently legal action."
+}

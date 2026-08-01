@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Develop the Rush attacker, then use its immediate attack and remaining Spark efficiently against the Scout before ending.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Cinderwing Finch",
+		"target": null
+	}
+}

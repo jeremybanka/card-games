@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Conserve all 3 Spark—especially the directed 2 Spark—and avoid an unnecessary play this turn."
+}

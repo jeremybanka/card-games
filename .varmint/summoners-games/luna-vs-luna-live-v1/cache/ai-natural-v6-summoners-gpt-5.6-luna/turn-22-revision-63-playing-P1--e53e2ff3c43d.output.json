@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Attack the exposed Ember Summoner for lethal before investing further resources.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P1:B0",
+		"target": "P0"
+	}
+}

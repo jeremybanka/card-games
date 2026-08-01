@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Deep Roots",
+			"target": "P0:B3"
+		},
+		{
+			"action": "usePower",
+			"target": "P0:B1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Strike the exposed opposing Summoner first, then spend 3 Spark to Root and reinforce Old Orchard Tender, and use the remaining 2 Spark for Tender Growth on Sporecap Tender. Preserve the other Beings' readiness for recovery and future pressure."
+}

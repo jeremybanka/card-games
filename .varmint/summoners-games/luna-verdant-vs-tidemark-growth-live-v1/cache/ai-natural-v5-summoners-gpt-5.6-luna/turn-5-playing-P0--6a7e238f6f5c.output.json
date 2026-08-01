@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 2 Spark on Tender Growth, increasing Scout to 3 Attack and 5 Energy, then attack and eliminate Icicle Stoat. Scout becomes weary after combat; end with 1 Spark."
+}

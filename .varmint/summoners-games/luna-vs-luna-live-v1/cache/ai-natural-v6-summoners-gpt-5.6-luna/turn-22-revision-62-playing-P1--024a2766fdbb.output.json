@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Use Green Reprisal to remove the Guard, then attack the exposed Ember Summoner while preserving the Tender’s Rooted recovery if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Green Reprisal",
+		"target": "P0:B0"
+	}
+}

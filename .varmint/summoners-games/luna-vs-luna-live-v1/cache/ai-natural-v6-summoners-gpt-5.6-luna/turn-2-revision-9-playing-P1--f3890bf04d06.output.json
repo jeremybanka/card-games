@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No profitable action is available; end the turn and preserve the Scout for future growth.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

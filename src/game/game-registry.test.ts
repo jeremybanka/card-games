@@ -11,6 +11,7 @@ import type { GameKind } from "./game-types.ts"
 const adapters = {
 	hearts: { label: "Hearts" },
 	ohHell: { label: "Oh Hell!" },
+	summoners: { label: "Summoners" },
 } satisfies Record<GameKind, { label: string }>
 
 describe("game registry dispatch", () => {

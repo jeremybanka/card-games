@@ -1,8 +1,8 @@
 import type {
+	AnyPrivatePlayerView,
+	AnyPublicGameView,
 	GameKind,
-	PrivatePlayerView,
 	PrivatePlayerViewFor,
-	PublicGameView,
 	PublicGameViewFor,
 } from "./game-types.ts"
 
@@ -33,8 +33,8 @@ export type CorrelatedGameViews = {
 }[GameKind]
 
 export function correlateGameViews(
-	publicView: PublicGameView,
-	privateView: PrivatePlayerView,
+	publicView: AnyPublicGameView,
+	privateView: AnyPrivatePlayerView,
 	message: string,
 ): CorrelatedGameViews {
 	assertMatchingGameKinds(publicView, privateView, message)
@@ -46,8 +46,8 @@ export function correlateGameViews(
  * at its declaration site.
  */
 export function registeredGameAdapter<Adapter>(
-	gameKind: GameKind,
-	registry: Readonly<Record<GameKind, unknown>>,
+	gameKind: string,
+	registry: Readonly<Record<string, unknown>>,
 ): Adapter {
 	return registry[gameKind] as Adapter
 }
@@ -57,8 +57,8 @@ export function registeredGameAdapter<Adapter>(
  * concrete game does not implement that capability.
  */
 export function registeredGameCapability<Capability>(
-	gameKind: GameKind,
-	registry: Readonly<Partial<Record<GameKind, unknown>>>,
+	gameKind: string,
+	registry: Readonly<Partial<Record<string, unknown>>>,
 ): Capability | null {
 	return (registry[gameKind] as Capability | undefined) ?? null
 }

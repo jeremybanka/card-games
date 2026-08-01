@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Many-Eyed Moth",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend all Spark on Many-Eyed Moth to establish a Being and draw a card from its summon trigger. Preserve no further actions since Spark is exhausted and the Moth is newly summoned."
+}

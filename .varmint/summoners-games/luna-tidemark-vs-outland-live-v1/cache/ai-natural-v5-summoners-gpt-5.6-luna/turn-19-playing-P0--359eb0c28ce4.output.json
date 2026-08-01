@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Riverjaw Newt",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1:B1"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1:B1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Riverjaw Newt, use its first attack into the enemy Guard, then draw with Read the Current to ready it and make its bonus Current attack. Preserve the remaining Spark and finish the turn."
+}

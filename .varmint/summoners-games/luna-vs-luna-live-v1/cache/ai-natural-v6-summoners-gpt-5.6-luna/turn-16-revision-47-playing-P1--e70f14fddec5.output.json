@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No profitable actions remain; end the turn and preserve the current board.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

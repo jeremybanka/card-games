@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Second Shadow",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip Dustmote Familiar for +1 Attack, then strike the opposing Summoner for 4 damage and use Leech to return Luna Outland to full. Avoid the Rooted Scout."
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Use both direct-damage options to weaken Old Orchard Tender while preserving future flexibility.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Spark Toss",
+		"target": "P1:B0"
+	}
+}

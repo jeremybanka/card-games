@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Flash Freeze",
+			"target": "P1:B1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 2 Spark to destroy the stronger enemy attacker, Many-Eyed Moth, then preserve 1 Spark and end the turn. Mistfin Minnow is weary and cannot attack; its Current has already triggered."
+}

@@ -1,0 +1,28 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Canopy Stag",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "tend",
+			"target": "P0:B0",
+			"tender": "P0:B1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon the Stag and Scout, use the Scout’s Tend to grow the Stag, then attack P1 directly with the enlarged Stag. Preserve 2 Spark for flexibility."
+}

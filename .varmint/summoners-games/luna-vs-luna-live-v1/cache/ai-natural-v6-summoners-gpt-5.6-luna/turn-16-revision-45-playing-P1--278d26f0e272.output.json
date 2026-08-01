@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deploy the discounted Walking Grove now for Guard and a durable board, preserving the Tender’s growth and Rooted recovery.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "The Walking Grove",
+		"target": null
+	}
+}

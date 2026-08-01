@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Build growth on Old Orchard Tender while preserving both Tenders for a future payoff turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Sudden Overgrowth",
+		"target": "P1:B0"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Concentrate growth on Old Orchard Tender while preserving its readiness for Rooted recovery; use Sporecap’s Tend first.",
+	"nextAction": {
+		"action": "tend",
+		"target": "P1:B0",
+		"tender": "P1:B1"
+	}
+}

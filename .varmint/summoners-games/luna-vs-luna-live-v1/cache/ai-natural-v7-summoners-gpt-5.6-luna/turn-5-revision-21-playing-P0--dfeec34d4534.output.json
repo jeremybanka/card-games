@@ -1,0 +1,7 @@
+{
+	"actionReason": "All attackers, cards, Spark, powers, and Tend actions have been exhausted, so ending the turn is preferable to passing any remaining profitable opportunity.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Convert this turn's Spark and Rush attackers into maximum immediate damage while preserving board."
+}

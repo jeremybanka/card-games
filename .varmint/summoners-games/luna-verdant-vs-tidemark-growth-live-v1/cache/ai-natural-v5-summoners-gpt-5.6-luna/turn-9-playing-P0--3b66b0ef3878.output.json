@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Preserve all 2 Spark for future threats. The Scout is weary and cannot attack or Tend, while spending Spark now provides no immediate payoff."
+}

@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Sporecap Tender",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the exposed opposing Summoner for 1 damage, then spend the remaining 2 Spark to summon Sporecap Tender for board development. Preserve Seedling Scout’s Tend option for a later turn; Fruitful Sacrifice and Tender Growth provide no value with only one Being."
+}

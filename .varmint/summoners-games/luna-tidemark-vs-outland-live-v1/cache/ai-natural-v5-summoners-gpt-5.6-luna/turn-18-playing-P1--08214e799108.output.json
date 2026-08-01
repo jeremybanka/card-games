@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Unbodying Choir",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack directly with Dustmote Familiar for 1 damage and Leech recovery, then use Private Thought for guaranteed damage and recovery. Summon Unbodying Choir as a Guard/Leech defender, leaving 1 Spark."
+}

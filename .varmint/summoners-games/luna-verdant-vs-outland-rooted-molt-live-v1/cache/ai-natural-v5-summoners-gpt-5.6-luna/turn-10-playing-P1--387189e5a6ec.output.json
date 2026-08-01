@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack P0 with Dustmote Familiar for 2 damage, triggering Leech to restore Luna Outland to full. Preserve the remaining 2 Spark and avoid the Guarded Seedling Scout."
+}

@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend both Spark on Tender Growth to make Seedling Scout a 2-Attack, 4-Energy Being, then attack and remove Mistfin Minnow. End with Scout weary and undamaged beyond the simultaneous 1 damage, with no Spark remaining."
+}

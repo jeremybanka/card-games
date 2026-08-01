@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve the rooted Tender for end-of-turn recovery while growing it and preparing to remove the enemy Guard.",
+	"nextAction": {
+		"action": "usePower",
+		"target": "P1:B0"
+	}
+}

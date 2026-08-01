@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "Unbodying Choir",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack Thornhare with the Guard Choir; it deals 6, survives the 5 return damage, triggers Molt for +1 Attack, and destroys Thornhare. Spend 6 Spark on a second Unbodying Choir, then spend 2 Spark on Private Thought to damage P0 and restore 1 life."
+}

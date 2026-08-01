@@ -12,7 +12,7 @@ import type { CardId, PlayerId } from "./game-types.ts"
 
 const hostId = "user::catalog-host" satisfies PlayerId
 const physicalCardIds = Array.from(
-	{ length: 52 },
+	{ length: 96 },
 	(_, index) => `card::catalog-${index}` as CardId,
 )
 
@@ -41,6 +41,7 @@ describe("game catalog", () => {
 	it("validates external kinds instead of defaulting unknown games to Hearts", () => {
 		expect(isGameKind("hearts")).toBe(true)
 		expect(isGameKind("ohHell")).toBe(true)
+		expect(isGameKind("summoners")).toBe(true)
 		expect(isGameKind("summons")).toBe(false)
 		expect(() => parseGameKind("summons")).toThrow(
 			"Choose a supported card game.",

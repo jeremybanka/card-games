@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Mistfin Minnow",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Play Mistfin Minnow to spend the lone Spark and draw a card; its Current trigger readies it. Preserve it rather than risk an unsupported attack into the opposing Being."
+}

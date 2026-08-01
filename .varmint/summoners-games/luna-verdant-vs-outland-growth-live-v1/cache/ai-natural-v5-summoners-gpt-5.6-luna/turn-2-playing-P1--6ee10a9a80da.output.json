@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "With only 1 Spark, no card or power is affordable, and there are no friendly Beings to target. End the turn."
+}

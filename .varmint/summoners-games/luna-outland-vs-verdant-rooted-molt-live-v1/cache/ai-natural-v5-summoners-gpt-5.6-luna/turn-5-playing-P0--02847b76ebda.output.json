@@ -1,0 +1,23 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Many-Eyed Moth",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack with both ready Beings for 4 total damage, gaining Leech healing from Dustmote Familiar. Then spend 2 Spark to summon Many-Eyed Moth and draw a card, developing the board while retaining 1 Spark."
+}

@@ -16,9 +16,21 @@ import type {
 	OhHellPrivatePlayerView,
 	OhHellPublicGameView,
 	PlayerId,
-	PrivatePlayerView,
-	PublicGameView,
+	AnyPrivatePlayerView,
+	AnyPublicGameView,
 } from "./game-types.ts"
+import {
+	createSummonersGame,
+	SUMMONERS_PLAYER_MAXIMUM,
+	SUMMONERS_PLAYER_MINIMUM,
+	toSummonersPrivatePlayerView,
+	toSummonersPublicGameView,
+	type SummonersState,
+} from "../summoners/summoners-engine.ts"
+import type {
+	SummonersPrivatePlayerView,
+	SummonersPublicGameView,
+} from "../summoners/summoners-types.ts"
 import {
 	createOhHellGame,
 	OH_HELL_PLAYER_MAXIMUM,
@@ -83,6 +95,20 @@ export const gameCatalog = defineGameCatalog({
 		OhHellPublicGameView,
 		OhHellPrivatePlayerView
 	>,
+	summoners: {
+		createInitialState: createSummonersGame,
+		kind: "summoners",
+		label: "Summoners",
+		maximumPlayers: SUMMONERS_PLAYER_MAXIMUM,
+		minimumPlayers: SUMMONERS_PLAYER_MINIMUM,
+		privateView: toSummonersPrivatePlayerView,
+		publicView: toSummonersPublicGameView,
+	} satisfies GameCatalogEntry<
+		"summoners",
+		SummonersState,
+		SummonersPublicGameView,
+		SummonersPrivatePlayerView
+	>,
 } as const)
 
 export function isGameKind(input: unknown): input is GameKind {
@@ -94,9 +120,9 @@ export function parseGameKind(input: unknown): GameKind {
 	throw new Error("Choose a supported card game.")
 }
 
-export function publicGameView(state: GameState): PublicGameView {
+export function publicGameView(state: GameState): AnyPublicGameView {
 	const game = registeredGameAdapter<{
-		publicView: (state: GameState) => PublicGameView
+		publicView: (state: GameState) => AnyPublicGameView
 	}>(state.gameKind, gameCatalog)
 	return game.publicView(state)
 }
@@ -104,9 +130,9 @@ export function publicGameView(state: GameState): PublicGameView {
 export function privatePlayerView(
 	state: GameState,
 	playerId: PlayerId,
-): PrivatePlayerView {
+): AnyPrivatePlayerView {
 	const game = registeredGameAdapter<{
-		privateView: (state: GameState, playerId: PlayerId) => PrivatePlayerView
+		privateView: (state: GameState, playerId: PlayerId) => AnyPrivatePlayerView
 	}>(state.gameKind, gameCatalog)
 	return game.privateView(state, playerId)
 }

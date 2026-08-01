@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Seedling Scout for 1 Spark, establishing a Being while preserving no-action alternatives; with no other friendly Being, it cannot legally Tend this turn. End turn."
+}

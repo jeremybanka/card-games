@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Borrowed Body",
+			"target": "P0:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "Marrow Hound",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Sporesick Elk",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Return the Guard to hand, develop two Beings, then use Private Thought for guaranteed damage and life recovery. Spend 9 Spark total, leaving 1; the Elk’s summon effect deals 1 damage to Luna Verdant, while the power deals 1 to P0 and restores 1 life."
+}

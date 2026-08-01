@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Build the board while preserving Old Orchard Tender’s growth investment for future pressure.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Sporecap Tender",
+		"target": null
+	}
+}

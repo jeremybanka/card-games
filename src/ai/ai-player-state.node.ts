@@ -9,7 +9,7 @@ import {
 	privatePlayerViewAtom,
 	publicGameViewAtom,
 } from "../game/game-state-atoms.ts"
-import { correlateGameViews } from "../game/game-registry.ts"
+import { assertMatchingGameKinds } from "../game/game-registry.ts"
 import type { AiStrategyReviewTurn, PlayerId } from "../game/game-types.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { renderAiGameFacts, type AiGameContext } from "./ai-game-facts.ts"
@@ -17,6 +17,7 @@ import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
 import type {
 	AiMemoryLedgerEntry,
 	AiNextAction,
+	SummonersAiTurnLedgerEntry,
 	AiTurnDecision,
 } from "./ai-types.ts"
 
@@ -31,6 +32,7 @@ export type AiPlayerSiloState = {
 	aiRenderedGameFactsSelector: ReadonlyPureSelectorToken<string>
 	aiStrategicTurnSelector: ReadonlyPureSelectorToken<Loadable<AiTurnDecision>>
 	aiStrategyReviewTurnsAtom: RegularAtomToken<AiStrategyReviewTurn[]>
+	aiSummonersTurnLedgerAtom: RegularAtomToken<SummonersAiTurnLedgerEntry[]>
 }
 
 export function createAiPlayerSiloState(
@@ -56,20 +58,30 @@ export function createAiPlayerSiloState(
 		key: "aiStrategyReviewTurns",
 		default: [],
 	})
+	const aiSummonersTurnLedgerAtom = silo.atom<SummonersAiTurnLedgerEntry[]>({
+		key: "aiSummonersTurnLedger",
+		default: [],
+	})
 
 	const contextFromState = (get: {
 		<T>(token: RegularAtomToken<T>): T
 	}): AiGameContext => {
-		const views = correlateGameViews(
-			get(publicGameViewAtom),
-			get(privatePlayerViewAtom),
+		const publicView = get(publicGameViewAtom)
+		const privateView = get(privatePlayerViewAtom)
+		assertMatchingGameKinds(
+			publicView,
+			privateView,
 			"AI public and private views describe different games.",
 		)
+		const views = {
+			privateView,
+			publicView,
+		} as Pick<AiGameContext, "privateView" | "publicView">
 		const strategy = aiGameStrategy(views.publicView.gameKind)
 		const strategicPrivateView = strategy.privateViewForStrategy(
-			views.privateView,
+			views.privateView as never,
 		)
-		const strategicViews = correlateGameViews(
+		assertMatchingGameKinds(
 			views.publicView,
 			strategicPrivateView,
 			"AI strategy changed the private view game kind.",
@@ -78,8 +90,10 @@ export function createAiPlayerSiloState(
 			memoryLedger: get(aiMemoryLedgerAtom),
 			playerId,
 			previousPlan: get(aiCurrentPlanAtom),
-			...strategicViews,
-		}
+			privateView: strategicPrivateView,
+			publicView: views.publicView,
+			summonersTurnLedger: get(aiSummonersTurnLedgerAtom),
+		} as AiGameContext
 	}
 
 	const aiRenderedGameFactsSelector = silo.selector<string>({
@@ -122,5 +136,6 @@ export function createAiPlayerSiloState(
 		aiRenderedGameFactsSelector,
 		aiStrategicTurnSelector,
 		aiStrategyReviewTurnsAtom,
+		aiSummonersTurnLedgerAtom,
 	}
 }

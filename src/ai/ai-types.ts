@@ -1,9 +1,9 @@
 import type {
-	GameKind,
 	PassDirection,
 	PlayerId,
 	VisibleCard,
 } from "../game/game-types.ts"
+import type { SummonersDeckId } from "../summoners/summoners-types.ts"
 
 type AiCardRank =
 	| "2"
@@ -31,20 +31,40 @@ export type OhHellAiNextAction =
 	| { action: "playCard"; card: AiCardValue }
 	| { action: "submitBid"; bid: number }
 
+export type SummonersAiAction =
+	| { action: "attack"; attacker: string; target: string }
+	| { action: "endTurn" }
+	| {
+			action: "playCard"
+			card: string
+			target: string | null
+	  }
+	| { action: "selectDeck"; deck: SummonersDeckId }
+	| { action: "tend"; target: string; tender: string }
+	| { action: "usePower"; target: string | null }
+
+export type SummonersAiTurnLedgerEntry = {
+	action: SummonersAiAction
+	actionReason: string
+}
+
 export type AiNextActionByGame = {
 	hearts: HeartsAiNextAction
 	ohHell: OhHellAiNextAction
+	summoners: SummonersAiAction
 }
 
-export type AiNextActionFor<Kind extends GameKind> = AiNextActionByGame[Kind]
-export type AiNextAction = AiNextActionFor<GameKind>
+export type AiGameKind = keyof AiNextActionByGame
+export type AiNextActionFor<Kind extends AiGameKind> = AiNextActionByGame[Kind]
+export type AiNextAction = AiNextActionFor<AiGameKind>
 
-export type AiTurnDecisionFor<Kind extends GameKind> = {
+export type AiTurnDecisionFor<Kind extends AiGameKind> = {
+	actionReason?: string
 	currentPlan: string
 	nextAction: AiNextActionFor<Kind>
 }
 
-export type AiTurnDecision = AiTurnDecisionFor<GameKind>
+export type AiTurnDecision = AiTurnDecisionFor<AiGameKind>
 
 export type HeartsPassMemoryEntry = {
 	cards: VisibleCard[]

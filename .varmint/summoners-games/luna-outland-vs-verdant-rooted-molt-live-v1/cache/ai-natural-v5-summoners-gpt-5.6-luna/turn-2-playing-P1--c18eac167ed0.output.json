@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "No action is currently legal, so conserve the Spark and end the turn."
+}

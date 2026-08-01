@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Concentrate growth on Old Orchard Tender, then attack with it for pressure while preserving its readiness.",
+	"nextAction": {
+		"action": "tend",
+		"target": "P1:B0",
+		"tender": "P1:B1"
+	}
+}

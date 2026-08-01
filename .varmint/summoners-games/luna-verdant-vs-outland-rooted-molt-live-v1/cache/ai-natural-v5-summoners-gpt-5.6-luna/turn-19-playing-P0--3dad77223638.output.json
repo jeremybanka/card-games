@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Thornhare",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Thornhare for future pressure, but do not attack into either Guard. Retain the remaining 7 Spark and end the turn."
+}

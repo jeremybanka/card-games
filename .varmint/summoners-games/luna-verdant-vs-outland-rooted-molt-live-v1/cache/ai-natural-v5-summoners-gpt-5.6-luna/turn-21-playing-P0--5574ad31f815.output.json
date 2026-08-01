@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Canopy Muster",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Play Canopy Muster for card advantage and 1 life, retain 7 Spark for future pressure, and avoid attacking into the enemy Guards."
+}

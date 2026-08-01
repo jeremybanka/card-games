@@ -1,0 +1,37 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Gullwind Courier",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Riverjaw Newt",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon the Rush Courier and Current Newt, attack with both, then use Read the Current to draw and ready the Newt for its bonus second attack. End with 1 Spark preserved."
+}

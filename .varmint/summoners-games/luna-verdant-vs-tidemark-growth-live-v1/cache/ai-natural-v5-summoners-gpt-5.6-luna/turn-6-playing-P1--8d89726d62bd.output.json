@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack Luna Verdant first, then spend 2 Spark on Read the Current; the bonus draw triggers Mistfin Minnow’s Current, readying it for a second summoner attack. Avoid the Guarded Seedling Scout and preserve the remaining 1 Spark."
+}

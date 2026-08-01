@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "Unbodying Choir",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack and destroy Seedling Scout safely; Marrow Hound survives, triggers Molt, and Leech restores 1 life. Then spend the remaining 6 Spark on Unbodying Choir and 2 Spark on Private Thought to damage P0 and heal."
+}

@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Bone Needle",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend both Spark to equip Bone Needle, then attack the opposing Summoner for 3 damage. Leech restores Luna Outland to full; avoid trading into the Rooted Scout."
+}

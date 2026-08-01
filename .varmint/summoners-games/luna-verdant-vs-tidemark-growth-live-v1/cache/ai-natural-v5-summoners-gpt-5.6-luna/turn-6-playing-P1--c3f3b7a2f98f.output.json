@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Icicle Stoat",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Icicle Stoat for 2 Spark as a blocker against Seedling Scout, preserving it rather than attacking. End with 1 Spark; Read the Current is no longer affordable."
+}

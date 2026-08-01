@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Concentrate growth on Old Orchard Tender, then deploy the discounted Walking Grove for a durable Guard board.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Sudden Overgrowth",
+		"target": "P1:B0"
+	}
+}

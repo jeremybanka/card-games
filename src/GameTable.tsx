@@ -902,8 +902,8 @@ function PlayerZone({
 }
 
 export function GameTable({ onLeave, socket }: GameTableProps): VNode {
-	const game = usePullAtom(publicGameViewAtom)
-	const privateView = usePullAtom(privatePlayerViewAtom)
+	const game = usePullAtom(publicGameViewAtom) as PublicGameView
+	const privateView = usePullAtom(privatePlayerViewAtom) as PrivatePlayerView
 	const myUserKey = usePullAtom(myUserKeyAtom) as PlayerId | null
 	const actionError = useO(actionErrorAtom)
 	const autoPlayEnabled = useO(autoPlayEnabledAtom)

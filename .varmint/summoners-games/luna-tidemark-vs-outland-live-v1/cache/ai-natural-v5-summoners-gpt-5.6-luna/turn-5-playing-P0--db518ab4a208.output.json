@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack first to exhaust Mistfin Minnow, then use Read the Current for 2 Spark; its draw triggers Current to ready the Minnow for a second attack. Deal 2 total damage, then end the turn."
+}

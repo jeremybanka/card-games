@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Conserve all 2 Spark as directed; no play is needed this turn."
+}

@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Canopy Stag",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P0:B1"
+		},
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "tend",
+			"target": "P0:B1",
+			"tender": "P0:B2"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Build a durable Rooted Canopy Stag, use all Spark efficiently, and preserve the ready high-growth Scout for recovery and future pressure. The new Scout Tends instead, adding a second growth counter to the Stag."
+}

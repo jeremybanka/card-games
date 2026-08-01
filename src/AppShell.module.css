@@ -2,6 +2,10 @@ app-shell.class {
 	min-height: 100%;
 	display: block;
 
+	> room-game-table {
+		display: contents;
+	}
+
 	> connection-status {
 		position: fixed;
 		z-index: 100;

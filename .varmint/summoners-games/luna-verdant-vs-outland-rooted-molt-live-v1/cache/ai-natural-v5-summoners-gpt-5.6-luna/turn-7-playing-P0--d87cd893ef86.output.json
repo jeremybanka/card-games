@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use the Staff-equipped Scout to pressure P1 directly. It deals 2 damage and Leech restores Luna to 23, then end the turn without spending Spark or risking unnecessary combat."
+}

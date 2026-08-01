@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Preserve all 2 Spark rather than summoning Barkhide Mouse; no attack or growth line is available, so end the turn."
+}

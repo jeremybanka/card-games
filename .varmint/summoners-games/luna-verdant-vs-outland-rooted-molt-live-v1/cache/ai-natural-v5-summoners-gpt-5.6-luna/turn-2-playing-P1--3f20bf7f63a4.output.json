@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Dustmote Familiar",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend the single Spark on Dustmote Familiar to establish a Leech Being, then end the turn."
+}

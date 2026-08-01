@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "The planned 9-Spark line has resolved. No further plays, attacks, or power use are legal; preserve the remaining 1 Spark and end the turn."
+}

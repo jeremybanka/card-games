@@ -1,0 +1,6 @@
+{
+	"currentPlan": "End the turn as instructed; preserve Spark and flexibility for the next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

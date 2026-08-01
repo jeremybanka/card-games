@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Preserve resources after the Cub’s attack and end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

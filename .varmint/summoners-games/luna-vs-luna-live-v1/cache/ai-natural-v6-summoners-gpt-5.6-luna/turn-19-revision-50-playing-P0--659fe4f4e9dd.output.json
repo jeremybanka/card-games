@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Sweep both Beings, finish the Guard with Last Light, then use the Rush Cub to attack it before ending with no Spark.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Wildfire Lesson",
+		"target": null
+	}
+}

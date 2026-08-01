@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Remove Old Orchard Tender efficiently with direct damage, preserving flexibility for a follow-up removal action.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Spark Toss",
+		"target": "P1:B0"
+	}
+}

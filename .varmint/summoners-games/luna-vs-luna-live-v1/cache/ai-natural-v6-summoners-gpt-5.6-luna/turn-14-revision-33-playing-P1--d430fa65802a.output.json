@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Invest in the Orchard Tender’s growth and energy, then end without attacking to preserve future pressure.",
+	"nextAction": {
+		"action": "usePower",
+		"target": "P1:B0"
+	}
+}

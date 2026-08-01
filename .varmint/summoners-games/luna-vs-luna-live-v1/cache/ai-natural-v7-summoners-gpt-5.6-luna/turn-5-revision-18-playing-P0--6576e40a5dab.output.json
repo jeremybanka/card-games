@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack the Summoner now for 2 before spending Spark on Brasshorn Ibex; attacking the Scout risks combat damage while delaying the Rush attack loses immediate pressure.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1"
+	},
+	"turnObjective": "Convert this turn's Spark and Rush attackers into maximum immediate damage while preserving board."
+}

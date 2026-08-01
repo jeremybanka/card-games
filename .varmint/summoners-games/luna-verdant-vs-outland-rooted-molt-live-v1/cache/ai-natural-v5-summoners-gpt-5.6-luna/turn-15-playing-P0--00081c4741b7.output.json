@@ -1,0 +1,33 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Thornhare",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Blooming Staff",
+			"target": "P0:B1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Build two attackers, equip Thornhare with Blooming Staff for durable pressure and Leech, then attack the opposing Summoner. Spend 7 Spark and retain 1; no Guard is present, and both Beings remain available for combat."
+}

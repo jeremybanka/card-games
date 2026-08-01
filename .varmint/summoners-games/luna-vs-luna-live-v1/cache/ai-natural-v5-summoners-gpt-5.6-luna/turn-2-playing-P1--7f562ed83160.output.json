@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Play Seedling Scout to establish a Being and preserve the remaining turn; no legal Tend target or further Spark play exists."
+}

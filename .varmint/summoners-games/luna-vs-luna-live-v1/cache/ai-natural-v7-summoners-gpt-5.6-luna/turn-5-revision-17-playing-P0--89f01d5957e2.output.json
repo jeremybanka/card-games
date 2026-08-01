@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack Luna Verdant with a Rush attacker for immediate damage; attacking the Scout risks losing a Being in combat, while playing a card first reduces this turn’s pressure.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B1",
+		"target": "P1"
+	},
+	"turnObjective": "Convert this turn's Spark and Rush attackers into maximum immediate damage while preserving board."
+}
