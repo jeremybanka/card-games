@@ -1,5 +1,6 @@
 import type { AiModelId } from "../ai/ai-models.ts"
 import type { GameKind } from "./game-kinds.ts"
+import type { OhHellRules } from "./oh-hell-rules.ts"
 
 export type { GameKind } from "./game-kinds.ts"
 
@@ -120,6 +121,7 @@ export type OhHellPublicGameView = TrickTakingPublicGameFields & {
 	passSubmittedPlayerIds?: never
 	phase: OhHellPhase
 	players: OhHellPublicPlayerView[]
+	rules: OhHellRules
 	roundHandSize: number
 	trumpSuit: Suit | null
 }
@@ -224,6 +226,10 @@ export type SubmitBidClientEvents = {
 	submitBid: (bid: number, ack: ActionAck) => void
 }
 
+export type ConfigureOhHellRulesClientEvents = {
+	configureOhHellRules: (rules: OhHellRules, ack: ActionAck) => void
+}
+
 export type RoundLifecycleClientEvents = {
 	restartGame: (ack: ActionAck) => void
 	startGame: (ack: ActionAck) => void
@@ -236,6 +242,7 @@ export type HeartsClientEvents = AiSeatClientEvents &
 	RoundLifecycleClientEvents
 
 export type OhHellClientEvents = AiSeatClientEvents &
+	ConfigureOhHellRulesClientEvents &
 	PlayCardClientEvents &
 	RoundLifecycleClientEvents &
 	SubmitBidClientEvents

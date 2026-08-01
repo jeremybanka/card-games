@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { BiddingConsole } from "./BiddingConsole.tsx"
 import type { OhHellPublicGameView, PlayerId } from "./game/game-types.ts"
+import { STANDARD_PAGAT_OH_HELL_RULES } from "./game/oh-hell-rules.ts"
 
 vi.mock("preact/jsx-runtime", async () => {
 	const runtime = await vi.importActual<object>("react/jsx-runtime")
@@ -91,6 +92,7 @@ function biddingView(): OhHellPublicGameView {
 				tricksWon: 0,
 			},
 		],
+		rules: structuredClone(STANDARD_PAGAT_OH_HELL_RULES),
 		roomCode: "WIND",
 		roundHandSize: 5,
 		roundNumber: 1,

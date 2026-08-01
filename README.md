@@ -114,8 +114,8 @@ read-only Varmint cache with a throwing underlying generator and asserts that
 all 27 decisions are cache hits. In the recorded round, Terra captures every
 scoring card and shoots the moon, producing the final score Terra 0, Player 26.
 
-The Oh Hell realtime end-to-end test plays all five rounds of the
-`5, 4, 3, 2, 1` hand schedule. Its checked-in
+The Oh Hell realtime end-to-end test selects a compact legacy profile and plays
+all five rounds of its `5, 4, 3, 2, 1` hand schedule. Its checked-in
 `.varmint/oh-hell-games/sol-vs-three-luna-live-v2-trump-break/` fixture
 contains 20 model bids and 60 model card plays. Run
 `pnpm record:oh-hell-ai-game` to replace it with a paid live recording; normal

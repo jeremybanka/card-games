@@ -436,6 +436,7 @@ function renderOhHellBiddingFacts(context: AiGameContextFor<"ohHell">): string {
 			}: ${player.bid ?? "pending"}`,
 	)
 	const dealerConstraint =
+		context.publicView.rules.requireUnsatisfiableBids &&
 		context.publicView.dealerId === context.playerId
 			? [
 					"",

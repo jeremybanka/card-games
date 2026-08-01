@@ -30,10 +30,19 @@ import {
 	projectVisibleTrick,
 	requireHostAction,
 } from "./trick-taking-domain.ts"
+import {
+	deriveOhHellHandSchedule,
+	OH_HELL_PLAYER_MAXIMUM,
+	OH_HELL_PLAYER_MINIMUM,
+	parseOhHellRules,
+	STANDARD_PAGAT_OH_HELL_RULES,
+	type OhHellRules,
+} from "./oh-hell-rules.ts"
 
-export const OH_HELL_PLAYER_MINIMUM = 3
-export const OH_HELL_PLAYER_MAXIMUM = 4
-export const OH_HELL_HAND_SCHEDULE = [5, 4, 3, 2, 1] as const
+export {
+	OH_HELL_PLAYER_MAXIMUM,
+	OH_HELL_PLAYER_MINIMUM,
+} from "./oh-hell-rules.ts"
 
 export type OhHellPlayer = {
 	aiModel: AiModelId | null
@@ -64,7 +73,9 @@ export type OhHellState = {
 	phase: "lobby" | "bidding" | "playing" | "roundComplete" | "gameComplete"
 	physicalCardIds: CardId[]
 	players: OhHellPlayer[]
+	roundHandSchedule: number[]
 	roomCode: string
+	rules: OhHellRules
 	roundHandSize: number
 	roundNumber: number
 	statusMessage: string
@@ -148,7 +159,9 @@ export function createOhHellGame(
 				tricksWon: 0,
 			},
 		],
+		roundHandSchedule: [],
 		roomCode,
+		rules: structuredClone(STANDARD_PAGAT_OH_HELL_RULES),
 		roundHandSize: 0,
 		roundNumber: 0,
 		statusMessage: "Invite two or three more players.",
@@ -186,13 +199,35 @@ export function joinOhHellGame(
 			tricksWon: 0,
 		}),
 		fullTableError: () =>
-			new OhHellRuleError("This table already has four players."),
+			new OhHellRuleError(
+				`This table already has ${OH_HELL_PLAYER_MAXIMUM} players.`,
+			),
 		inProgressError: () =>
 			new OhHellRuleError("This game is already in progress."),
 		maximumPlayers: OH_HELL_PLAYER_MAXIMUM,
 		minimumPlayers: OH_HELL_PLAYER_MINIMUM,
 		waitingStatus: "Invite one more player.",
 	})
+}
+
+export function configureOhHellRules(
+	state: OhHellState,
+	hostId: PlayerId,
+	rulesInput: unknown,
+): OhHellState {
+	requireHostAction(
+		state,
+		hostId,
+		"lobby",
+		() => new OhHellRuleError("Only the host can configure the rules."),
+		() => new OhHellRuleError("Rules cannot change after the game starts."),
+	)
+	const rules = parseOhHellRules(rulesInput)
+	const next = copyGameState(state)
+	next.rules = rules
+	next.roundHandSchedule = []
+	next.statusMessage = "The table rules were updated."
+	return next
 }
 
 export function disconnectOhHellPlayer(
@@ -207,11 +242,22 @@ export function dealOhHellRound(
 	random: () => number = secureRandom,
 ): OhHellState {
 	const next = copyGameState(state)
-	if (next.players.length < 3 || next.players.length > 4)
-		throw new OhHellRuleError("Oh Hell needs three or four players.")
+	if (
+		next.players.length < OH_HELL_PLAYER_MINIMUM ||
+		next.players.length > OH_HELL_PLAYER_MAXIMUM
+	)
+		throw new OhHellRuleError(
+			`Oh Hell needs ${OH_HELL_PLAYER_MINIMUM} to ${OH_HELL_PLAYER_MAXIMUM} players.`,
+		)
 	if (next.players.some((player) => !player.connected))
 		throw new OhHellRuleError("Every player must be connected before dealing.")
-	const handSize = OH_HELL_HAND_SCHEDULE[next.roundNumber]
+	if (next.roundHandSchedule.length === 0) {
+		next.roundHandSchedule = deriveOhHellHandSchedule(
+			next.rules,
+			next.players.length,
+		)
+	}
+	const handSize = next.roundHandSchedule[next.roundNumber]
 	if (handSize === undefined) throw new OhHellRuleError("The game is complete.")
 	next.roundNumber += 1
 	next.roundHandSize = handSize
@@ -260,7 +306,8 @@ export function dealOhHellRound(
 export function legalBidsFor(state: OhHellState, id: PlayerId): number[] {
 	if (state.phase !== "bidding" || state.currentPlayerId !== id) return []
 	const bids = Array.from({ length: state.roundHandSize + 1 }, (_, bid) => bid)
-	if (id !== state.dealerId) return bids
+	if (!state.rules.requireUnsatisfiableBids || id !== state.dealerId)
+		return bids
 	const total = state.players.reduce(
 		(sum, player) => sum + (player.bid ?? 0),
 		0,
@@ -303,16 +350,18 @@ export function playableOhHellCardIdsFor(
 	const hand = state.players[playerIndex(state, id)]?.hand ?? []
 	const lead = state.currentTrick[0]
 	if (!lead) {
-		const trumpWasPlayed = state.completedTricks.some((trick) =>
-			trick.plays.some(
-				(play) => value(state, play.cardId).suit === state.trumpSuit,
-			),
-		)
-		if (!trumpWasPlayed) {
-			const nonTrump = hand.filter(
-				(cardId) => value(state, cardId).suit !== state.trumpSuit,
+		if (state.rules.requireTrumpBreak) {
+			const trumpWasPlayed = state.completedTricks.some((trick) =>
+				trick.plays.some(
+					(play) => value(state, play.cardId).suit === state.trumpSuit,
+				),
 			)
-			if (nonTrump.length > 0) return nonTrump
+			if (!trumpWasPlayed) {
+				const nonTrump = hand.filter(
+					(cardId) => value(state, cardId).suit !== state.trumpSuit,
+				)
+				if (nonTrump.length > 0) return nonTrump
+			}
 		}
 		return [...hand]
 	}
@@ -346,10 +395,14 @@ function trickWinner(state: OhHellState): PlayerId {
 function scoreRound(state: OhHellState): void {
 	for (const player of state.players) {
 		player.roundPoints =
-			player.bid === player.tricksWon ? 10 + player.tricksWon : player.tricksWon
+			player.bid === player.tricksWon
+				? 10 + player.tricksWon
+				: state.rules.awardPittancePoints
+					? player.tricksWon
+					: 0
 		player.score += player.roundPoints
 	}
-	if (state.roundNumber >= OH_HELL_HAND_SCHEDULE.length) {
+	if (state.roundNumber >= state.roundHandSchedule.length) {
 		const best = Math.max(...state.players.map((player) => player.score))
 		state.winnerIds = state.players
 			.filter((player) => player.score === best)
@@ -458,6 +511,7 @@ export function restartOhHellGame(
 		score: 0,
 		tricksWon: 0,
 	}))
+	next.rules = structuredClone(state.rules)
 	next.statusMessage = "The host can start a new game."
 	return next
 }
@@ -481,13 +535,14 @@ export function toOhHellPublicGameView(
 		gameKind: "ohHell",
 		hostId: state.hostId,
 		lastTrickWinnerId: state.lastTrickWinnerId,
-		maximumRounds: OH_HELL_HAND_SCHEDULE.length,
+		maximumRounds: state.roundHandSchedule.length,
 		phase: state.phase,
 		players: state.players.map((player) => ({
 			...projectPublicPlayer(player),
 			bid: player.bid,
 			tricksWon: player.tricksWon,
 		})),
+		rules: structuredClone(state.rules),
 		roomCode: state.roomCode,
 		roundHandSize: state.roundHandSize,
 		roundNumber: state.roundNumber,

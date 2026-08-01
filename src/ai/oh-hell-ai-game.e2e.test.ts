@@ -21,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { parsePlayCardPayload } from "../game/game-actions.ts"
 import {
+	configureOhHellRules,
 	createOhHellGame,
 	joinOhHellGame,
 	playOhHellCard,
@@ -29,6 +30,7 @@ import {
 	submitOhHellBid,
 	type OhHellState,
 } from "../game/oh-hell-engine.ts"
+import type { OhHellRules } from "../game/oh-hell-rules.ts"
 import { createSeededRandom } from "../game/seeded-random.ts"
 import {
 	gameStateAtoms,
@@ -67,6 +69,16 @@ import type { AiTurnDecision } from "./ai-types.ts"
 const roomCode = "HELL"
 const invariantSeed = "oh-hell-sol-vs-three-luna-v1"
 const liveInvariantSeed = "oh-hell-sol-vs-three-luna-live-v1"
+const recordedGameRules = {
+	awardPittancePoints: true,
+	requireTrumpBreak: true,
+	requireUnsatisfiableBids: true,
+	schedule: {
+		maximumHandSize: 5,
+		minimumHandSize: 1,
+		style: "descending",
+	},
+} as const satisfies OhHellRules
 const liveRecordingName =
 	process.env.OH_HELL_AI_GAME_RECORDING_NAME?.trim() ||
 	"sol-vs-three-luna-live-v2-trump-break"
@@ -228,12 +240,13 @@ async function runBotTable(
 	const seed = options.seed ?? invariantSeed
 	const dealRandom = createSeededRandom(`deal:${roomCode}:${seed}`)
 	const identityRandom = createSeededRandom(`identity:${roomCode}:${seed}`)
-	const initial = createOhHellGame(
+	let initial = createOhHellGame(
 		roomCode,
 		bots[0].id,
 		bots[0].name,
 		createPhysicalCardIds(identityRandom.uuid),
 	)
+	initial = configureOhHellRules(initial, bots[0].id, recordedGameRules)
 	initial.players[0]!.aiModel = bots[0].modelId
 	initial.players[0]!.kind = "ai"
 	setState(gameStateAtoms, roomCode, initial)

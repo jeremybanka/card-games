@@ -1,0 +1,160 @@
+oh-hell-rules-panel.class {
+	width: min(100%, 28rem);
+	display: block;
+	text-align: left;
+
+	> details {
+		display: grid;
+		gap: 0.65rem;
+		padding: 0.65rem;
+		border: 1px solid rgb(255 255 255 / 0.14);
+		border-radius: 0.9rem;
+		background: rgb(0 0 0 / 0.16);
+
+		> summary {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			cursor: pointer;
+			font-size: 0.72rem;
+			list-style: none;
+
+			> span {
+				color: var(--ink-muted);
+				font-weight: 800;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+			}
+
+			> strong {
+				color: var(--gold);
+			}
+		}
+
+		> profile-controls {
+			display: grid;
+			gap: 0.4rem;
+
+			> label {
+				display: grid;
+				gap: 0.2rem;
+			}
+
+			> profile-save-row {
+				display: grid;
+				grid-template-columns: 1fr auto auto;
+				gap: 0.35rem;
+			}
+
+			> p {
+				margin: 0;
+				color: #ffb5a8;
+				font-size: 0.68rem;
+			}
+		}
+
+		> rule-switches {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 0.35rem;
+
+			> label {
+				display: grid;
+				grid-template-columns: auto 1fr;
+				align-items: start;
+				gap: 0.35rem;
+				padding: 0.45rem;
+				border-radius: 0.55rem;
+				background: rgb(255 255 255 / 0.05);
+				font-size: 0.65rem;
+				line-height: 1.2;
+
+				> input {
+					margin: 0;
+					accent-color: var(--gold);
+				}
+			}
+		}
+
+		> schedule-controls {
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 0.4rem;
+
+			> label {
+				min-width: 0;
+				display: grid;
+				gap: 0.2rem;
+			}
+		}
+
+		> schedule-preview {
+			display: block;
+			color: var(--ink-muted);
+			font-size: 0.62rem;
+			line-height: 1.35;
+			text-align: center;
+
+			&[data-invalid] {
+				color: #ffb5a8;
+			}
+		}
+
+		label > span {
+			color: var(--ink-muted);
+			font-size: 0.55rem;
+			font-weight: 750;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+		}
+
+		select,
+		input[type="number"],
+		profile-save-row > input {
+			min-width: 0;
+			width: 100%;
+			padding: 0.42rem;
+			border: 1px solid rgb(255 255 255 / 0.16);
+			border-radius: 0.45rem;
+			background: #173f33;
+			color: var(--ink);
+			font: inherit;
+			font-size: 0.66rem;
+		}
+
+		button {
+			padding: 0.42rem 0.55rem;
+			border: 0;
+			border-radius: 0.45rem;
+			background: rgb(225 190 105 / 0.16);
+			color: var(--gold);
+			font-size: 0.62rem;
+			font-weight: 800;
+		}
+	}
+
+	&:not([data-editable]) > details {
+		> rule-switches,
+		> schedule-controls {
+			opacity: 0.75;
+		}
+	}
+}
+
+@media (max-width: 30rem) {
+	oh-hell-rules-panel.class > details {
+		> rule-switches,
+		> schedule-controls {
+			grid-template-columns: 1fr;
+		}
+
+		> profile-controls > profile-save-row {
+			grid-template-columns: 1fr auto;
+
+			> button:last-child {
+				grid-column: 2;
+			}
+		}
+	}
+}

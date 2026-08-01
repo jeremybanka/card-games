@@ -16,6 +16,7 @@ import { parsePlayCardPayload } from "../src/game/game-actions.ts"
 import type { OhHellClientEvents } from "../src/game/game-types.ts"
 import {
 	createOhHellGame,
+	configureOhHellRules,
 	disconnectOhHellPlayer,
 	type OhHellState,
 	joinOhHellGame,
@@ -41,6 +42,18 @@ export const ohHellGame: GameDefinition<
 				canReviewStrategy: (state) =>
 					state.phase === "roundComplete" || state.phase === "gameComplete",
 				maximumPlayers: OH_HELL_PLAYER_MAXIMUM,
+			}),
+			bindGameEvent(socket, "configureOhHellRules", (rules, ack) => {
+				acknowledge(
+					ack,
+					"realtime.action.configure_oh_hell_rules",
+					{ playerId },
+					() => {
+						controller.setState(
+							configureOhHellRules(controller.getState(), playerId, rules),
+						)
+					},
+				)
 			}),
 			bindGameEvent(socket, "startGame", (ack) => {
 				acknowledge(ack, "realtime.action.start_game", { playerId }, (span) => {

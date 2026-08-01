@@ -74,6 +74,8 @@ export function heartsStateSummaryForLog(state: HeartsState): unknown {
 export function ohHellStateSummaryForLog(state: OhHellState): unknown {
 	return {
 		...commonStateSummaryForLog(state),
+		rules: state.rules,
+		roundHandSchedule: state.roundHandSchedule,
 		trumpSuit: state.trumpSuit,
 		players: state.players.map((player) => ({
 			...commonPlayerSummaryForLog(player),
