@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve KC and spades; take exactly one trick later with AS.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3C"
+	}
+}

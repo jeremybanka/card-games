@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Discard TS; the club trump already wins, so the bid cannot be made.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TS"
-	}
-}

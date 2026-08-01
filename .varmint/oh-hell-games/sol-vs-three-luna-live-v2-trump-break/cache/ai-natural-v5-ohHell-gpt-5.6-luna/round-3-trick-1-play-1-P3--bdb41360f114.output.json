@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead KH to target one heart trick, preserving AH for a second; avoid relying on 6S.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KH"
+	}
+}

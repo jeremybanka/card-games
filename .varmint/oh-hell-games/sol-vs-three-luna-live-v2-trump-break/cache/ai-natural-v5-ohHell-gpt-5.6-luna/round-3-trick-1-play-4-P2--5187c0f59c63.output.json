@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard the forced 3H; preserve both low off-suit cards for a later controlled club opportunity.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3H"
+	}
+}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Preserve the bid-0 target; discard now and avoid taking either trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5H"
-	}
-}

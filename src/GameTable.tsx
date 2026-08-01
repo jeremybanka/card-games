@@ -42,6 +42,7 @@ import {
 	isAutoPlayTurnActionable,
 } from "./game/hearts-auto-play.ts"
 import { gameCatalog } from "./game/game-catalog.ts"
+import { ohHellRulesErrorForPlayers } from "./game/oh-hell-rules.ts"
 import {
 	trickTakingTableAdapter,
 	passingTableAdapter,
@@ -70,6 +71,7 @@ import type {
 } from "./game/game-types.ts"
 import css from "./GameTable.module.css"
 import { GameTransitions } from "./GameTransitions.tsx"
+import { OhHellRulesPanel } from "./OhHellRulesPanel.tsx"
 import { PlayerAvatar } from "./PlayerAvatar.tsx"
 import { PlayerNameplate } from "./PlayerNameplate.tsx"
 import { PassReceipt } from "./PassReceipt.tsx"
@@ -1079,6 +1081,10 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 		)
 	}, [game.players, mySeatIndex])
 	const tableAdapter = trickTakingTableAdapter(game)
+	const ohHellRulesError =
+		game.gameKind === "ohHell"
+			? ohHellRulesErrorForPlayers(game.rules, game.players.length)
+			: null
 	const passRecipient =
 		passingTableAdapter(game)?.recipient(game, mySeatIndex) ?? null
 
@@ -1248,6 +1254,7 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 			className={css.class}
 			data-card-gesture={dragState?.phase}
 			data-card-round={game.roundNumber}
+			data-phase={game.phase}
 			ref={setTableRoot}
 		>
 			<table-header>
@@ -1353,9 +1360,20 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 								</seat-pill>
 							))}
 						</seated-list>
+						{game.gameKind === "ohHell" ? (
+							<OhHellRulesPanel
+								editable={game.hostId === myUserKey}
+								onConfigure={(rules) =>
+									socket.emit("configureOhHellRules", rules, handleResult)
+								}
+								playerCount={game.players.length}
+								rules={game.rules}
+							/>
+						) : null}
 						{game.hostId === myUserKey ? (
 							<>
-								{game.players.length < 4 ? (
+								{game.players.length <
+								gameCatalog[game.gameKind].maximumPlayers ? (
 									<ai-seat-controls>
 										<label>
 											<span>OpenAI opponent</span>
@@ -1393,7 +1411,8 @@ export function GameTable({ onLeave, socket }: GameTableProps): VNode {
 									type="button"
 									disabled={
 										game.players.length <
-										gameCatalog[game.gameKind].minimumPlayers
+											gameCatalog[game.gameKind].minimumPlayers ||
+										ohHellRulesError !== null
 									}
 									onClick={() => {
 										socket.emit("startGame", handleResult)

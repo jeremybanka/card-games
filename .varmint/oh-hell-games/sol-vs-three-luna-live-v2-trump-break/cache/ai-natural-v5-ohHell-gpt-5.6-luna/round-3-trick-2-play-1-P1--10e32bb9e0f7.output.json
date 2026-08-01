@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Avoid winning; lead the lower-risk QD and let an opponent take the trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QD"
+	}
+}

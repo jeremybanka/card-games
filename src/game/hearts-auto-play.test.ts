@@ -16,6 +16,7 @@ import {
 	type Suit,
 	type VisibleCard,
 } from "./game-types.ts"
+import { STANDARD_PAGAT_OH_HELL_RULES } from "./oh-hell-rules.ts"
 
 const me = "user::me" as PlayerId
 const other = "user::other" as PlayerId
@@ -177,6 +178,7 @@ describe("auto-play turn identity and readiness", () => {
 					maximumRounds: 5,
 					phase: "playing",
 					players: [],
+					rules: structuredClone(STANDARD_PAGAT_OH_HELL_RULES),
 					roomCode: "WIND",
 					roundHandSize: 2,
 					roundNumber: 2,

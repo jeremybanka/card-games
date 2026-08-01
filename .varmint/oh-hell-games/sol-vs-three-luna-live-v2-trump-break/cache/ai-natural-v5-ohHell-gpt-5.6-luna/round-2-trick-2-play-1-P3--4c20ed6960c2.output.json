@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Avoid another trick; lead the weaker spade and preserve TS as a safer discard later.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9S"
+	}
+}

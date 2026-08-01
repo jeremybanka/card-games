@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Use the ten of clubs as my likely single winning trick; avoid relying on the 3S.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

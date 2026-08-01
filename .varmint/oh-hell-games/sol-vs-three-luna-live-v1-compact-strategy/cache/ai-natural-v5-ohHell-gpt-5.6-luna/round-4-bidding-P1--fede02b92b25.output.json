@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 0; avoid winning tricks, especially with the low trump.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 0
-	}
-}

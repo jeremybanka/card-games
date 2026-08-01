@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead the strongest remaining card to seek exactly one more trick; preserve QH if AD is trumped.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AD"
+	}
+}

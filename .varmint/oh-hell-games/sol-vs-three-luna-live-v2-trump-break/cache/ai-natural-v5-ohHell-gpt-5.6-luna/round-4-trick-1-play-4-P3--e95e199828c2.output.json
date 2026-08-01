@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Avoid taking either trick; discard the higher off-suit card now and keep 5D for safer future play.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7H"
+	}
+}

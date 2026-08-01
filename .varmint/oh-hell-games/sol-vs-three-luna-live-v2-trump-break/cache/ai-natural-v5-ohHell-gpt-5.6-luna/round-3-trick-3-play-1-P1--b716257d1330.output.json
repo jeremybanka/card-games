@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Forced to lead KS; avoid winning if possible, but only card is legal.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KS"
+	}
+}

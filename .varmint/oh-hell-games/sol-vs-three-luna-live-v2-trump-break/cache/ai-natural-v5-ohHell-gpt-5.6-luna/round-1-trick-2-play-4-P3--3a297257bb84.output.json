@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Preserve AH as the reliable winner; discard a low heart now.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7H"
+	}
+}

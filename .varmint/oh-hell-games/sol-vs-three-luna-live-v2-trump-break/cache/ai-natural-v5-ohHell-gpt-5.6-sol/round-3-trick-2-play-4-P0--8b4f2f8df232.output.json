@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at zero; shed 7D now and keep the safer 3D for the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "7D"
+	}
+}

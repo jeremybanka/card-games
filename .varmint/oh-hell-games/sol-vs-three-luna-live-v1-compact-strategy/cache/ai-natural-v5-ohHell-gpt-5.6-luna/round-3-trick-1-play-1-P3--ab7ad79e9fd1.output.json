@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 2; lead AH, then use KH for a second heart trick if hearts remain safe.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "AH"
-	}
-}

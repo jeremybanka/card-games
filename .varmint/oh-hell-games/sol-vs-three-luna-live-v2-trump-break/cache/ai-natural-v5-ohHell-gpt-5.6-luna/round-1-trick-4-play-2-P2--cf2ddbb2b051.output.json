@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Discard KC now; use AS to secure exactly one trick on the final hand.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KC"
+	}
+}

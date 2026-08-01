@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play KC; it is forced and may be beaten by a heart. Then lead TS to avoid taking the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KC"
+	}
+}

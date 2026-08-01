@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck with 2D; preserve AS to secure exactly one later trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2D"
+	}
+}

@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Stay at zero; discard the higher safe diamond, leaving 4D.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "6D"
-	}
-}

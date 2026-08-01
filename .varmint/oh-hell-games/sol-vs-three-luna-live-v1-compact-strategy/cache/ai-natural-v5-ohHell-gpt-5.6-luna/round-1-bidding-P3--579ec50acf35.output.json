@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 1: rely on the ace of hearts; avoid trying to force a second heart trick.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 1
-	}
-}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1: the club trump wins any non-club lead; otherwise follow suit is irrelevant with one card.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

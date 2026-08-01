@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1; preserve AH as the reliable winner and avoid taking this club trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "6C"
+	}
+}

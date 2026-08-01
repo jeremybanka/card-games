@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take this spade trick with TS; preserve AD for the second target trick and avoid QH unless needed.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

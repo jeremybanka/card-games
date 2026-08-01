@@ -21,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { parsePlayCardPayload } from "../game/game-actions.ts"
 import {
+	configureOhHellRules,
 	createOhHellGame,
 	joinOhHellGame,
 	playOhHellCard,
@@ -29,6 +30,7 @@ import {
 	submitOhHellBid,
 	type OhHellState,
 } from "../game/oh-hell-engine.ts"
+import type { OhHellRules } from "../game/oh-hell-rules.ts"
 import { createSeededRandom } from "../game/seeded-random.ts"
 import {
 	gameStateAtoms,
@@ -67,9 +69,19 @@ import type { AiTurnDecision } from "./ai-types.ts"
 const roomCode = "HELL"
 const invariantSeed = "oh-hell-sol-vs-three-luna-v1"
 const liveInvariantSeed = "oh-hell-sol-vs-three-luna-live-v1"
+const recordedGameRules = {
+	awardPittancePoints: true,
+	requireTrumpBreak: true,
+	requireUnsatisfiableBids: true,
+	schedule: {
+		maximumHandSize: 5,
+		minimumHandSize: 1,
+		style: "descending",
+	},
+} as const satisfies OhHellRules
 const liveRecordingName =
 	process.env.OH_HELL_AI_GAME_RECORDING_NAME?.trim() ||
-	"sol-vs-three-luna-live-v1-compact-strategy"
+	"sol-vs-three-luna-live-v2-trump-break"
 const liveCacheMode: CacheMode =
 	process.env.OH_HELL_AI_GAME_CACHE_MODE === "read" ? "read" : "write"
 const bots = [
@@ -228,12 +240,13 @@ async function runBotTable(
 	const seed = options.seed ?? invariantSeed
 	const dealRandom = createSeededRandom(`deal:${roomCode}:${seed}`)
 	const identityRandom = createSeededRandom(`identity:${roomCode}:${seed}`)
-	const initial = createOhHellGame(
+	let initial = createOhHellGame(
 		roomCode,
 		bots[0].id,
 		bots[0].name,
 		createPhysicalCardIds(identityRandom.uuid),
 	)
+	initial = configureOhHellRules(initial, bots[0].id, recordedGameRules)
 	initial.players[0]!.aiModel = bots[0].modelId
 	initial.players[0]!.kind = "ai"
 	setState(gameStateAtoms, roomCode, initial)
@@ -548,7 +561,7 @@ describe("four-bot deterministic realtime Oh Hell game", () => {
 			process.cwd(),
 			".varmint",
 			"oh-hell-games",
-			"sol-vs-three-luna-live-v1-compact-strategy",
+			"sol-vs-three-luna-live-v2-trump-break",
 			"cache",
 		)
 		const decisions: LiveDecisionRecord[] = []
@@ -567,15 +580,10 @@ describe("four-bot deterministic realtime Oh Hell game", () => {
 
 		expect(decisions).toHaveLength(80)
 		expect(modelResponses).toHaveLength(0)
-		expect(fallbacks).toHaveLength(1)
-		expect(fallbacks[0]).toMatchObject({
-			modelId: "gpt-5.6-luna",
-			reason: "illegal_action",
-			sequence: 67,
-		})
+		expect(fallbacks).toEqual([])
 		expect(replayed.cacheOutputCount).toBe(80)
 		expect(replayed.finalState.players.map((player) => player.score)).toEqual([
-			33, 32, 36, 34,
+			42, 44, 46, 23,
 		])
 		expect(replayed.finalState.winnerIds).toEqual([bots[2].id])
 	}, 20_000)

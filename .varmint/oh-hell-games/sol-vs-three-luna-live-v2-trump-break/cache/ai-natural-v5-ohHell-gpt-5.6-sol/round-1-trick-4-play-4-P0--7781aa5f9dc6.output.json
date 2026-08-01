@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Ruff now to hit bid; lead KH last and try to avoid the overtrick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "8S"
+	}
+}

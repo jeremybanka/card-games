@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lead the only card; it is an unavoidable extra trick risk, but all players are already on target.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "TC"
-	}
-}

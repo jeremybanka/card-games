@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Play KH; it cannot win, so finish with 0 tricks.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "KH"
-	}
-}

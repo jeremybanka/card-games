@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take the needed trick with the unbeatable spade, finishing exactly on bid.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "AS"
+	}
+}

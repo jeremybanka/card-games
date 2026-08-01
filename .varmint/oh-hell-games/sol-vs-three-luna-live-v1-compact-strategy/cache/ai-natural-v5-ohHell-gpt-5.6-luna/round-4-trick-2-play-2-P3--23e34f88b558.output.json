@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 0; discard under the club lead and avoid taking the trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "5D"
-	}
-}

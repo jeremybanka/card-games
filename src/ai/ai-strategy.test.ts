@@ -16,6 +16,7 @@ import {
 	type PlayerId,
 	type VisibleCard,
 } from "../game/game-types.ts"
+import { STANDARD_PAGAT_OH_HELL_RULES } from "../game/oh-hell-rules.ts"
 import {
 	renderAiGameFacts,
 	type AiGameContext,
@@ -159,6 +160,7 @@ function ohHellContext(
 				tricksWon: 0,
 			},
 		],
+		rules: structuredClone(STANDARD_PAGAT_OH_HELL_RULES),
 		roomCode: "WIND",
 		roundHandSize: cards.length,
 		roundNumber: 1,
@@ -247,6 +249,7 @@ function ohHellBiddingContext(
 					tricksWon: 0,
 				},
 			],
+			rules: structuredClone(STANDARD_PAGAT_OH_HELL_RULES),
 			roomCode: "WIND",
 			roundHandSize: cards.length,
 			roundNumber: 2,

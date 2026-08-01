@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Seek exactly one trick with KD; avoid winning later if it succeeds.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "KD"
+	}
+}

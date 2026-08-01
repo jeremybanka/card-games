@@ -59,6 +59,20 @@ game-table.class {
 		}
 	}
 
+	&[data-phase="lobby"] {
+		grid-template-rows: auto 1fr;
+
+		> opponents-row,
+		> player-zone {
+			display: none;
+		}
+
+		> table-center {
+			overflow: auto;
+			padding-block: 0.75rem max(1rem, env(safe-area-inset-bottom));
+		}
+	}
+
 	> table-header {
 		z-index: var(--z-overlay);
 		display: grid;
@@ -144,27 +158,19 @@ game-table.class {
 	}
 
 	> opponents-row {
-		--opponent-count: 3;
-
 		z-index: var(--z-hand);
-		display: grid;
-		grid-template-columns: repeat(var(--opponent-count), minmax(0, 1fr));
+		display: flex;
 		align-items: start;
 		gap: 0.35rem;
 		padding: 0.2rem 0.55rem;
-
-		&[data-count="1"] {
-			--opponent-count: 1;
-		}
-
-		&[data-count="2"] {
-			--opponent-count: 2;
-		}
+		overflow-x: auto;
+		scrollbar-width: thin;
 
 		> opponent-zone {
 			position: relative;
 			isolation: isolate;
-			min-width: 0;
+			min-width: min(8rem, 32vw);
+			flex: 1 0 min(8rem, 32vw);
 			display: grid;
 			grid-template-columns: 1fr auto;
 			grid-template-rows: auto 1fr;
@@ -266,7 +272,8 @@ game-table.class {
 		}
 
 		> waiting-room {
-			width: min(90%, 23rem);
+			width: min(94%, 32rem);
+			margin: auto;
 			display: grid;
 			place-items: center;
 			gap: 0.55rem;
@@ -282,7 +289,7 @@ game-table.class {
 			> h2 {
 				margin: 0;
 				font-family: Georgia, "Times New Roman", serif;
-				font-size: clamp(3rem, 15vw, 5rem);
+				font-size: clamp(2.5rem, 12vw, 4.5rem);
 				font-weight: 500;
 				letter-spacing: 0.2em;
 				line-height: 0.95;

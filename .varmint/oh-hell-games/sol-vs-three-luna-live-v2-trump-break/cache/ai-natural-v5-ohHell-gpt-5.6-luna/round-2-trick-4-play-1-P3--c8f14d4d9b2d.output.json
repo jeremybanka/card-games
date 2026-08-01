@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead TS and hope an opponent takes it; avoid winning the final trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

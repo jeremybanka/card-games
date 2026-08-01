@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at 0 by discarding TS; TC remains unbeatable by this play.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TS"
+	}
+}

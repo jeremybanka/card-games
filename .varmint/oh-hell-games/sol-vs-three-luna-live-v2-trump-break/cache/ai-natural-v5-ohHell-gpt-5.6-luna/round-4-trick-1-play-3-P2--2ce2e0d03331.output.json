@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Play 3S to take this trick and reach my bid; discard TC on the final trick if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3S"
+	}
+}

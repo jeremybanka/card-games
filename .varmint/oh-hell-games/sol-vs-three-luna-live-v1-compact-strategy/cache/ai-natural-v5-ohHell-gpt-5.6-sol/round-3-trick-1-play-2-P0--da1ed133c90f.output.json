@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Maintain bid 0; follow low and avoid taking any trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "9H"
-	}
-}

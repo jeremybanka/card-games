@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at zero; discard 3D and let P2's trump win.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "3D"
+	}
+}

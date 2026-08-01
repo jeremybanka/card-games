@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Take the available ruff to pursue exactly one trick; discard off-suit later.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "QH"
+	}
+}

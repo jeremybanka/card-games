@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Bid 1, relying primarily on the queen of hearts; treat KC as a possible extra trick only if safely established.",
-	"nextAction": {
-		"action": "submitBid",
-		"bid": 1
-	}
-}

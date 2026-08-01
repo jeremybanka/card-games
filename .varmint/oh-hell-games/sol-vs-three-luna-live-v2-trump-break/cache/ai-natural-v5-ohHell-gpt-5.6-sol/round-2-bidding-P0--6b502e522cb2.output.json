@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Aim for zero; shed QD under a higher diamond and play low otherwise.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 0
+	}
+}

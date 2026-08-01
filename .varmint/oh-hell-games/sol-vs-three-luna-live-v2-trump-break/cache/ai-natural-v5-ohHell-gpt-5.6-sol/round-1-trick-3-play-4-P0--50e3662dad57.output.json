@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Duck the ace with JD; then use 8S or KH to secure exactly one later trick.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "JD"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 1; seek one controlled trick with the low club, otherwise discard safely.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 1
+	}
+}

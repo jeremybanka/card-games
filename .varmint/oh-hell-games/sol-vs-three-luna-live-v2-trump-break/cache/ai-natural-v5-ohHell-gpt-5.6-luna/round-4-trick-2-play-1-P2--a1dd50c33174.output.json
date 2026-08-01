@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Lead TC; I am already on target, so avoid taking another trick if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "TC"
+	}
+}

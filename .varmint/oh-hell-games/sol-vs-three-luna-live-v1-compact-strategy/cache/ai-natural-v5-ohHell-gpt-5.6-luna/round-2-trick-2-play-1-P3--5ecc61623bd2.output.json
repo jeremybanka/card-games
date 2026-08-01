@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Avoid winning; lead a low spade to give P2 a chance to take the trick.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "9S"
-	}
-}

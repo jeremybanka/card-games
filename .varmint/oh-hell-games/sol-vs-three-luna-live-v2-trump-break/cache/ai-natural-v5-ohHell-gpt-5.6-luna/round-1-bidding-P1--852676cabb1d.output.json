@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Bid 2; aim to take AD and TS, while avoiding forcing QH or low cards to win.",
+	"nextAction": {
+		"action": "submitBid",
+		"bid": 2
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Aim for zero; duck with 9H, then shed low diamonds while avoiding the lead when possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "9H"
+	}
+}

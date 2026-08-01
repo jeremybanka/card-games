@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Stay at 0; lead low and try to shed TS under a higher spade.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "2S"
+	}
+}

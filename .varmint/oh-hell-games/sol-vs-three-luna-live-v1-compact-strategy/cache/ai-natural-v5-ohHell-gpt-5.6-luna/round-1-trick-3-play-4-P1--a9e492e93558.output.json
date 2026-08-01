@@ -1,7 +1,0 @@
-{
-	"currentPlan": "Lose this trick; preserve AD as the likely one remaining winner and avoid creating an extra QH winner.",
-	"nextAction": {
-		"action": "playCard",
-		"card": "QH"
-	}
-}
