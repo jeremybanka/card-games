@@ -17,6 +17,7 @@ import { fallbackAiDecision, type AiTurnGenerator } from "./ai-strategy.ts"
 import type {
 	AiMemoryLedgerEntry,
 	AiNextAction,
+	SummonersAiTurnLedgerEntry,
 	AiTurnDecision,
 } from "./ai-types.ts"
 
@@ -31,6 +32,7 @@ export type AiPlayerSiloState = {
 	aiRenderedGameFactsSelector: ReadonlyPureSelectorToken<string>
 	aiStrategicTurnSelector: ReadonlyPureSelectorToken<Loadable<AiTurnDecision>>
 	aiStrategyReviewTurnsAtom: RegularAtomToken<AiStrategyReviewTurn[]>
+	aiSummonersTurnLedgerAtom: RegularAtomToken<SummonersAiTurnLedgerEntry[]>
 }
 
 export function createAiPlayerSiloState(
@@ -54,6 +56,10 @@ export function createAiPlayerSiloState(
 	})
 	const aiStrategyReviewTurnsAtom = silo.atom<AiStrategyReviewTurn[]>({
 		key: "aiStrategyReviewTurns",
+		default: [],
+	})
+	const aiSummonersTurnLedgerAtom = silo.atom<SummonersAiTurnLedgerEntry[]>({
+		key: "aiSummonersTurnLedger",
 		default: [],
 	})
 
@@ -86,6 +92,7 @@ export function createAiPlayerSiloState(
 			previousPlan: get(aiCurrentPlanAtom),
 			privateView: strategicPrivateView,
 			publicView: views.publicView,
+			summonersTurnLedger: get(aiSummonersTurnLedgerAtom),
 		} as AiGameContext
 	}
 
@@ -129,5 +136,6 @@ export function createAiPlayerSiloState(
 		aiRenderedGameFactsSelector,
 		aiStrategicTurnSelector,
 		aiStrategyReviewTurnsAtom,
+		aiSummonersTurnLedgerAtom,
 	}
 }

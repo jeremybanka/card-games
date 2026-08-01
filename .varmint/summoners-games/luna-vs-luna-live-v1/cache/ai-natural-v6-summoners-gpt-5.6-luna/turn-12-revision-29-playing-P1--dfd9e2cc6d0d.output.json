@@ -1,0 +1,6 @@
+{
+	"currentPlan": "End the turn to preserve the Orchard Tender’s growth investment and prepare for future pressure.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

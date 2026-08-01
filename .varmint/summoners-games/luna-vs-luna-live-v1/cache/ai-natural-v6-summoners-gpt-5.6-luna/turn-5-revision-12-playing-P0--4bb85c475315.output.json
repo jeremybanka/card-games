@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Coalcoat Cub has already attacked; preserve resources and end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

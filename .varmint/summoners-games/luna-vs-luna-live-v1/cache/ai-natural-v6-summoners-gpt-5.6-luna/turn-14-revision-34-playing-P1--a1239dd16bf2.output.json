@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Invest in Old Orchard Tender’s growth and energy: root it, then use Sporecap’s Tend to add another growth while preserving Orchard’s readiness for recovery.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Deep Roots",
+		"target": "P1:B0"
+	}
+}

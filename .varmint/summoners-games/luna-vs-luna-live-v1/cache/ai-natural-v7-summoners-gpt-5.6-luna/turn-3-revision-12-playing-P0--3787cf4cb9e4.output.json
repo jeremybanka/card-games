@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack Luna Verdant with Cinderwing Finch rather than attack Seedling Scout: the Finch is ready and can deal immediate Summoner damage, while trading into the Scout would forgo that pressure without a favorable removal payoff.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B1",
+		"target": "P1"
+	},
+	"turnObjective": "Press Summoner damage while preserving Spark to deploy an additional Rush Being."
+}

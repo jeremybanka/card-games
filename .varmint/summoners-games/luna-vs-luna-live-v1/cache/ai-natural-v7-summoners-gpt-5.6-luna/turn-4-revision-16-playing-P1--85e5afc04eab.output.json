@@ -1,0 +1,7 @@
+{
+	"actionReason": "Ending is preferable because no ready attackers, playable cards, Tend actions, unused power, or damaged ready Rooted Beings remain; all Spark is spent and passing advances no available opportunity.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Grow Seedling Scout and convert its readiness into immediate pressure before ending the turn."
+}

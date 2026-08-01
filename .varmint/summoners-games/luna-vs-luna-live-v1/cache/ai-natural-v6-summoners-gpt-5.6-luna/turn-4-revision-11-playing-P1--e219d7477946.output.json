@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No profitable action is available; preserve Seedling Scout for future growth and end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

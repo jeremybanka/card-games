@@ -1,0 +1,7 @@
+{
+	"actionReason": "End the turn: no Spark, ready attackers, playable cards, Tend actions, affordable power, or Rooted recovery remain, so passing preserves no additional opportunity.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Press Summoner damage while preserving Spark to deploy an additional Rush Being."
+}

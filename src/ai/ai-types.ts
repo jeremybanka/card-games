@@ -43,10 +43,15 @@ export type SummonersAiAction =
 	| { action: "tend"; target: string; tender: string }
 	| { action: "usePower"; target: string | null }
 
+export type SummonersAiTurnLedgerEntry = {
+	action: SummonersAiAction
+	actionReason: string
+}
+
 export type AiNextActionByGame = {
 	hearts: HeartsAiNextAction
 	ohHell: OhHellAiNextAction
-	summoners: SummonersAiAction[]
+	summoners: SummonersAiAction
 }
 
 export type AiGameKind = keyof AiNextActionByGame
@@ -54,6 +59,7 @@ export type AiNextActionFor<Kind extends AiGameKind> = AiNextActionByGame[Kind]
 export type AiNextAction = AiNextActionFor<AiGameKind>
 
 export type AiTurnDecisionFor<Kind extends AiGameKind> = {
+	actionReason?: string
 	currentPlan: string
 	nextAction: AiNextActionFor<Kind>
 }

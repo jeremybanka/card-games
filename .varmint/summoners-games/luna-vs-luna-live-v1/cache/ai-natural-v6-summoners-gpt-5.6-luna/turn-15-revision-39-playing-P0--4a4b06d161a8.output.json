@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Clear both Sporecap Tenders and weaken Old Orchard Tender, then use remaining Spark for further removal.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Wildfire Lesson",
+		"target": null
+	}
+}

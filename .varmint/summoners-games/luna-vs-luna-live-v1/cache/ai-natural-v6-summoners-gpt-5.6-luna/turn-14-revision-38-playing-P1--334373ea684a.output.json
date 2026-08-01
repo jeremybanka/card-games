@@ -1,0 +1,6 @@
+{
+	"currentPlan": "End the turn and preserve the invested growth board for the next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

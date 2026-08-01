@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Draw two cards seeking removal for the heavily grown Old Orchard Tender; preserve future options while preventing its next strike if possible.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Ash Lesson",
+		"target": null
+	}
+}

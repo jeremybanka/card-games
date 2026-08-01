@@ -45,8 +45,8 @@ import type { AiModelId } from "./ai-models.ts"
 import type { AiTurnGenerator } from "./ai-strategy.ts"
 import type {
 	AiMemoryLedgerEntry,
-	HeartsAiNextAction,
-	OhHellAiNextAction,
+	AiNextAction,
+	SummonersAiAction,
 } from "./ai-types.ts"
 import {
 	createAiPlayerSiloState,
@@ -241,6 +241,7 @@ async function createAiPlayerRuntime(
 	let acting = false
 	let lastAttemptedFingerprint = ""
 	let observedRoundNumber = 0
+	let observedSummonersTurnNumber = -1
 	let pullDisposers: Array<() => void> = []
 	let pendingPass: PendingPass | undefined
 
@@ -250,7 +251,15 @@ async function createAiPlayerRuntime(
 
 	const resetMemoryForNewRound = (): void => {
 		const game = aiPublicView(silo)
-		if (game.gameKind === "summoners") return
+		if (game.gameKind === "summoners") {
+			if (game.turnNumber === observedSummonersTurnNumber) return
+			observedSummonersTurnNumber = game.turnNumber
+			lastAttemptedFingerprint = ""
+			silo.setState(state.aiCurrentPlanAtom, "")
+			silo.setState(state.aiNextActionAtom, null)
+			silo.setState(state.aiSummonersTurnLedgerAtom, [])
+			return
+		}
 		const roundNumber = game.roundNumber
 		if (roundNumber === observedRoundNumber) return
 		observedRoundNumber = roundNumber
@@ -324,7 +333,7 @@ async function createAiPlayerRuntime(
 		createHash("sha256").update(fingerprint).digest("hex").slice(0, 12)
 
 	const strategyReviewAction = (
-		action: HeartsAiNextAction | OhHellAiNextAction,
+		action: AiNextAction,
 		privateView: PrivatePlayerView,
 	): AiStrategyReviewAction => {
 		if (action.action === "passCards") {
@@ -402,10 +411,16 @@ async function createAiPlayerRuntime(
 						currentGame.gameKind === "summoners"
 							? `turn-${currentGame.turnNumber}`
 							: `round-${currentGame.roundNumber}-trick-${currentGame.trickNumber}`
-					silo.setState(state.aiCurrentPlanAtom, decision.currentPlan)
+					const existingPlan = silo.getState(state.aiCurrentPlanAtom)
+					const turnObjective =
+						currentGame.gameKind === "summoners" && existingPlan.length > 0
+							? existingPlan
+							: decision.currentPlan
+					silo.setState(state.aiCurrentPlanAtom, turnObjective)
 					silo.setState(state.aiNextActionAtom, decision.nextAction)
 					span.event("ai.state.updated", {
-						currentPlan: decision.currentPlan,
+						actionReason: decision.actionReason,
+						currentPlan: turnObjective,
 						nextAction: decision.nextAction,
 						turnKey,
 					})
@@ -413,9 +428,12 @@ async function createAiPlayerRuntime(
 					const actionContext = {
 						memoryLedger: silo.getState(state.aiMemoryLedgerAtom),
 						playerId: options.playerId,
-						previousPlan: silo.getState(state.aiCurrentPlanAtom),
+						previousPlan: turnObjective,
 						privateView: privateViewAtStart,
 						publicView: gameAtStart,
+						summonersTurnLedger: silo.getState(
+							state.aiSummonersTurnLedgerAtom,
+						),
 					} as AiGameContext
 					const result = await aiGameStrategy(
 						gameAtStart.gameKind,
@@ -423,7 +441,6 @@ async function createAiPlayerRuntime(
 					const nextAction = decision.nextAction
 					if (
 						result.ok &&
-						!Array.isArray(nextAction) &&
 						nextAction.action === "passCards"
 					) {
 						if (
@@ -471,10 +488,19 @@ async function createAiPlayerRuntime(
 						span.setOutcome("error")
 						return
 					}
+					if (gameAtStart.gameKind === "summoners") {
+						silo.setState(state.aiSummonersTurnLedgerAtom, (ledger) => [
+							...ledger,
+							{
+								action: nextAction as SummonersAiAction,
+								actionReason:
+									decision.actionReason ?? "No action reason supplied.",
+							},
+						])
+					}
 					if (
 						gameAtStart.gameKind === "summoners" ||
-						privateViewAtStart.gameKind === "summoners" ||
-						Array.isArray(nextAction)
+						privateViewAtStart.gameKind === "summoners"
 					) {
 						return
 					}

@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No profitable action is currently legal; end the turn and reassess after resolution.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

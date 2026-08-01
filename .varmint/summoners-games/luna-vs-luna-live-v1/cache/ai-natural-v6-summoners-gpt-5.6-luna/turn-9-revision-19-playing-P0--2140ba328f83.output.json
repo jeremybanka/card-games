@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Attack the Seedling Scout first, then spend the last Spark to trigger Blaze and attack again.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1:B0"
+	}
+}

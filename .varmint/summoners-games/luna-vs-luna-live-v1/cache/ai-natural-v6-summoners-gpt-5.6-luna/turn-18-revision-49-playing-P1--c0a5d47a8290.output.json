@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Preserve the strong board and end the turn; attacking or tending would sacrifice Rooted recovery without a profitable payoff.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

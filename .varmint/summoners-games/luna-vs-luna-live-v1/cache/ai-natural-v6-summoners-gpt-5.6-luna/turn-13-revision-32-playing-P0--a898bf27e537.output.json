@@ -1,0 +1,6 @@
+{
+	"currentPlan": "End the turn; no Spark or Beings are available, so preserve the hand and prepare removal for Old Orchard Tender next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

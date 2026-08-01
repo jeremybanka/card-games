@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Strengthen the guarded board while preserving Luna’s protection: equip Ashen Colossus, then deploy another Guard with the remaining Spark.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Frontier Flareknife",
+		"target": "P0:B0"
+	}
+}

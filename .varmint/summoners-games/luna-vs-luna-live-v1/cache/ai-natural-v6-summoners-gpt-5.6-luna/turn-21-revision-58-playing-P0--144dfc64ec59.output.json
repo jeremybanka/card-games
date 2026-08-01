@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deploy a second Guard with the remaining Spark to reinforce the board and preserve protection.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Kilnback Tortoise",
+		"target": null
+	}
+}

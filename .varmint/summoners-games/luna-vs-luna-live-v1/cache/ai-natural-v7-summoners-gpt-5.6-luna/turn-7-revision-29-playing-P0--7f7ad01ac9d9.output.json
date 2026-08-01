@@ -1,0 +1,7 @@
+{
+	"actionReason": "All three attackers have already acted, and with 0 Spark there are no playable cards, Tend actions, powers, or Rooted recovery opportunities. Ending the turn is preferable to passing because no profitable action remains.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Clear P1’s battlefield and maximize damage to Luna Verdant this turn."
+}

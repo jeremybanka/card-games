@@ -1,0 +1,7 @@
+{
+	"actionReason": "Only endTurn is legal. There are no ready attackers, playable cards, Tend actions, affordable power, or damaged ready Rooted Beings to preserve, so passing is preferable to an unavailable development action.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Establish a durable growth engine while developing the board efficiently."
+}

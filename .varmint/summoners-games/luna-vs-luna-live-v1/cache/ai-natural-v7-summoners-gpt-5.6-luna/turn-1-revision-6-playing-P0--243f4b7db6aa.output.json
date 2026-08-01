@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack now to exploit Coalcoat Cub’s Rush and deal pressure; ending would forfeit the only remaining profitable action.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1"
+	},
+	"turnObjective": "Deploy Coalcoat Cub and use its Rush attack to pressure the opposing Summoner."
+}

@@ -190,3 +190,65 @@ mis-sequences a keyword or leaves substantial Spark unused.
 - **Signal:** the new threshold line is legible and Luna can execute it. The
   model-call timeout is a separate reliability gap; this recording is partial
   and should not be treated as a matchup result.
+
+## Move-by-move Luna loop
+
+Summoners now asks Luna for exactly one legal action, submits that intent
+through the authoritative realtime handler, and renders a fresh observation
+after the action resolves. The current plan carries forward as strategic
+memory, but Spark, readiness, targets, triggers, and battlefield references
+always come from the new server projection. The `ai-natural-v6` Varmint
+boundary records each observation and atomic decision separately.
+
+### Ember Reliquary versus Verdant Compact
+
+- **Result:** Verdant won on turn 22 at 24 life; no model fallbacks occurred.
+- The final cache contains 59 separately generated decisions for 61 committed
+  intents including deck selection. Twelve turns contained multiple actions,
+  with as many as six separately observed actions in one turn.
+- Verdant used Tend, Tender Growth, attacks, and multiple summons in coherent
+  sequences. Ember likewise executed Rush lines action by action.
+- An initial loop recording exposed Luna's false assumption that a ready Being
+  could block. Summoners has no blocking or response window, so the prompt now
+  states that only Guard protects a Summoner and that unused Spark/readiness do
+  not carry forward.
+- After that correction, Verdant stopped passing resource-rich turns and the
+  match lasted three times as long as the initial turn-7 Ember rout.
+- **Signal:** iterative observation fixes both the combinatorial full-turn
+  generation stall and stale-state sequencing. It also makes strategic prompt
+  defects much easier to identify from the per-action cache.
+
+### Turn-objective and end-turn discipline comparison
+
+The `ai-natural-v7` contract resets strategic memory at every authoritative
+turn boundary, keeps one objective immutable within the turn, lists previously
+acknowledged actions with their reasons, and renders an end-turn audit of
+Spark, ready attackers, playable cards, Tend, powers, and Rooted recovery.
+
+Using the same Ember-versus-Verdant deal seed:
+
+| Measure | v6 atomic loop | v7 objective + ledger |
+| --- | ---: | ---: |
+| Result | Verdant, turn 22 at 24 life | Ember, turn 9 at 20 life |
+| Model decisions | 59 | 30 |
+| Empty playing turns | 10 | 0 |
+| Multi-action playing turns | 12 | 9 |
+| Most actions in one turn | 6 | 5 |
+| Model fallbacks | 0 | 0 |
+
+- Under v6, turns 3–8 were six consecutive passes despite listed attacks,
+  powers, and playable cards. Stale prose such as "already attacked" survived
+  into later turns and overruled the freshly readied state.
+- Under v7, every playing turn converted at least one available resource or
+  readiness before ending. Each `endTurn` reason explicitly checked the audit,
+  and the runtime test verified an empty objective/ledger on the first
+  observation of every turn followed by one ledger entry per resolved action.
+- Ember executed coherent pressure: attack before development, add a Rush
+  Being, attack again; later use Wildfire Lesson, clear Seedling Scout, then
+  send the remaining attackers at the Summoner. Verdant used Tender Growth,
+  life-gain development, attacks, and remaining Spark rather than waiting for
+  an imagined future block.
+- **Signal:** the agents are substantially more disciplined and the cached
+  reasons are easier to appraise. The reversal to an Ember win is not enough to
+  establish balance by itself, but it suggests the older Verdant win was
+  heavily distorted by donated tempo.

@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack the Summoner before developing Cinderwing Finch; this preserves both Spark for the Rush threat, while attacking Seedling Scout would trade away Coalcoat Cub without removing it immediately.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1"
+	},
+	"turnObjective": "Press Summoner damage while preserving Spark to deploy an additional Rush Being."
+}

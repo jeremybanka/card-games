@@ -1,0 +1,7 @@
+{
+	"actionReason": "All available Spark, the power, and actionable readiness have already been spent this turn. No cards are affordable, no Being is ready to attack or Tend, and no damaged ready Rooted Being can recover, so ending is preferable to passing any remaining opportunity.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Stabilize life total while developing a Being and converting remaining Spark into growth."
+}

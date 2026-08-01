@@ -30,7 +30,12 @@ import {
 } from "../summoners/summoners-glossary.ts"
 import type { SummonersKeyword } from "../summoners/summoners-types.ts"
 import { aiCardValue } from "./ai-card-value.ts"
-import type { AiGameKind, AiMemoryLedgerEntry } from "./ai-types.ts"
+import type {
+	AiGameKind,
+	AiMemoryLedgerEntry,
+	SummonersAiAction,
+	SummonersAiTurnLedgerEntry,
+} from "./ai-types.ts"
 import {
 	summonersLegalActionLines,
 	summonersTargetReference,
@@ -40,6 +45,7 @@ type CommonAiGameContext = {
 	memoryLedger: AiMemoryLedgerEntry[]
 	playerId: PlayerId
 	previousPlan: string
+	summonersTurnLedger?: SummonersAiTurnLedgerEntry[]
 }
 
 export type AiGameContextFor<Kind extends AiGameKind> = CommonAiGameContext & {
@@ -232,14 +238,88 @@ function renderSummonersFacts(context: AiGameContextFor<"summoners">): string {
 			return `${summonersTargetReference(context, target)} = ${being.card.name}`
 		}),
 	])
+	const renderTurnAction = (action: SummonersAiAction): string => {
+		switch (action.action) {
+			case "attack":
+				return `Attack with ${action.attacker} targeting ${action.target}`
+			case "endTurn":
+				return "End the turn"
+			case "playCard":
+				return `Play ${action.card}${
+					action.target === null ? "" : ` targeting ${action.target}`
+				}`
+			case "selectDeck":
+				return `Select deck ${action.deck}`
+			case "tend":
+				return `Tend with ${action.tender} targeting ${action.target}`
+			case "usePower":
+				return `Use the Summoner power${
+					action.target === null ? "" : ` targeting ${action.target}`
+				}`
+		}
+	}
+	const turnLedger = context.summonersTurnLedger ?? []
+	const resolvedActions =
+		turnLedger.length === 0
+			? ["- none yet"]
+			: turnLedger.map(
+					(entry, index) =>
+						`- ${index + 1}. ${renderTurnAction(entry.action)} — ${entry.actionReason}`,
+				)
+	const playableCards = context.privateView.hand.filter((card) =>
+		context.privateView.playableCardIds.includes(card.physicalId),
+	)
+	const readyAttackers = me?.battlefield.filter((being) => being.ready) ?? []
+	const readyTenders = readyAttackers.filter((being) =>
+		being.keywords.includes("tend"),
+	)
+	const rootedRecovery = readyAttackers.filter(
+		(being) => being.damage > 0 && being.keywords.includes("rooted"),
+	)
+	const affordablePower =
+		me?.summoner !== null &&
+		me?.summoner !== undefined &&
+		!me.powerUsed &&
+		me.spark >= me.summoner.power.cost
+			? me.summoner.power
+			: null
+	const endTurnAudit = [
+		`- Unspent Spark: ${me?.spark ?? 0}; it does not carry forward.`,
+		`- Ready attackers: ${
+			readyAttackers.length === 0
+				? "none"
+				: readyAttackers.map((being) => being.card.name).join(", ")
+		}.`,
+		`- Playable cards: ${
+			playableCards.length === 0
+				? "none"
+				: playableCards.map((card) => card.name).join(", ")
+		}.`,
+		`- Ready Tend actions: ${
+			readyTenders.length === 0
+				? "none"
+				: readyTenders.map((being) => being.card.name).join(", ")
+		}.`,
+		`- Unused affordable power: ${affordablePower?.name ?? "none"}.`,
+		`- Ready damaged Rooted Beings that can recover by ending ready: ${
+			rootedRecovery.length === 0
+				? "none"
+				: rootedRecovery.map((being) => being.card.name).join(", ")
+		}.`,
+	]
 	const phaseInstruction =
 		context.publicView.phase === "lobby"
 			? ["## Task", "", `Choose one starter deck for seat P${myIndex}.`]
 			: [
 					"## Task",
 					"",
-					"Return one concise strategic plan and the complete ordered sequence of actions for this turn.",
-					"The final action must be `endTurn`. After each action, update Spark, readiness, damage, battlefield capacity, targets, Guard restrictions, and once-per-turn keyword triggers before evaluating the next action.",
+					context.previousPlan.length === 0
+						? "Establish one concise turn objective, explain the immediate choice, and choose exactly one listed legal action now."
+						: `Repeat the existing turn objective exactly as \`turnObjective\`: ${JSON.stringify(
+								context.previousPlan,
+							)}. Explain the immediate choice and choose exactly one listed legal action now.`,
+					"The server will resolve that action authoritatively. If your turn continues, you will receive the updated Spark, readiness, damage, battlefield, targets, Guard restrictions, and trigger state before choosing again.",
+					"If choosing `endTurn`, the action reason must address the relevant opportunities in the end-turn audit.",
 				]
 	const glossary = [...usedKeywords]
 		.sort()
@@ -294,8 +374,7 @@ function renderSummonersFacts(context: AiGameContextFor<"summoners">): string {
 		"",
 		"## Stable character references",
 		"",
-		"These references remain bound to the same physical characters for the entire proposed sequence.",
-		`A newly summoned Being receives the next unused P${myIndex}:Bn reference in summon order.`,
+		"These references identify characters in this current state only. Re-read them after every resolved action.",
 		"",
 		...targetLegend,
 		"",
@@ -303,9 +382,13 @@ function renderSummonersFacts(context: AiGameContextFor<"summoners">): string {
 		"",
 		...context.publicView.recentHistory.map((event) => `- ${event}`),
 		"",
-		"## Strategic memory",
+		"## Turn objective",
 		"",
-		context.previousPlan || "None.",
+		context.previousPlan || "None yet; establish it with this decision.",
+		"",
+		"## Resolved actions this turn",
+		"",
+		...resolvedActions,
 		...(keywordStrategy.length === 0
 			? []
 			: ["", "## Keyword strategy", "", ...keywordStrategy]),
@@ -313,6 +396,9 @@ function renderSummonersFacts(context: AiGameContextFor<"summoners">): string {
 		"## Legal actions now",
 		"",
 		...summonersLegalActionLines(context),
+		...(context.publicView.phase === "playing"
+			? ["", "## End-turn audit", "", ...endTurnAudit]
+			: []),
 		"",
 		"Hidden-information boundary: opponent card values are unknown. Never name or infer them.",
 		"",

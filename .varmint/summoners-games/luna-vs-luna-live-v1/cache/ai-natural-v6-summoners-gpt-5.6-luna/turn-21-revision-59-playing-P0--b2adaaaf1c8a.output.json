@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Attack the opposing Guard now to pressure it before ending the turn.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1:B0"
+	}
+}

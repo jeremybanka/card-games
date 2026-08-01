@@ -151,7 +151,7 @@ export function promptFixtureKey(
 	const player = playerIndex === -1 ? context.playerId : `P${playerIndex}`
 	const readableKey =
 		context.publicView.gameKind === "summoners"
-			? `turn-${context.publicView.turnNumber}-${context.publicView.phase}-${player}`
+			? `turn-${context.publicView.turnNumber}-revision-${context.publicView.revision}-${context.publicView.phase}-${player}`
 			: context.publicView.phase === "playing"
 			? `round-${context.publicView.roundNumber}-trick-${
 					context.publicView.trickNumber + 1
@@ -334,8 +334,9 @@ export function createOpenAiTurnGenerator(
 		const gameKind = context.publicView.gameKind
 		let cached = cachedGenerators.get(gameKind)
 		if (cached === undefined) {
+			const contractVersion = gameKind === "summoners" ? "v7" : "v5"
 			cached = wrapAiGeneratorWithVarmint(
-				`ai-natural-v5-${gameKind}-${modelId}`,
+				`ai-natural-${contractVersion}-${gameKind}-${modelId}`,
 				modelId,
 				generate,
 				options.squirrel,

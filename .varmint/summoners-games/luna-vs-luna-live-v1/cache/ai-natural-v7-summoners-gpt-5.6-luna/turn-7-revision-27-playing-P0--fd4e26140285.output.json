@@ -1,0 +1,9 @@
+{
+	"actionReason": "Attack with Coalcoat Cub to deal its 2 damage to Luna Verdant; ending the turn would forgo immediate damage, while attacking with Finch first is equivalent but leaves Cub as the remaining attack.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B0",
+		"target": "P1"
+	},
+	"turnObjective": "Clear P1’s battlefield and maximize damage to Luna Verdant this turn."
+}

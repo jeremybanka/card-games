@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Apply immediate pressure with the ready Tender; preserve its growth and avoid sacrificing future flexibility.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P1:B0",
+		"target": "P0"
+	}
+}

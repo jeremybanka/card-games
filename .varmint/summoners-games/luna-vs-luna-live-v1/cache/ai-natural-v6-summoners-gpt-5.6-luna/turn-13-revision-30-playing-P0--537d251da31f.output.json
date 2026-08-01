@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Eliminate the heavily grown Old Orchard Tender before it can strike again; follow with remaining Spark-efficient plays.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Last Light",
+		"target": "P1:B0"
+	}
+}

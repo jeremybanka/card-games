@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deploy a Guard immediately to protect Luna, then use remaining Spark for additional board presence or removal.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Ashen Colossus",
+		"target": null
+	}
+}

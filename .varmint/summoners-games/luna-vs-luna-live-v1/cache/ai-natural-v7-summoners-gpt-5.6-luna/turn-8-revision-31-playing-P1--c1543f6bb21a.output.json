@@ -1,0 +1,8 @@
+{
+	"actionReason": "Use the unused 2-Spark Tender Growth now; ending would waste the power, and no other legal actions can improve growth or stabilization this turn.",
+	"nextAction": {
+		"action": "usePower",
+		"target": "P1:B0"
+	},
+	"turnObjective": "Stabilize life total while developing a Being and converting remaining Spark into growth."
+}

@@ -1,0 +1,9 @@
+{
+	"actionReason": "Cinderwing Finch deals the remaining 3 damage for lethal immediately; using Pocket Ember or Last Light first is unnecessary and would spend resources before the available lethal attack.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B1",
+		"target": "P1"
+	},
+	"turnObjective": "Deal at least 7 damage to Luna Verdant this turn and win before spending resources on nonlethal value."
+}

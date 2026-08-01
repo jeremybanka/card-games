@@ -64,12 +64,10 @@ describe("Summoners AI strategy", () => {
 		}
 
 		const decision = fallbackAiDecision(context)
-		expect(decision.nextAction).toEqual([
-			{
-				action: "selectDeck",
-				deck: "emberReliquary",
-			},
-		])
+		expect(decision.nextAction).toEqual({
+			action: "selectDeck",
+			deck: "emberReliquary",
+		})
 		expect(aiGameStrategy("summoners").isLegalAction(
 			context,
 			decision.nextAction,
@@ -106,20 +104,51 @@ describe("Summoners AI strategy", () => {
 			),
 		).toBe(true)
 		expect(
-			aiGameStrategy("summoners").isLegalAction(context, [
-				{ action: "endTurn" },
-				{ action: "endTurn" },
-			]),
-		).toBe(false)
+			aiGameStrategy("summoners").isLegalAction(context, {
+				action: "endTurn",
+			}),
+		).toBe(true)
 		const facts = renderAiGameFacts(context)
 		expect(facts).toContain("## Your hand")
 		expect(facts).toContain("## Legal actions now")
+		expect(facts).toContain("## End-turn audit")
+		expect(facts).toContain("Unspent Spark:")
+		expect(facts).toContain("choose exactly one listed legal action now")
+		expect(facts).not.toContain("complete ordered sequence")
 		expect(facts).toContain("[Guard](#guard)")
 		expect(facts).toContain("### Guard")
 		expect(facts).not.toContain("### Leech")
 		expect(facts).toContain("Power status: unused this turn")
 		expect(facts).toContain("Hidden-information boundary")
 		expect(facts).not.toContain("card::")
+		expect(aiGameStrategy("summoners").systemPrompt).toContain(
+			"Summoners has no blocking or response window",
+		)
+
+		const continuingFacts = renderAiGameFacts({
+			...context,
+			previousPlan: "Build a wide board, then convert readiness into pressure.",
+			summonersTurnLedger: [
+				{
+					action: {
+						action: "playCard",
+						card: "Cinderwing Finch",
+						target: null,
+					},
+					actionReason: "A Rush Being converts Spark into immediate pressure.",
+				},
+			],
+		})
+		expect(continuingFacts).toContain("## Turn objective")
+		expect(continuingFacts).toContain(
+			"Build a wide board, then convert readiness into pressure.",
+		)
+		expect(continuingFacts).toContain("## Resolved actions this turn")
+		expect(continuingFacts).toContain("Play Cinderwing Finch")
+		expect(continuingFacts).toContain(
+			"A Rush Being converts Spark into immediate pressure.",
+		)
+		expect(continuingFacts).toContain("Repeat the existing turn objective")
 	})
 
 	it("teaches attack-trigger-attack sequencing for readying keywords", () => {
@@ -155,61 +184,48 @@ describe("Summoners AI strategy", () => {
 		)
 	})
 
-	it("parses a complete turn and rejects malformed model actions", () => {
+	it("parses one next action and rejects malformed model actions", () => {
 		const strategy = aiGameStrategy("summoners")
 		expect(
 			strategy.parseDecision({
-				actions: [
-					{
-						action: "playCard",
-						card: "Cinder Pup",
-						target: null,
-					},
-					{
-						action: "attack",
-						attacker: "P0:B0",
-						target: "P1",
-					},
-					{ action: "endTurn" },
-				],
-				plan: "Develop a rushing attacker and convert it into pressure.",
+				actionReason: "Develop the board before spending readiness.",
+				nextAction: {
+					action: "playCard",
+					card: "Cinder Pup",
+					target: null,
+				},
+				turnObjective:
+					"Develop a rushing attacker and convert it into pressure.",
 			}),
 		).toEqual({
 			ok: true,
 			value: {
+				actionReason: "Develop the board before spending readiness.",
 				currentPlan:
 					"Develop a rushing attacker and convert it into pressure.",
-				nextAction: [
-					{
-						action: "playCard",
-						card: "Cinder Pup",
-						target: null,
-					},
-					{
-						action: "attack",
-						attacker: "P0:B0",
-						target: "P1",
-					},
-					{ action: "endTurn" },
-				],
+				nextAction: {
+					action: "playCard",
+					card: "Cinder Pup",
+					target: null,
+				},
 			},
 		})
 		expect(
 			strategy.parseDecision({
-				actions: [
-					{
-						action: "attack",
-						attacker: "the big one",
-						target: "the enemy",
-					},
-				],
-				plan: "Invent a target.",
+				actionReason: "Attack an invented target.",
+				nextAction: {
+					action: "attack",
+					attacker: "the big one",
+					target: "the enemy",
+				},
+				turnObjective: "Invent a target.",
 			}).ok,
 		).toBe(false)
 		expect(
 			strategy.parseDecision({
-				actions: [{ action: "peekAtOpponentHand" }],
-				plan: "Cheat.",
+				actionReason: "Gain hidden information.",
+				nextAction: { action: "peekAtOpponentHand" },
+				turnObjective: "Cheat.",
 			}).ok,
 		).toBe(false)
 	})

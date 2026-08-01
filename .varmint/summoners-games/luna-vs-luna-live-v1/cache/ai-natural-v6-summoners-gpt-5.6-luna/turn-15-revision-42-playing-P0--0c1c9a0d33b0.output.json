@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Use Pocket Ember to weaken the Old Orchard Tender, preserving the Tortoise for defense and future flexibility.",
+	"nextAction": {
+		"action": "usePower",
+		"target": "P1:B0"
+	}
+}

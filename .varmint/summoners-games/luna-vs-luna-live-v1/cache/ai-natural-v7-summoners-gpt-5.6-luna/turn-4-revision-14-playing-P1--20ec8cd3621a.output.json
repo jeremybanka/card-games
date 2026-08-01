@@ -1,0 +1,8 @@
+{
+	"actionReason": "Use Tender Growth before attacking to gain permanent growth and restore the Scout, then pressure the opponent; playing Sporecap instead gives healing but sacrifices the stronger growth-plus-attack line.",
+	"nextAction": {
+		"action": "usePower",
+		"target": "P1:B0"
+	},
+	"turnObjective": "Grow Seedling Scout and convert its readiness into immediate pressure before ending the turn."
+}

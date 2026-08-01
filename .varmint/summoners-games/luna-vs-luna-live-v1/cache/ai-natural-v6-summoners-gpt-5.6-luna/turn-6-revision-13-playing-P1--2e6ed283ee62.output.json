@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Preserve Seedling Scout for future growth and end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

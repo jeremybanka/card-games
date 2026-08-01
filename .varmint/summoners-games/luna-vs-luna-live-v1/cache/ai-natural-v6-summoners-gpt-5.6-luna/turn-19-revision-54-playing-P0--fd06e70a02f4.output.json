@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No resources or Beings remain; end the turn and prepare to deploy pressure next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

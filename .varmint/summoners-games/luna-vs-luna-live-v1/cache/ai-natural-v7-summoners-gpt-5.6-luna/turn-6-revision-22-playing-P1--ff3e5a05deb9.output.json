@@ -1,0 +1,9 @@
+{
+	"actionReason": "Play Sporecap Tender to gain 2 life and develop a Being; unlike immediate growth, this addresses the urgent life deficit while Seedling Scout remains available to attack for pressure.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Sporecap Tender",
+		"target": null
+	},
+	"turnObjective": "Stabilize life total while developing the board and using Seedling Scout’s ready attack for pressure."
+}

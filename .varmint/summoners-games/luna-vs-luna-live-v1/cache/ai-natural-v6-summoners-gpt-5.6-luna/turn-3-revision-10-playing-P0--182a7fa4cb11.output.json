@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Coalcoat Cub has already attacked and has no profitable action remaining; end the turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

@@ -1,0 +1,6 @@
+{
+	"currentPlan": "Preserve the strong rooted Tender and end the turn so it can recover Energy; avoid spending readiness on a low-value attack or Tend.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

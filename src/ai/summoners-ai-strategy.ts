@@ -1,6 +1,5 @@
 import type { JSONSchema7 } from "ai"
 
-import type { ActionResult, CardId } from "../game/game-types.ts"
 import { SUMMONERS_DECK_IDS } from "../summoners/summoners-cards.ts"
 import type {
 	SummonersPublicPlayerView,
@@ -14,96 +13,94 @@ import type { AiTurnDecisionFor, SummonersAiAction } from "./ai-types.ts"
 
 const targetPattern = "^P[0-3](?::B[0-4])?$"
 
+const summonersActionJsonSchema: JSONSchema7 = {
+	anyOf: [
+		{
+			additionalProperties: false,
+			properties: {
+				action: { enum: ["selectDeck"], type: "string" },
+				deck: { enum: [...SUMMONERS_DECK_IDS], type: "string" },
+			},
+			required: ["action", "deck"],
+			type: "object",
+		},
+		{
+			additionalProperties: false,
+			properties: {
+				action: { enum: ["playCard"], type: "string" },
+				card: { type: "string" },
+				target: {
+					anyOf: [
+						{ pattern: targetPattern, type: "string" },
+						{ type: "null" },
+					],
+				},
+			},
+			required: ["action", "card", "target"],
+			type: "object",
+		},
+		{
+			additionalProperties: false,
+			properties: {
+				action: { enum: ["attack"], type: "string" },
+				attacker: {
+					pattern: "^P[0-3]:B[0-4]$",
+					type: "string",
+				},
+				target: { pattern: targetPattern, type: "string" },
+			},
+			required: ["action", "attacker", "target"],
+			type: "object",
+		},
+		{
+			additionalProperties: false,
+			properties: {
+				action: { enum: ["tend"], type: "string" },
+				target: {
+					pattern: "^P[0-3]:B[0-4]$",
+					type: "string",
+				},
+				tender: {
+					pattern: "^P[0-3]:B[0-4]$",
+					type: "string",
+				},
+			},
+			required: ["action", "target", "tender"],
+			type: "object",
+		},
+		{
+			additionalProperties: false,
+			properties: {
+				action: { enum: ["usePower"], type: "string" },
+				target: {
+					anyOf: [
+						{ pattern: targetPattern, type: "string" },
+						{ type: "null" },
+					],
+				},
+			},
+			required: ["action", "target"],
+			type: "object",
+		},
+		{
+			additionalProperties: false,
+			properties: {
+				action: { enum: ["endTurn"], type: "string" },
+			},
+			required: ["action"],
+			type: "object",
+		},
+	],
+}
+
 const summonersAiTurnDecisionJsonSchema: JSONSchema7 = {
 	additionalProperties: false,
 	properties: {
-		actions: {
-			items: {
-				anyOf: [
-					{
-						additionalProperties: false,
-						properties: {
-							action: { enum: ["selectDeck"], type: "string" },
-							deck: { enum: [...SUMMONERS_DECK_IDS], type: "string" },
-						},
-						required: ["action", "deck"],
-						type: "object",
-					},
-					{
-						additionalProperties: false,
-						properties: {
-							action: { enum: ["playCard"], type: "string" },
-							card: { type: "string" },
-							target: {
-								anyOf: [
-									{ pattern: targetPattern, type: "string" },
-									{ type: "null" },
-								],
-							},
-						},
-						required: ["action", "card", "target"],
-						type: "object",
-					},
-					{
-						additionalProperties: false,
-						properties: {
-							action: { enum: ["attack"], type: "string" },
-							attacker: {
-								pattern: "^P[0-3]:B[0-4]$",
-								type: "string",
-							},
-							target: { pattern: targetPattern, type: "string" },
-						},
-						required: ["action", "attacker", "target"],
-						type: "object",
-					},
-					{
-						additionalProperties: false,
-						properties: {
-							action: { enum: ["tend"], type: "string" },
-							target: {
-								pattern: "^P[0-3]:B[0-4]$",
-								type: "string",
-							},
-							tender: {
-								pattern: "^P[0-3]:B[0-4]$",
-								type: "string",
-							},
-						},
-						required: ["action", "target", "tender"],
-						type: "object",
-					},
-					{
-						additionalProperties: false,
-						properties: {
-							action: { enum: ["usePower"], type: "string" },
-							target: {
-								anyOf: [
-									{ pattern: targetPattern, type: "string" },
-									{ type: "null" },
-								],
-							},
-						},
-						required: ["action", "target"],
-						type: "object",
-					},
-					{
-						additionalProperties: false,
-						properties: {
-							action: { enum: ["endTurn"], type: "string" },
-						},
-						required: ["action"],
-						type: "object",
-					},
-				],
-			},
-			maxItems: 24,
-			minItems: 1,
-			type: "array",
-		},
-		plan: { type: "string" },
+		actionReason: { type: "string" },
+		nextAction: summonersActionJsonSchema,
+		turnObjective: { type: "string" },
 	},
-	required: ["plan", "actions"],
+	required: ["turnObjective", "actionReason", "nextAction"],
 	type: "object",
 }
 
@@ -317,14 +314,13 @@ function fallbackSummonersDecision(
 	if (context.publicView.phase === "lobby") {
 		const index = Math.max(0, playerIndex(context, context.playerId))
 		return {
+			actionReason: "Select a starter deck before the game can begin.",
 			currentPlan:
 				"Choose a distinct starter philosophy, then learn its curve.",
-			nextAction: [
-				{
-					action: "selectDeck",
-					deck: SUMMONERS_DECK_IDS[index % SUMMONERS_DECK_IDS.length]!,
-				},
-			],
+			nextAction: {
+				action: "selectDeck",
+				deck: SUMMONERS_DECK_IDS[index % SUMMONERS_DECK_IDS.length]!,
+			},
 		}
 	}
 
@@ -332,16 +328,15 @@ function fallbackSummonersDecision(
 	const attackTarget = attackTargets(context)[0]
 	if (readyAttacker !== -1 && attackTarget !== undefined) {
 		return {
+			actionReason:
+				"Use available readiness for immediate pressure against the first legal target.",
 			currentPlan:
 				"Turn ready Beings toward the opposing Summoner while respecting Guards.",
-			nextAction: [
-				{
-					action: "attack",
-					attacker: `P${playerIndex(context, context.playerId)}:B${readyAttacker}`,
-					target: summonersTargetReference(context, attackTarget),
-				},
-				{ action: "endTurn" },
-			],
+			nextAction: {
+				action: "attack",
+				attacker: `P${playerIndex(context, context.playerId)}:B${readyAttacker}`,
+				target: summonersTargetReference(context, attackTarget),
+			},
 		}
 	}
 
@@ -357,16 +352,15 @@ function fallbackSummonersDecision(
 		)[0]
 	if (playable !== undefined) {
 		return {
+			actionReason:
+				"Convert available Spark into the strongest legal board development.",
 			currentPlan:
 				"Develop the strongest legal board presence, then convert it into pressure.",
-			nextAction: [
-				{
-					action: "playCard",
-					card: playable.name,
-					target: targetReferenceFor(context, playable.targeting) ?? null,
-				},
-				{ action: "endTurn" },
-			],
+			nextAction: {
+				action: "playCard",
+				card: playable.name,
+				target: targetReferenceFor(context, playable.targeting) ?? null,
+			},
 		}
 	}
 
@@ -382,19 +376,20 @@ function fallbackSummonersDecision(
 		powerTarget !== undefined
 	) {
 		return {
+			actionReason:
+				"Convert spare Spark into the Summoner's once-per-turn advantage.",
 			currentPlan:
 				"Use spare Spark through the Summoner before yielding the invocation.",
-			nextAction: [
-				{ action: "usePower", target: powerTarget },
-				{ action: "endTurn" },
-			],
+			nextAction: { action: "usePower", target: powerTarget },
 		}
 	}
 
 	return {
+		actionReason:
+			"No remaining legal action improves the board or converts expiring resources.",
 		currentPlan:
 			"Preserve the remaining hand and pass priority when no profitable action remains.",
-		nextAction: [{ action: "endTurn" }],
+		nextAction: { action: "endTurn" },
 	}
 }
 
@@ -464,30 +459,11 @@ function isLegalSummonersAtomicAction(
 		: action.target !== null && validTargets.includes(action.target)
 }
 
-function isLegalSummonersActionSequence(
+function isLegalSummonersAction(
 	context: AiGameContextFor<"summoners">,
-	actions: SummonersAiAction[],
+	action: SummonersAiAction,
 ): boolean {
-	if (actions.length === 0) return false
-	if (context.publicView.phase === "lobby") {
-		return (
-			actions.length === 1 &&
-			actions[0]?.action === "selectDeck" &&
-			isLegalSummonersAtomicAction(context, actions[0])
-		)
-	}
-	if (
-		actions.at(-1)?.action !== "endTurn" ||
-		actions.slice(0, -1).some((action) => action.action === "endTurn") ||
-		actions.some((action) => action.action === "selectDeck")
-	) {
-		return false
-	}
-	const firstAction = actions[0]
-	return (
-		firstAction !== undefined &&
-		isLegalSummonersAtomicAction(context, firstAction)
-	)
+	return isLegalSummonersAtomicAction(context, action)
 }
 
 function isSummonersAction(input: unknown): input is SummonersAiAction {
@@ -541,141 +517,107 @@ function parseSummonersDecision(
 	}
 	const decision = input as Record<string, unknown>
 	if (
-		typeof decision.plan !== "string" ||
-		!Array.isArray(decision.actions) ||
-		decision.actions.length === 0 ||
-		!decision.actions.every(isSummonersAction)
+		typeof decision.turnObjective !== "string" ||
+		typeof decision.actionReason !== "string" ||
+		decision.actionReason.length === 0 ||
+		!isSummonersAction(decision.nextAction)
 	) {
 		return { error: new Error("Invalid Summoners AI decision."), ok: false }
 	}
 	return {
 		ok: true,
 		value: {
-			currentPlan: decision.plan,
-			nextAction: decision.actions,
+			actionReason: decision.actionReason,
+			currentPlan: decision.turnObjective,
+			nextAction: decision.nextAction,
 		},
 	}
 }
 
 export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 	fallbackDecision: fallbackSummonersDecision,
-	isLegalAction: isLegalSummonersActionSequence,
+	isLegalAction: isLegalSummonersAction,
 	outputDescription:
-		"A concise strategic plan and a complete ordered Summoners turn ending with endTurn.",
-	outputName: "summoners_turn_sequence",
+		"A turn objective, a concise reason comparing the immediate alternatives, and exactly one legal Summoners action for the current state.",
+	outputName: "summoners_next_action",
 	outputSchema: summonersAiTurnDecisionJsonSchema,
 	parseDecision: parseSummonersDecision,
 	privateViewForStrategy: (view) => view,
-	submitAction: async (socket, actions, context) => {
-		const usedCardIds = new Set<string>()
-		const boundBeingIds = new Map<string, CardId>()
-		for (const [ownerIndex, player] of context.publicView.players.entries()) {
-			for (const [beingIndex, being] of player.battlefield.entries()) {
-				boundBeingIds.set(
-					`P${ownerIndex}:B${beingIndex}`,
-					being.card.physicalId,
-				)
-			}
-		}
-		const myIndex = playerIndex(context, context.playerId)
-		let nextOwnBeingIndex = myPlayer(context).battlefield.length
-		const resolveBoundTarget = (reference: string): SummonersTarget | null => {
-			const match = /^P(\d)(?::B(\d))?$/.exec(reference)
-			if (match === null) return null
-			const owner = context.publicView.players[Number(match[1])]
-			if (owner === undefined) return null
-			if (match[2] === undefined) {
-				return { kind: "summoner", playerId: owner.id }
-			}
-			const cardId = boundBeingIds.get(reference)
-			return cardId === undefined
-				? null
-				: { cardId, kind: "being", playerId: owner.id }
-		}
-		for (const action of actions) {
-			let result: ActionResult
-			switch (action.action) {
+	submitAction: async (socket, action, context) => {
+		switch (action.action) {
 				case "selectDeck":
-					result = await new Promise((resolve) => {
+					return new Promise((resolve) => {
 						socket.emit("selectSummonersDeck", action.deck, resolve)
 					})
-					break
 				case "playCard": {
 					const card = context.privateView.hand.find(
-						(candidate) =>
-							candidate.name === action.card &&
-							!usedCardIds.has(candidate.physicalId),
+						(candidate) => candidate.name === action.card,
 					)
 					if (card === undefined) {
 						throw new Error("The AI selected a card outside its legal hand.")
 					}
-					usedCardIds.add(card.physicalId)
-					result = await new Promise((resolve) => {
+					return new Promise((resolve) => {
 						socket.emit(
 							"playSummonersCard",
 							card.physicalId,
-							action.target === null ? null : resolveBoundTarget(action.target),
+							action.target === null
+								? null
+								: resolveSummonersTargetReference(context, action.target),
 							resolve,
 						)
 					})
-					if (result.ok && card.type === "being") {
-						boundBeingIds.set(
-							`P${myIndex}:B${nextOwnBeingIndex}`,
-							card.physicalId,
-						)
-						nextOwnBeingIndex += 1
-					}
-					break
 				}
 				case "attack": {
-					const attackerId = boundBeingIds.get(action.attacker)
-					const target = resolveBoundTarget(action.target)
-					if (attackerId === undefined || target === null) {
+					const attacker = resolveSummonersTargetReference(
+						context,
+						action.attacker,
+					)
+					const target = resolveSummonersTargetReference(context, action.target)
+					if (attacker?.kind !== "being" || target === null) {
 						throw new Error("The AI selected a missing combatant.")
 					}
-					result = await new Promise((resolve) => {
-						socket.emit("attackSummoners", attackerId, target, resolve)
+					return new Promise((resolve) => {
+						socket.emit("attackSummoners", attacker.cardId, target, resolve)
 					})
-					break
 				}
 				case "tend": {
-					const tenderId = boundBeingIds.get(action.tender)
-					const targetId = boundBeingIds.get(action.target)
-					if (tenderId === undefined || targetId === undefined) {
+					const tender = resolveSummonersTargetReference(context, action.tender)
+					const target = resolveSummonersTargetReference(context, action.target)
+					if (tender?.kind !== "being" || target?.kind !== "being") {
 						throw new Error("The AI selected a missing Being to Tend.")
 					}
-					result = await new Promise((resolve) => {
-						socket.emit("tendSummoners", tenderId, targetId, resolve)
+					return new Promise((resolve) => {
+						socket.emit("tendSummoners", tender.cardId, target.cardId, resolve)
 					})
-					break
 				}
 				case "usePower":
-					result = await new Promise((resolve) => {
+					return new Promise((resolve) => {
 						socket.emit(
 							"useSummonerPower",
-							action.target === null ? null : resolveBoundTarget(action.target),
+							action.target === null
+								? null
+								: resolveSummonersTargetReference(context, action.target),
 							resolve,
 						)
 					})
-					break
 				case "endTurn":
-					result = await new Promise((resolve) => {
+					return new Promise((resolve) => {
 						socket.emit("endSummonersTurn", resolve)
 					})
-					break
-			}
-			if (!result.ok) return result
 		}
-		return { ok: true, roomCode: context.publicView.roomCode }
 	},
 	systemPrompt: [
 		"You are a strategic Summoners player in a living card game.",
-		"Propose one complete, ordered turn ending with endTurn. The server executes actions in order and validates each one authoritatively.",
-		"If an action becomes illegal, execution stops before it; completed earlier actions are not rolled back.",
+		"Choose exactly one legal action for the current state. After the server validates and resolves it, you will observe the resulting state and choose again if your turn continues.",
+		"At the start of a turn, establish one concise turnObjective. During that turn, repeat the supplied objective verbatim; do not replace it with a description of the last action.",
+		"Give an actionReason that compares the chosen action with the most relevant immediate alternative.",
 		"Players are P0 through P3. Their Beings are Pn:B0 through Pn:B4.",
-		"Character references remain bound to their current physical characters for the lifetime of the sequence.",
+		"Character references describe only the current state and may change after this action resolves.",
 		"Never invent hidden opponent card values. Opponent hands expose counts and opaque backs only.",
-		"Spend Spark efficiently, respect Guards, account for simultaneous combat and once-per-turn keyword triggers, and pursue a coherent turn-level plan.",
+		"Summoners has no blocking or response window. A ready Being does not protect its Summoner unless it has Guard; readiness is useful only for a listed action or a specific end-of-turn effect such as Rooted.",
+		"Spark and unused readiness do not carry into future turns. Take profitable actions before ending the turn.",
+		"Before choosing endTurn, audit every ready attacker, affordable card, ready Tend action, unused affordable power, and damaged ready Rooted Being shown in the context. The actionReason must explain why passing those opportunities is preferable.",
+		"Maintain or revise a coherent turn-level plan as each authoritative result arrives. Spend Spark efficiently, respect Guards, and account for simultaneous combat and once-per-turn keyword triggers.",
 		"Growth is permanent +1 Attack/+1 Energy. A Tend action spends the tender's readiness, so compare it against attacking or preserving Rooted recovery.",
 	].join("\n"),
 	usesTurnGenerator: () => true,

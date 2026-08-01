@@ -1,0 +1,7 @@
+{
+	"actionReason": "End the turn because no ready attackers, playable cards, Tend actions, affordable power, or damaged ready Rooted Beings remain; the unused 1 Spark cannot carry forward.",
+	"nextAction": {
+		"action": "endTurn"
+	},
+	"turnObjective": "Stabilize life total while developing the board and using Seedling Scout’s ready attack for pressure."
+}

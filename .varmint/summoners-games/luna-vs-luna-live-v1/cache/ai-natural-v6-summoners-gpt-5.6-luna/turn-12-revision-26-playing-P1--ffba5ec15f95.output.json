@@ -1,0 +1,7 @@
+{
+	"currentPlan": "Concentrate growth on Old Orchard Tender, using Tender Growth before tending to maximize its permanent stats while preserving future payoff potential.",
+	"nextAction": {
+		"action": "usePower",
+		"target": "P1:B0"
+	}
+}

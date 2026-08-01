@@ -1,0 +1,9 @@
+{
+	"actionReason": "Wildfire Lesson is preferable to an immediate attack because it kills Sporecap Tender and softens Seedling Scout, enabling the three ready attackers to clear the remaining Being and pressure the Summoner while spending all Spark.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Wildfire Lesson",
+		"target": null
+	},
+	"turnObjective": "Clear P1’s battlefield and maximize damage to Luna Verdant this turn."
+}

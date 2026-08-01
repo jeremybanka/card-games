@@ -38,6 +38,7 @@ import {
 	playSummonersCard,
 	selectSummonersDeck,
 	startSummonersGame,
+	tendSummoners,
 	type SummonersState,
 	toSummonersPublicGameView,
 	useSummonerPower,
@@ -112,6 +113,7 @@ type TranscriptEntry = {
 		| "endSummonersTurn"
 		| "playSummonersCard"
 		| "selectSummonersDeck"
+		| "tendSummoners"
 		| "useSummonerPower"
 	playerId: PlayerId
 	turnNumber: number
@@ -123,6 +125,14 @@ type FallbackRecord = {
 	modelId: AiModelId
 	playerId: PlayerId
 	reason: AiFallbackReason
+	turnNumber: number
+}
+
+type DecisionObservation = {
+	ledgerLength: number
+	playerId: PlayerId
+	previousPlan: string
+	revision: number
 	turnNumber: number
 }
 
@@ -390,6 +400,25 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 					}
 				})
 
+				socket.on("tendSummoners", (tenderId, targetId, ack) => {
+					try {
+						const state = currentState()
+						setState(
+							gameStateAtoms,
+							roomCode,
+							tendSummoners(state, playerId, tenderId, targetId),
+						)
+						transcript.push({
+							action: "tendSummoners",
+							playerId,
+							turnNumber: state.turnNumber,
+						})
+						ack({ ok: true, roomCode })
+					} catch (error) {
+						actionFailure(ack, error)
+					}
+				})
+
 				socket.on("endSummonersTurn", (ack) => {
 					try {
 						const state = currentState()
@@ -423,6 +452,7 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 		const generatorCalls = new Map<PlayerId, number>()
 		const modelResponses: AiModelResponseRecord[] = []
 		const fallbacks: FallbackRecord[] = []
+		const decisionObservations: DecisionObservation[] = []
 
 		try {
 			for (const bot of bots) {
@@ -445,6 +475,15 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 				})
 				const generateTurn: AiTurnGenerator = async (context) => {
 					generatorCalls.set(bot.id, (generatorCalls.get(bot.id) ?? 0) + 1)
+					if (context.publicView.gameKind === "summoners") {
+						decisionObservations.push({
+							ledgerLength: context.summonersTurnLedger?.length ?? 0,
+							playerId: bot.id,
+							previousPlan: context.previousPlan,
+							revision: context.publicView.revision,
+							turnNumber: context.publicView.turnNumber,
+						})
+					}
 					return modelGenerator(context)
 				}
 				runtimes.push(
@@ -512,6 +551,32 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 			expect(
 				transcript.some((entry) => entry.action === "attackSummoners"),
 			).toBe(true)
+			const actionsPerInvocation = new Map<string, number>()
+			for (const entry of transcript) {
+				if (entry.action === "selectSummonersDeck") continue
+				const key = `${entry.playerId}:${entry.turnNumber}`
+				actionsPerInvocation.set(key, (actionsPerInvocation.get(key) ?? 0) + 1)
+			}
+			expect([...actionsPerInvocation.values()].some((count) => count > 1)).toBe(
+				true,
+			)
+			const observationsByInvocation = Map.groupBy(
+				decisionObservations,
+				(observation) => `${observation.playerId}:${observation.turnNumber}`,
+			)
+			for (const observations of observationsByInvocation.values()) {
+				const ordered = observations.toSorted(
+					(left, right) => left.revision - right.revision,
+				)
+				expect(ordered[0]).toMatchObject({
+					ledgerLength: 0,
+					previousPlan: "",
+				})
+				for (const [index, observation] of ordered.entries()) {
+					expect(observation.ledgerLength).toBe(index)
+					if (index > 0) expect(observation.previousPlan.length).toBeGreaterThan(0)
+				}
+			}
 			expect(generatorCalls.get(bots[0].id)).toBeGreaterThan(1)
 			expect(generatorCalls.get(bots[1].id)).toBeGreaterThan(1)
 			expect(
@@ -527,6 +592,7 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 							cacheDirectory,
 							createdAt: new Date().toISOString(),
 							decks: matchupDecks,
+							decisionObservations,
 							fallbacks,
 							finalState: toSummonersPublicGameView(finalState),
 							modelResponses,

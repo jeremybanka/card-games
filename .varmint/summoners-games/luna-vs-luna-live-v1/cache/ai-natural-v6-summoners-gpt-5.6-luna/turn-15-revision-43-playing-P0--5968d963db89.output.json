@@ -1,0 +1,6 @@
+{
+	"currentPlan": "No legal plays remain; end the turn and preserve future flexibility.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}

@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Use Last Light to cripple the Guard, then deploy the Rush Cub to finish it before ending the turn.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Last Light",
+		"target": "P1:B1"
+	}
+}

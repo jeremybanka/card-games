@@ -1,0 +1,8 @@
+{
+	"currentPlan": "Deploy the low-cost Seedling Scout to establish a Being for future growth and Tend actions.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Seedling Scout",
+		"target": null
+	}
+}

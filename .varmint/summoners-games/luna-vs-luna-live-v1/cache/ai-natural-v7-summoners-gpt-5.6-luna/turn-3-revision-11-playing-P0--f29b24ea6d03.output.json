@@ -1,0 +1,9 @@
+{
+	"actionReason": "Play Cinderwing Finch rather than use Pocket Ember: it spends the same 2 Spark while adding a permanent Rush attacker and immediate Summoner pressure, whereas the power deals only 1 damage.",
+	"nextAction": {
+		"action": "playCard",
+		"card": "Cinderwing Finch",
+		"target": null
+	},
+	"turnObjective": "Press Summoner damage while preserving Spark to deploy an additional Rush Being."
+}

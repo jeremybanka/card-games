@@ -1,0 +1,9 @@
+{
+	"actionReason": "Brasshorn Ibex’s 4 Attack can clear the remaining Seedling Scout in one strike, leaving both Rush attackers available to deal 5 damage to Luna Verdant; attacking the Summoner first would leave the battlefield uncleared.",
+	"nextAction": {
+		"action": "attack",
+		"attacker": "P0:B2",
+		"target": "P1:B0"
+	},
+	"turnObjective": "Clear P1’s battlefield and maximize damage to Luna Verdant this turn."
+}

@@ -1,0 +1,6 @@
+{
+	"currentPlan": "End the turn as directed; preserve resources for the next turn.",
+	"nextAction": {
+		"action": "endTurn"
+	}
+}
