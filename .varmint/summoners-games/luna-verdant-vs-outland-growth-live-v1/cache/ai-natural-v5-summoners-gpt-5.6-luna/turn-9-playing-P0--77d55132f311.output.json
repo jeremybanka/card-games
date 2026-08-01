@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Sudden Overgrowth",
+			"target": "P0:B3"
+		},
+		{
+			"action": "usePower",
+			"target": "P0:B1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the exposed opposing Summoner with Seedling Scout first. Then invest 3 Spark in Old Orchard Tender via Sudden Overgrowth, and spend the remaining 2 Spark on Tender Growth targeting Sporecap Tender, preserving both Tenders' readiness."
+}

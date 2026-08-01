@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 2 Spark with Pocket Ember to damage the opposing Summoner, then use Cinderwing Finch’s Rush attack for 3 more damage. Preserve Coalcoat Cub and leave 1 Spark unspent."
+}

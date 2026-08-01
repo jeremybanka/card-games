@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Mistfin Minnow",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Mistfin to draw and trigger Current, attack immediately, use Read the Current for a second draw and Current ready, attack again, then preserve 3 Spark."
+}

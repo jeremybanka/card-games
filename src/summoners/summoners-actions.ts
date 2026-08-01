@@ -30,3 +30,10 @@ export function parseSummonersTarget(input: unknown): SummonersTarget | null {
 		playerId: result.playerId as PlayerId,
 	}
 }
+
+export function parseSummonersCardId(input: unknown): CardId {
+	if (typeof input !== "string" || !input.startsWith("card::")) {
+		throw new Error("That physical card ID is invalid.")
+	}
+	return input as CardId
+}

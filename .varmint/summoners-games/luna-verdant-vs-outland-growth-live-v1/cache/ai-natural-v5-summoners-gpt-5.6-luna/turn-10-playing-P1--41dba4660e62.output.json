@@ -1,0 +1,23 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Cancerous Bloom",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B1",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Cancerous Bloom for 4 direct Summoner damage and restore life to cap, then attack the unguarded Summoner with both ready Leech Beings for 5 more damage and healing. Preserve the board and avoid unnecessary Tend or Molt risks."
+}

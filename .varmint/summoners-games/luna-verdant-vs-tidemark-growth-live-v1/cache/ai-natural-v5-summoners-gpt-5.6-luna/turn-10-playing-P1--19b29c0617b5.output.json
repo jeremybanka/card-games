@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Riverjaw Newt",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Riverjaw Newt, then use Read the Current to draw while leveraging Current’s ready trigger. Attack the weaker Seedling Scout twice, maximizing value while avoiding the 5-Attack Scout."
+}

@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1:B1"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B1",
+			"target": "P1:B1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the enemy Guard with Gullwind Courier first. Then spend 2 Spark on Read the Current; its draw triggers Riverjaw Newt’s Current to ready it, allowing Newt’s bonus attack into the Guard. Preserve the remaining 5 Spark."
+}

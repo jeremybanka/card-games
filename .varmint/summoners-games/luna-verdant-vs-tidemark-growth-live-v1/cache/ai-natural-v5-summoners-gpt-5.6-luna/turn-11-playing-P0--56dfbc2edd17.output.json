@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "The Walking Grove",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Tender Growth to raise Seedling Scout to 5 growth, reducing The Walking Grove to 6 Spark; spend all 6 Spark to summon it, then end without attacking or Tending so the Rooted Scout remains ready for recovery."
+}

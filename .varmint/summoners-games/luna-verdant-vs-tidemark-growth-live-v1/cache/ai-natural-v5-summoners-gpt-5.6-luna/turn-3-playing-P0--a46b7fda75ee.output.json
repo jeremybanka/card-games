@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Rootwoven Buckler",
+			"target": "P0:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip Seedling Scout with Rootwoven Buckler, spending all 2 Spark to increase its Energy and grant Rooted. Preserve its readiness so it can recover from future damage; avoid attacking or Tending this turn."
+}

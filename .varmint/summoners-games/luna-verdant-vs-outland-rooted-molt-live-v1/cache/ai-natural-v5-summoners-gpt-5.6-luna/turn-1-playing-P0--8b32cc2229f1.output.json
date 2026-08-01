@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend the lone Spark on a Seedling Scout to establish an early Being, then end the turn. It cannot attack immediately, so preserve it for future development."
+}

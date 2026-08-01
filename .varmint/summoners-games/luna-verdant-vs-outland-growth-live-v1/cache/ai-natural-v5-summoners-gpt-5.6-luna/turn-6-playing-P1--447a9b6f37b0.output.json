@@ -1,0 +1,23 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Bone Needle",
+			"target": "P1:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "Dustmote Familiar",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip Bone Needle for +2 Attack and Leech, summon Dustmote with the final Spark, then attack the enemy Summoner for 4 damage while restoring 4 life. No Guard blocks the attack."
+}

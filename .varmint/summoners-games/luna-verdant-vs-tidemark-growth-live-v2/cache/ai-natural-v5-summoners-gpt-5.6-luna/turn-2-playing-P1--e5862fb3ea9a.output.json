@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Mistfin Minnow",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Mistfin Minnow for 1 Spark to trigger its draw and establish a Current Being; no further legal plays are available, so end the turn."
+}

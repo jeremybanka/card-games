@@ -24,8 +24,11 @@ import {
 } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import {
+	AiGenerationTimeoutError,
 	aiGenerationContract,
+	generateAiWithDeadline,
 	promptFixtureKey,
+	retryAiGeneration,
 	wrapAiGeneratorWithVarmint,
 } from "./ai-generator.node.ts"
 import { isAiTurnReady } from "./ai-player.node.ts"
@@ -747,6 +750,57 @@ describe("AI Hearts generators", () => {
 		} finally {
 			await rm(cacheDirectory, { force: true, recursive: true })
 		}
+	})
+
+	it("retries a failed model generation once and returns the retry", async () => {
+		const generate = vi
+			.fn<(attempt: number) => Promise<string>>()
+			.mockRejectedValueOnce(new Error("request timed out"))
+			.mockResolvedValueOnce("recovered")
+		const onRetry = vi.fn()
+
+		await expect(retryAiGeneration(generate, 2, onRetry)).resolves.toBe(
+			"recovered",
+		)
+		expect(generate).toHaveBeenNthCalledWith(1, 1)
+		expect(generate).toHaveBeenNthCalledWith(2, 2)
+		expect(onRetry).toHaveBeenCalledOnce()
+	})
+
+	it("aborts and rejects a model generation at the local deadline", async () => {
+		let observedSignal: AbortSignal | undefined
+		const pending = (abortSignal: AbortSignal): Promise<string> => {
+			observedSignal = abortSignal
+			return new Promise(() => undefined)
+		}
+
+		await expect(generateAiWithDeadline(pending, 5)).rejects.toBeInstanceOf(
+			AiGenerationTimeoutError,
+		)
+		expect(observedSignal?.aborted).toBe(true)
+	})
+
+	it("surfaces the final model error after exhausting retries", async () => {
+		const finalError = new Error("still unavailable")
+		const generate = vi
+			.fn<(attempt: number) => Promise<string>>()
+			.mockRejectedValueOnce(new Error("request timed out"))
+			.mockRejectedValueOnce(finalError)
+
+		await expect(retryAiGeneration(generate, 2)).rejects.toBe(finalError)
+		expect(generate).toHaveBeenCalledTimes(2)
+	})
+
+	it("does not retry a generation error rejected by the retry policy", async () => {
+		const timeout = new AiGenerationTimeoutError("request timed out")
+		const generate = vi.fn<() => Promise<string>>().mockRejectedValue(timeout)
+		const onRetry = vi.fn()
+
+		await expect(
+			retryAiGeneration(generate, 2, onRetry, (error) => error !== timeout),
+		).rejects.toBe(timeout)
+		expect(generate).toHaveBeenCalledOnce()
+		expect(onRetry).not.toHaveBeenCalled()
 	})
 })
 

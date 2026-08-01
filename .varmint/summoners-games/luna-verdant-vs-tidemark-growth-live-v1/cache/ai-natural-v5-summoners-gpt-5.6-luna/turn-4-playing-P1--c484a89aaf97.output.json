@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Icicle Stoat",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend all 2 Spark to summon Icicle Stoat, establishing a Being for future turns; preserve no remaining actions or Spark and end the turn."
+}

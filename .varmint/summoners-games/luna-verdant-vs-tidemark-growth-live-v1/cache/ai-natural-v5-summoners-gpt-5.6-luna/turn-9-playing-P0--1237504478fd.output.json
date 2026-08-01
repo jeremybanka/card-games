@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 1 Spark to summon another Scout, then spend 2 Spark on Tender Growth for P0:B0. Attack and eliminate Riverjaw Newt; finish with 2 Spark and the attacking Scout weary."
+}

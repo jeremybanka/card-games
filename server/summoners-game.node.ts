@@ -9,6 +9,7 @@ import {
 	restartSummonersGame,
 	selectSummonersDeck,
 	startSummonersGame,
+	tendSummoners,
 	type SummonersState,
 	useSummonerPower,
 } from "../src/summoners/summoners-engine.ts"
@@ -17,7 +18,10 @@ import {
 	isSummonersDeckId,
 	summonersCardDefinition,
 } from "../src/summoners/summoners-cards.ts"
-import { parseSummonersTarget } from "../src/summoners/summoners-actions.ts"
+import {
+	parseSummonersCardId,
+	parseSummonersTarget,
+} from "../src/summoners/summoners-actions.ts"
 import type { SummonersClientEvents } from "../src/summoners/summoners-types.ts"
 import type { WayfarerGameResources } from "./wayfarer-game-resources.node.ts"
 import { bindAiSeatActions } from "./ai-seat-actions.node.ts"
@@ -176,6 +180,29 @@ export const summonersGame: GameDefinition<
 							attackerId,
 							playerId,
 							state: controller.stateSummaryForLog(),
+						})
+					},
+				)
+			}),
+			bindGameEvent(socket, "tendSummoners", (tenderId, targetId, ack) => {
+				acknowledge(
+					ack,
+					"realtime.action.tend_summoners",
+					{ playerId, targetId, tenderId },
+					(span) => {
+						controller.setState(
+							tendSummoners(
+								controller.getState(),
+								playerId,
+								parseSummonersCardId(tenderId),
+								parseSummonersCardId(targetId),
+							),
+						)
+						span.event("summoners.being_tended", {
+							playerId,
+							state: controller.stateSummaryForLog(),
+							targetId,
+							tenderId,
 						})
 					},
 				)

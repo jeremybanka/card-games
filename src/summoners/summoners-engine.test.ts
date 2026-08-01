@@ -16,6 +16,7 @@ import {
 	playSummonersCard,
 	selectSummonersDeck,
 	startSummonersGame,
+	tendSummoners,
 	toSummonersPrivatePlayerView,
 	toSummonersPublicGameView,
 	type SummonersPlayer,
@@ -70,10 +71,25 @@ describe("Summoners card set", () => {
 		}
 	})
 
-	it("keeps Verdant's efficient defenses within their tuned thresholds", () => {
+	it("adds the full Verdant cultivation package to the collection", () => {
+		for (const cardId of [
+			"briar-challenge",
+			"canopy-stag",
+			"deep-roots",
+			"fruitful-sacrifice",
+			"old-orchard-tender",
+			"season-s-turning",
+			"walking-grove",
+		]) {
+			expect(summonersCardCatalog).toHaveProperty(cardId)
+		}
+	})
+
+	it("gives Verdant explicit growth thresholds instead of free defenses", () => {
 		expect(summonersCardCatalog["barkhide-mouse"]).toMatchObject({
 			attack: 1,
 			energy: 4,
+			keywords: ["rooted"],
 		})
 		expect(summonersCardCatalog["rootwoven-buckler"]).toMatchObject({
 			energy: 2,
@@ -153,6 +169,7 @@ describe("Summoners authoritative engine", () => {
 		bea.spark = 10
 		const mouseId = moveCardToHand(state, bea, "barkhide-mouse")
 		state = playSummonersCard(state, beaId, mouseId, null)
+		state.players[1]!.battlefield[0]!.growth = 2
 		state = endSummonersTurn(state, beaId)
 
 		expect(() =>
@@ -169,7 +186,7 @@ describe("Summoners authoritative engine", () => {
 		expect(battled.players[1]?.battlefield[0]?.damage).toBe(2)
 	})
 
-	it("limits Tender Growth to repairing a friendly Being", () => {
+	it("lets Tender Growth cultivate and repair only a friendly Being", () => {
 		let state = endSummonersTurn(twoPlayerGame(), adaId)
 		const bea = state.players[1] as SummonersPlayer
 		bea.spark = 10
@@ -189,7 +206,162 @@ describe("Summoners authoritative engine", () => {
 			kind: "being",
 			playerId: beaId,
 		})
-		expect(healed.players[1]?.battlefield[0]?.damage).toBe(1)
+		expect(healed.players[1]?.battlefield[0]).toMatchObject({
+			damage: 2,
+			growth: 1,
+		})
+	})
+
+	it("lets a Tender invest its readiness in another Being once per turn", () => {
+		let state = twoPlayerGame("verdantCompact", "emberReliquary")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const scoutId = moveCardToHand(state, ada, "seedling-scout")
+		const mouseId = moveCardToHand(state, ada, "barkhide-mouse")
+		state = playSummonersCard(state, adaId, scoutId, null)
+		state = playSummonersCard(state, adaId, mouseId, null)
+		state = endSummonersTurn(state, adaId)
+		state = endSummonersTurn(state, beaId)
+
+		state = tendSummoners(state, adaId, scoutId, mouseId)
+		expect(state.players[0]?.battlefield).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					cardId: scoutId,
+					ready: false,
+					triggeredKeywords: ["tend"],
+				}),
+				expect.objectContaining({ cardId: mouseId, growth: 1 }),
+			]),
+		)
+		expect(() => tendSummoners(state, adaId, scoutId, mouseId)).toThrow(
+			"cannot Tend",
+		)
+	})
+
+	it("moves and harvests growth through Verdant's new strategic spells", () => {
+		let state = twoPlayerGame("verdantCompact", "emberReliquary")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 20
+		const scoutId = moveCardToHand(state, ada, "seedling-scout")
+		const mouseId = moveCardToHand(state, ada, "barkhide-mouse")
+		const stagId = moveCardToHand(state, ada, "canopy-stag")
+		const seasonId = moveCardToHand(state, ada, "season-s-turning")
+		const sacrificeId = moveCardToHand(state, ada, "fruitful-sacrifice")
+		state = playSummonersCard(state, adaId, scoutId, null)
+		state = playSummonersCard(state, adaId, mouseId, null)
+		state = playSummonersCard(state, adaId, stagId, null)
+		state.players[0]!.battlefield[0]!.growth = 1
+		state.players[0]!.battlefield[1]!.growth = 2
+		state.players[0]!.battlefield[2]!.damage = 3
+
+		state = playSummonersCard(state, adaId, seasonId, {
+			cardId: stagId,
+			kind: "being",
+			playerId: adaId,
+		})
+		expect(state.players[0]?.battlefield).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ cardId: scoutId, growth: 0 }),
+				expect.objectContaining({ cardId: mouseId, growth: 0 }),
+				expect.objectContaining({ cardId: stagId, damage: 0, growth: 3 }),
+			]),
+		)
+
+		state = playSummonersCard(state, adaId, sacrificeId, {
+			cardId: stagId,
+			kind: "being",
+			playerId: adaId,
+		})
+		expect(state.players[0]?.battlefield).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ cardId: scoutId, growth: 1 }),
+				expect.objectContaining({ cardId: mouseId, growth: 1 }),
+			]),
+		)
+		expect(state.players[0]?.discard).toContain(stagId)
+	})
+
+	it("turns cultivated Beings into threshold defenses and Breakthrough", () => {
+		let state = twoPlayerGame("verdantCompact", "verdantCompact")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const stagId = moveCardToHand(state, ada, "canopy-stag")
+		state = playSummonersCard(state, adaId, stagId, null)
+		state.players[0]!.battlefield[0]!.growth = 3
+		state = endSummonersTurn(state, adaId)
+
+		const bea = state.players[1] as SummonersPlayer
+		bea.spark = 10
+		const mouseId = moveCardToHand(state, bea, "barkhide-mouse")
+		state = playSummonersCard(state, beaId, mouseId, null)
+		state = endSummonersTurn(state, beaId)
+		state = attackSummoners(state, adaId, stagId, {
+			cardId: mouseId,
+			kind: "being",
+			playerId: beaId,
+		})
+
+		expect(state.players[1]?.health).toBe(22)
+		expect(
+			toSummonersPublicGameView(state).players[0]?.battlefield[0]?.keywords,
+		).toContain("breakthrough")
+	})
+
+	it("lets Deep Roots spend growth to resist removal once per turn", () => {
+		let state = twoPlayerGame("verdantCompact", "tidemarkMenagerie")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const mouseId = moveCardToHand(state, ada, "barkhide-mouse")
+		const rootsId = moveCardToHand(state, ada, "deep-roots")
+		state = playSummonersCard(state, adaId, mouseId, null)
+		state = playSummonersCard(state, adaId, rootsId, {
+			cardId: mouseId,
+			kind: "being",
+			playerId: adaId,
+		})
+		state.players[0]!.battlefield[0]!.growth = 4
+		state = endSummonersTurn(state, adaId)
+
+		const bea = state.players[1] as SummonersPlayer
+		bea.spark = 10
+		const firstRebuke = moveCardToHand(state, bea, "riptide-rebuke")
+		state = playSummonersCard(state, beaId, firstRebuke, {
+			cardId: mouseId,
+			kind: "being",
+			playerId: adaId,
+		})
+		expect(state.players[0]?.battlefield[0]).toMatchObject({ growth: 2 })
+		const secondRebuke = moveCardToHand(
+			state,
+			state.players[1] as SummonersPlayer,
+			"riptide-rebuke",
+		)
+		state = playSummonersCard(state, beaId, secondRebuke, {
+			cardId: mouseId,
+			kind: "being",
+			playerId: adaId,
+		})
+		expect(state.players[0]?.battlefield).toHaveLength(0)
+		expect(state.players[0]?.hand).toContain(mouseId)
+	})
+
+	it("discounts The Walking Grove as Verdant's ecosystem matures", () => {
+		let state = twoPlayerGame("verdantCompact", "emberReliquary")
+		const ada = state.players[0] as SummonersPlayer
+		ada.spark = 10
+		const scoutId = moveCardToHand(state, ada, "seedling-scout")
+		const mouseId = moveCardToHand(state, ada, "barkhide-mouse")
+		const groveId = moveCardToHand(state, ada, "walking-grove")
+		state = playSummonersCard(state, adaId, scoutId, null)
+		state = playSummonersCard(state, adaId, mouseId, null)
+		state.players[0]!.battlefield[0]!.growth = 4
+		state.players[0]!.battlefield[1]!.growth = 4
+		state.players[0]!.spark = 4
+
+		state = playSummonersCard(state, adaId, groveId, null)
+		expect(state.players[0]).toMatchObject({ spark: 0 })
+		expect(state.players[0]?.battlefield.at(-1)?.cardId).toBe(groveId)
 	})
 
 	it("lets Blaze ready a Being once when its Summoner spends the last Spark", () => {
@@ -256,8 +428,8 @@ describe("Summoners authoritative engine", () => {
 		expect(state.players[0]?.battlefield[0]?.ready).toBe(false)
 	})
 
-	it("lets Molt permanently strengthen a Being after one survived combat", () => {
-		let state = twoPlayerGame("outlandChorus", "emberReliquary")
+	it("lets Molt add Attack once after a Being survives combat", () => {
+		let state = twoPlayerGame("outlandChorus", "verdantCompact")
 		let ada = state.players[0] as SummonersPlayer
 		ada.spark = 10
 		const parasiteId = moveCardToHand(state, ada, "velvet-parasite")
@@ -266,12 +438,12 @@ describe("Summoners authoritative engine", () => {
 
 		const bea = state.players[1] as SummonersPlayer
 		bea.spark = 10
-		const tortoiseId = moveCardToHand(state, bea, "kilnback-tortoise")
-		state = playSummonersCard(state, beaId, tortoiseId, null)
+		const mouseId = moveCardToHand(state, bea, "barkhide-mouse")
+		state = playSummonersCard(state, beaId, mouseId, null)
 		state = endSummonersTurn(state, beaId)
 
 		state = attackSummoners(state, adaId, parasiteId, {
-			cardId: tortoiseId,
+			cardId: mouseId,
 			kind: "being",
 			playerId: beaId,
 		})
@@ -279,14 +451,14 @@ describe("Summoners authoritative engine", () => {
 			toSummonersPublicGameView(state).players[0]?.battlefield[0],
 		).toMatchObject({
 			attack: 4,
-			energy: 5,
+				energy: 4,
 			triggeredKeywords: ["molt"],
 		})
 
 		ada = state.players[0] as SummonersPlayer
 		ada.battlefield[0]!.ready = true
 		state = attackSummoners(state, adaId, parasiteId, {
-			cardId: tortoiseId,
+			cardId: mouseId,
 			kind: "being",
 			playerId: beaId,
 		})
@@ -294,7 +466,7 @@ describe("Summoners authoritative engine", () => {
 			toSummonersPublicGameView(state).players[0]?.battlefield[0],
 		).toMatchObject({
 			attack: 4,
-			energy: 5,
+				energy: 4,
 		})
 	})
 

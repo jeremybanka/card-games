@@ -42,6 +42,7 @@ import {
 	toSummonersPublicGameView,
 	useSummonerPower,
 } from "../summoners/summoners-engine.ts"
+import { isSummonersDeckId } from "../summoners/summoners-cards.ts"
 import type {
 	SummonersDeckId,
 	SummonersTarget,
@@ -54,21 +55,41 @@ import {
 import { createAiPlayer, type AiPlayerRuntime } from "./ai-player.node.ts"
 import type { AiFallbackReason, AiTurnGenerator } from "./ai-strategy.ts"
 
-const roomCode = "LUNA"
-const invariantSeed = "summoners-luna-vs-luna-v1"
-const liveRecordingName = "luna-vs-luna-live-v1"
+function configuredDeck(
+	environmentName: string,
+	fallback: SummonersDeckId,
+): SummonersDeckId {
+	const value = process.env[environmentName]
+	if (value === undefined) return fallback
+	if (!isSummonersDeckId(value)) {
+		throw new Error(`${environmentName} names an unknown Summoners deck.`)
+	}
+	return value
+}
+
+const roomCode = process.env.SUMMONERS_AI_ROOM_CODE ?? "LUNA"
+const invariantSeed =
+	process.env.SUMMONERS_AI_SEED ?? "summoners-luna-vs-luna-v1"
+const liveRecordingName =
+	process.env.SUMMONERS_AI_RECORDING_NAME ?? "luna-vs-luna-live-v1"
+const matchupDecks = [
+	configuredDeck("SUMMONERS_AI_DECK_A", "emberReliquary"),
+	configuredDeck("SUMMONERS_AI_DECK_B", "verdantCompact"),
+] as const
 const recordsLiveGame = process.env.RECORD_LIVE_SUMMONERS_AI_GAME === "1"
+const recordsIncrementally =
+	process.env.SUMMONERS_AI_INCREMENTAL_RECORDING === "1"
 const bots = [
 	{
 		id: "user::00000000-0000-4000-8000-0000000000a1",
 		modelId: "gpt-5.6-luna",
-		name: "Luna Ember",
+		name: process.env.SUMMONERS_AI_NAME_A ?? "Luna Ember",
 		secret: "10000000-0000-4000-8000-0000000000a1",
 	},
 	{
 		id: "user::00000000-0000-4000-8000-0000000000b2",
 		modelId: "gpt-5.6-luna",
-		name: "Luna Verdant",
+		name: process.env.SUMMONERS_AI_NAME_B ?? "Luna Verdant",
 		secret: "10000000-0000-4000-8000-0000000000b2",
 	},
 ] as const satisfies readonly {
@@ -188,7 +209,11 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 			liveRecordingName,
 		)
 		const cacheDirectory = join(recordingDirectory, "cache")
-		const cacheMode: CacheMode = recordsLiveGame ? "write" : "read"
+		const cacheMode: CacheMode = recordsLiveGame
+			? recordsIncrementally
+				? "read-write"
+				: "write"
+			: "read"
 		const squirrel = new Squirrel(cacheMode, cacheDirectory)
 		const dealRandom = createSeededRandom(
 			`deal:${roomCode}:${invariantSeed}`,
@@ -443,14 +468,14 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 			let ready = selectSummonersDeck(
 				seated,
 				bots[0].id,
-				"emberReliquary",
+				matchupDecks[0],
 			)
 			transcript.push({
 				action: "selectSummonersDeck",
 				playerId: bots[0].id,
 				turnNumber: ready.turnNumber,
 			})
-			ready = selectSummonersDeck(ready, bots[1].id, "verdantCompact")
+			ready = selectSummonersDeck(ready, bots[1].id, matchupDecks[1])
 			transcript.push({
 				action: "selectSummonersDeck",
 				playerId: bots[1].id,
@@ -501,6 +526,7 @@ describe("two-Luna deterministic realtime Summoners game", () => {
 						{
 							cacheDirectory,
 							createdAt: new Date().toISOString(),
+							decks: matchupDecks,
 							fallbacks,
 							finalState: toSummonersPublicGameView(finalState),
 							modelResponses,

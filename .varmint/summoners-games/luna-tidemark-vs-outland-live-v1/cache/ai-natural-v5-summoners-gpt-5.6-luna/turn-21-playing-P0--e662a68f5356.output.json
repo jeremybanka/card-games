@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Monsoon in a Jar",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Glacier Ram",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Cast Monsoon to destroy Dustmote Familiar and weaken the enemy Guard, then summon Glacier Ram as a Guard. Preserve 2 Spark; no legal attacks are available."
+}

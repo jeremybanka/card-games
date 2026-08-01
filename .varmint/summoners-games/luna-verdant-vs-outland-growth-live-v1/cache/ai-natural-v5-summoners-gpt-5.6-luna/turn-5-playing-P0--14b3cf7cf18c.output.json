@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "playCard",
+			"card": "Sporecap Tender",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the exposed opposing Summoner with Seedling Scout, then spend 2 Spark to summon another Sporecap Tender. Preserve both existing Tend options for future growth."
+}

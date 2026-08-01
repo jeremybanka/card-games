@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Canopy Stag",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend all 4 Spark on a durable Rooted Canopy Stag. Preserve the ready, high-growth Scout rather than attacking or Tending, maintaining future recovery and pressure."
+}

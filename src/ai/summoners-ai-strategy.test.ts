@@ -9,6 +9,7 @@ import {
 	startSummonersGame,
 	toSummonersPrivatePlayerView,
 	toSummonersPublicGameView,
+	type SummonersState,
 } from "../summoners/summoners-engine.ts"
 import { renderAiGameFacts, type AiGameContextFor } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
@@ -22,6 +23,31 @@ const rivalId =
 function physicalCards() {
 	let index = 0
 	return createSummonersPhysicalCardIds(() => `summoners-ai-${index++}`)
+}
+
+function putBlueprintInHand(
+	state: SummonersState,
+	playerIndex: number,
+	blueprintId: string,
+): void {
+	const player = state.players[playerIndex]
+	if (player === undefined) throw new Error("Missing Summoners player.")
+	if (
+		player.hand.some(
+			(cardId) => state.cardBlueprintById[cardId] === blueprintId,
+		)
+	) {
+		return
+	}
+	const deckIndex = player.deck.findIndex(
+		(cardId) => state.cardBlueprintById[cardId] === blueprintId,
+	)
+	const replacedCardId = player.hand[0]
+	if (deckIndex === -1 || replacedCardId === undefined) {
+		throw new Error(`${blueprintId} is unavailable for this test.`)
+	}
+	player.hand[0] = player.deck[deckIndex]!
+	player.deck[deckIndex] = replacedCardId
 }
 
 describe("Summoners AI strategy", () => {
@@ -94,6 +120,39 @@ describe("Summoners AI strategy", () => {
 		expect(facts).toContain("Power status: unused this turn")
 		expect(facts).toContain("Hidden-information boundary")
 		expect(facts).not.toContain("card::")
+	})
+
+	it("teaches attack-trigger-attack sequencing for readying keywords", () => {
+		let state = createSummonersGame("FLOW", lunaId, "Luna", physicalCards())
+		state = joinSummonersGame(state, rivalId, "Rival Luna")
+		state = selectSummonersDeck(state, lunaId, "tidemarkMenagerie")
+		state = selectSummonersDeck(state, rivalId, "emberReliquary")
+		state = startSummonersGame(state, lunaId, () => 0.375)
+		putBlueprintInHand(state, 0, "mistfin-minnow")
+		putBlueprintInHand(state, 1, "brasshorn-ibex")
+
+		const currentFacts = renderAiGameFacts({
+			memoryLedger: [],
+			playerId: lunaId,
+			previousPlan: "",
+			privateView: toSummonersPrivatePlayerView(state, lunaId),
+			publicView: toSummonersPublicGameView(state),
+		})
+		expect(currentFacts).toContain("## Keyword strategy")
+		expect(currentFacts).toContain(
+			"attack with the ready Being first, cause a bonus draw to ready it, then attack with it again",
+		)
+
+		const blazeFacts = renderAiGameFacts({
+			memoryLedger: [],
+			playerId: rivalId,
+			previousPlan: "",
+			privateView: toSummonersPrivatePlayerView(state, rivalId),
+			publicView: toSummonersPublicGameView(state),
+		})
+		expect(blazeFacts).toContain(
+			"attack with the ready Being first, spend your last Spark to ready it, then attack with it again",
+		)
 	})
 
 	it("parses a complete turn and rejects malformed model actions", () => {

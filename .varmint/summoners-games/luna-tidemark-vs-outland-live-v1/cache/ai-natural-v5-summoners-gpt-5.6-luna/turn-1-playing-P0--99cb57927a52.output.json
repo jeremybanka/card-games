@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Mistfin Minnow",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend the lone Spark on Mistfin Minnow for an extra card and establish an early Being, then end the turn."
+}

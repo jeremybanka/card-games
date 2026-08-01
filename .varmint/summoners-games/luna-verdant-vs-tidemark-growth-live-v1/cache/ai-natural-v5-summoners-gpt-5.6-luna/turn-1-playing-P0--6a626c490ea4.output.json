@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Seedling Scout for 1 Spark, establishing an early Being while preserving future Spark for growth or larger plays. No valid Tend target exists this turn."
+}

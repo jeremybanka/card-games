@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "No legal plays remain this turn; end the turn."
+}

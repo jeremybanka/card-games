@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "playCard",
+			"card": "Cancerous Bloom",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack and destroy the Seedling Scout; Marrow Hound survives, triggers Molt for +1 Attack, and Leech restores life. Then use Cancerous Bloom and Private Thought for 5 total damage to P0 while restoring life, spending all 7 Spark."
+}

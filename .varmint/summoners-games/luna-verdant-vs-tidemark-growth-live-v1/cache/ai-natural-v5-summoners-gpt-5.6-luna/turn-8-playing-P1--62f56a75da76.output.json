@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Riptide Rebuke",
+			"target": "P0:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Return the opposing Seedling Scout to hand, removing the immediate attack threat and its item if any. This spends 3 Spark, leaves 1 Spark, and avoids committing a weak Being without enough resources to protect it."
+}

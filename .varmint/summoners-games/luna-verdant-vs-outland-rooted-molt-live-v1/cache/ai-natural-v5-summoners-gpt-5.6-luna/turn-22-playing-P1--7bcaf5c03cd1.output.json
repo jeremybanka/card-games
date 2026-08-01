@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B1",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Cancerous Bloom",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the exposed enemy Summoner with both ready Choirs, then use Cancerous Bloom and Private Thought for 22 total damage, exceeding P0’s 11 Life. No enemy Beings or Guards restrict these attacks."
+}

@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Tender Growth on Seedling Scout for permanent growth and restored Energy, then attack Luna Ember for 3 damage while avoiding a damaging exchange with the Finch. End turn with Scout weary."
+}

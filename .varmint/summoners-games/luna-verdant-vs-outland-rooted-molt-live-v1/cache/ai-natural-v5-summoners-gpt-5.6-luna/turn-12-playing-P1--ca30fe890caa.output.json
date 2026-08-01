@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Second Shadow",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B1"
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip Marrow Hound for stronger guarded combat: it becomes 4/4 with Molt, kills the Guarded Barkhide Mouse while surviving, then Molt grants +1 Attack. Spend the remaining 2 Spark on Private Thought to damage P0 and restore 1 life."
+}

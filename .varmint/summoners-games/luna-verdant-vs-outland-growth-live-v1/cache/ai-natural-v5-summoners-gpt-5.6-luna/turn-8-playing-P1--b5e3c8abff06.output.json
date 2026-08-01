@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Thought Thorn",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B1",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend all 4 Spark on direct Summoner damage, then attack with both ready Leech Beings. This deals 1+2+4+1 damage, restores life to the cap, and preserves the board without risking combat casualties."
+}

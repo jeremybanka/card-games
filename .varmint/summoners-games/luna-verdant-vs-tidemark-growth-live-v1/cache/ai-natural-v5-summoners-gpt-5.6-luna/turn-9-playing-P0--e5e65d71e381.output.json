@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Sporecap Tender",
+			"target": null
+		},
+		{
+			"action": "tend",
+			"target": "P0:B0",
+			"tender": "P0:B1"
+		},
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Sporecap Tender for healing, have it Tend to Seedling Scout for permanent growth, then use Tender Growth for another growth and energy restoration. Attack P1 for 5 summoner damage and end the turn."
+}

@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack first to exploit the Minnow’s Current sequence, then spend 2 Spark on Read the Current to draw and ready it for a second safe attack against the opponent’s Summoner. Preserve the remaining 4 Spark and avoid Guarded Beings."
+}

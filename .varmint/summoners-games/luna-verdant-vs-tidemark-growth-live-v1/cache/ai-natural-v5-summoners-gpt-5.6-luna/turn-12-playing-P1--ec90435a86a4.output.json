@@ -1,0 +1,37 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Skysail Harness",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Gullwind Courier",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B1",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Equip the Newt for stronger combat, remove the enemy Being, then use Read the Current to ready the Newt for a second attack. Spend the remaining Spark on a Rush Courier for additional pressure."
+}

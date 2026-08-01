@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Marrow Hound",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 2 Spark on Marrow Hound, then attack the opposing Summoner with Dustmote Familiar. The 2 combat damage triggers Leech, restoring Luna Outland to full; avoid the Rooted Scout and preserve the remaining 2 Spark."
+}

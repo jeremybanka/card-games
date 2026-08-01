@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Preserve Thornhare rather than attack into the opposing Guard; retain Spark and end the turn."
+}

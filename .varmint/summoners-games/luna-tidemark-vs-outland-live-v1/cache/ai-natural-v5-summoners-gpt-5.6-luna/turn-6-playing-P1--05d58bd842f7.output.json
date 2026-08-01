@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Dustmote Familiar",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Private Thought for guaranteed pressure and healing, then spend the final Spark on Dustmote Familiar to establish a Being without exposing it to combat this turn."
+}

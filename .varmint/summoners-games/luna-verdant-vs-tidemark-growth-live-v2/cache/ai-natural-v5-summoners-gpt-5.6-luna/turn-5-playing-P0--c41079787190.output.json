@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Preserve all 3 Spark; no legal growth or attack line is available, and Barkhide Mouse would waste Spark without advancing the position."
+}

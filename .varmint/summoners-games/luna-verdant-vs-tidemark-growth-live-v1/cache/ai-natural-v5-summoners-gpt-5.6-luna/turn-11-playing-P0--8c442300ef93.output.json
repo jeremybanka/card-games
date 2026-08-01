@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Old Orchard Tender",
+			"target": null
+		},
+		{
+			"action": "tend",
+			"target": "P0:B0",
+			"tender": "P0:B1"
+		},
+		{
+			"action": "usePower",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Old Orchard Tender, have it Tend Seedling Scout for growth and its once-per-turn draw, restore Scout’s Energy with Tender Growth, then attack and eliminate Riverjaw Newt. Finish with 1 Spark; both attackers are weary."
+}

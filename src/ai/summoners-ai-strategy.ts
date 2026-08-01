@@ -60,6 +60,22 @@ const summonersAiTurnDecisionJsonSchema: JSONSchema7 = {
 					{
 						additionalProperties: false,
 						properties: {
+							action: { enum: ["tend"], type: "string" },
+							target: {
+								pattern: "^P[0-3]:B[0-4]$",
+								type: "string",
+							},
+							tender: {
+								pattern: "^P[0-3]:B[0-4]$",
+								type: "string",
+							},
+						},
+						required: ["action", "target", "tender"],
+						type: "object",
+					},
+					{
+						additionalProperties: false,
+						properties: {
 							action: { enum: ["usePower"], type: "string" },
 							target: {
 								anyOf: [
@@ -241,6 +257,19 @@ export function summonersLegalActionLines(
 			`- Attack with \`P${myIndex}:B${beingIndex}\` targeting ${attackTargetRefs.join(", ")}.`,
 		)
 	}
+	for (const [beingIndex, being] of me.battlefield.entries()) {
+		if (!being.ready || !being.keywords.includes("tend")) continue
+		const targets = me.battlefield
+			.map((_, targetIndex) => targetIndex)
+			.filter((targetIndex) => targetIndex !== beingIndex)
+		if (targets.length > 0) {
+			lines.push(
+				`- Tend with \`P${myIndex}:B${beingIndex}\` targeting ${targets
+					.map((targetIndex) => `\`P${myIndex}:B${targetIndex}\``)
+					.join(", ")}.`,
+			)
+		}
+	}
 	const power = me.summoner?.power
 	if (power !== undefined && !me.powerUsed && me.spark >= power.cost) {
 		const targets = targetsFor(context, power.targeting)
@@ -411,6 +440,20 @@ function isLegalSummonersAtomicAction(
 				.includes(action.target)
 		)
 	}
+	if (action.action === "tend") {
+		const myIndex = playerIndex(context, context.playerId)
+		const tenderMatch = new RegExp(`^P${myIndex}:B(\\d)$`).exec(action.tender)
+		const targetMatch = new RegExp(`^P${myIndex}:B(\\d)$`).exec(action.target)
+		const tender =
+			tenderMatch === null ? undefined : me.battlefield[Number(tenderMatch[1])]
+		return (
+			tender?.ready === true &&
+			tender.keywords.includes("tend") &&
+			action.tender !== action.target &&
+			targetMatch !== null &&
+			me.battlefield[Number(targetMatch[1])] !== undefined
+		)
+	}
 	const power = me.summoner?.power
 	if (power === undefined || me.powerUsed || me.spark < power.cost) return false
 	const validTargets = targetsFor(context, power.targeting).map((target) =>
@@ -473,6 +516,13 @@ function isSummonersAction(input: unknown): input is SummonersAiAction {
 				SUMMONERS_DECK_IDS.includes(
 					action.deck as (typeof SUMMONERS_DECK_IDS)[number],
 				)
+			)
+		case "tend":
+			return (
+				typeof action.tender === "string" &&
+				/^P[0-3]:B[0-4]$/.test(action.tender) &&
+				typeof action.target === "string" &&
+				/^P[0-3]:B[0-4]$/.test(action.target)
 			)
 		case "usePower":
 			return validTarget(action.target) || action.target === null
@@ -588,6 +638,17 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 					})
 					break
 				}
+				case "tend": {
+					const tenderId = boundBeingIds.get(action.tender)
+					const targetId = boundBeingIds.get(action.target)
+					if (tenderId === undefined || targetId === undefined) {
+						throw new Error("The AI selected a missing Being to Tend.")
+					}
+					result = await new Promise((resolve) => {
+						socket.emit("tendSummoners", tenderId, targetId, resolve)
+					})
+					break
+				}
 				case "usePower":
 					result = await new Promise((resolve) => {
 						socket.emit(
@@ -615,6 +676,7 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 		"Character references remain bound to their current physical characters for the lifetime of the sequence.",
 		"Never invent hidden opponent card values. Opponent hands expose counts and opaque backs only.",
 		"Spend Spark efficiently, respect Guards, account for simultaneous combat and once-per-turn keyword triggers, and pursue a coherent turn-level plan.",
+		"Growth is permanent +1 Attack/+1 Energy. A Tend action spends the tender's readiness, so compare it against attacking or preserving Rooted recovery.",
 	].join("\n"),
 	usesTurnGenerator: () => true,
 }

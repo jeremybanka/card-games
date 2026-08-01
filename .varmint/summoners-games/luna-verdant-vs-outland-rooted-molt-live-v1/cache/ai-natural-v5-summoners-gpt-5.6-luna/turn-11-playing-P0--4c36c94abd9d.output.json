@@ -1,0 +1,23 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Barkhide Mouse",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Green Reprisal",
+			"target": "P1:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Develop the Rooted Guard, remove the dangerous Leech/Molt Familiar, then preserve the Staff Scout for a direct attack. Spark goes 6→4→1; Scout deals 2 and Leeches 2, restoring Luna to 23."
+}

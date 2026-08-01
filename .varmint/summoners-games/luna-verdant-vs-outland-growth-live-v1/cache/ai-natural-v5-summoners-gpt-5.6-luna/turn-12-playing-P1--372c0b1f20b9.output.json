@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B1",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the unguarded Summoner with both ready Leech Beings for 5 damage and healing, then use Private Thought for additional damage and restoration. Preserve the board and avoid unnecessary equipment or Tend actions."
+}

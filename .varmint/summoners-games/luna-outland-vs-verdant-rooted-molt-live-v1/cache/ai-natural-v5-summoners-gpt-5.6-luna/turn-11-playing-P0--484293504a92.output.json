@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Sweet Morphology",
+			"target": "P0:B0"
+		},
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend all 6 Spark efficiently: strengthen B0, then use Private Thought to deal the final damage. No attack is needed; P0 ends at 23 life, and B0 remains ready at 4/5 battlefield capacity."
+}

@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Seedling Scout",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Seedling Scout as a low-cost setup, preserving 3 Spark. Do not waste its Tend without another Being to grow, and do not attack into the opposing Minnow."
+}

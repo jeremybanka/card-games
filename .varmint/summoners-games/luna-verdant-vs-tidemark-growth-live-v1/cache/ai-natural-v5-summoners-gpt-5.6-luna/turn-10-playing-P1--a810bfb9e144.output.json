@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "With 0 Spark, no legal plays or power use remain. End the turn and preserve the Riverjaw Newt for future Current-enabled tempo."
+}

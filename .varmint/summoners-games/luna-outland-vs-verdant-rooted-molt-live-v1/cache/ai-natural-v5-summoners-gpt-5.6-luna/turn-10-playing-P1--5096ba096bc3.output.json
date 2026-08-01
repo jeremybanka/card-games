@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Conserve all 5 Spark, including the 2-Spark power, and preserve the full hand for a stronger defensive response next turn."
+}

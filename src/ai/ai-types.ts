@@ -40,6 +40,7 @@ export type SummonersAiAction =
 			target: string | null
 	  }
 	| { action: "selectDeck"; deck: SummonersDeckId }
+	| { action: "tend"; target: string; tender: string }
 	| { action: "usePower"; target: string | null }
 
 export type AiNextActionByGame = {

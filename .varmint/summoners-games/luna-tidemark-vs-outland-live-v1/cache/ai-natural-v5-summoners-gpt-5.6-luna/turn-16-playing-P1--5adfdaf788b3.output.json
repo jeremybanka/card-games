@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Thought Thorn",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Velvet Parasite",
+			"target": null
+		},
+		{
+			"action": "playCard",
+			"card": "Dustmote Familiar",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Deal guaranteed damage with Private Thought and Thought Thorn, then spend the remaining Spark on two Leech Beings for board presence and future life recovery. End at 0 Spark with P1:B0 and P1:B1 summoned but not ready to attack."
+}

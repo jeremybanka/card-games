@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Thought Thorn",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend both Spark on Thought Thorn for 2 damage and a card draw, preserving the turn’s limited resources without exposing a fragile Being to Mistfin Minnow."
+}

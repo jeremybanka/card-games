@@ -34,7 +34,9 @@ type SummonersBeing = {
 	attackBonus: number
 	cardId: CardId
 	damage: number
+	deepRootsUsed: boolean
 	energyBonus: number
+	growth: number
 	itemCardId: CardId | null
 	ready: boolean
 	triggeredKeywords: SummonersKeyword[]
@@ -132,12 +134,26 @@ function beingStats(
 	const card = definitionFor(state, being.cardId)
 	const item =
 		being.itemCardId === null ? null : definitionFor(state, being.itemCardId)
+	const keywords = new Set([
+		...(card.keywords ?? []),
+		...(item?.grantedKeywords ?? []),
+	])
+	if (card.id === "barkhide-mouse" && being.growth >= 2) keywords.add("guard")
+	if (card.id === "canopy-stag" && being.growth >= 3) {
+		keywords.add("breakthrough")
+	}
 	return {
-		attack: (card.attack ?? 0) + being.attackBonus + (item?.attack ?? 0),
-		energy: (card.energy ?? 0) + being.energyBonus + (item?.energy ?? 0),
-		keywords: [
-			...new Set([...(card.keywords ?? []), ...(item?.grantedKeywords ?? [])]),
-		],
+		attack:
+			(card.attack ?? 0) +
+			being.attackBonus +
+			being.growth +
+			(item?.attack ?? 0),
+		energy:
+			(card.energy ?? 0) +
+			being.energyBonus +
+			being.growth +
+			(item?.energy ?? 0),
+		keywords: [...keywords],
 	}
 }
 
@@ -150,6 +166,7 @@ function publicBeing(
 		...stats,
 		card: visibleCard(state, being.cardId),
 		damage: being.damage,
+		growth: being.growth,
 		item:
 			being.itemCardId === null ? null : visibleCard(state, being.itemCardId),
 		ready: being.ready,
@@ -199,7 +216,7 @@ function playerCanPlayCard(
 		return false
 	}
 	const card = definitionFor(state, cardId)
-	if (card.cost > player.spark) return false
+	if (effectiveCardCost(state, player, card) > player.spark) return false
 	if (
 		card.type === "being" &&
 		player.battlefield.length >= SUMMONERS_BATTLEFIELD_LIMIT
@@ -213,6 +230,19 @@ function playerCanPlayCard(
 		return false
 	}
 	return true
+}
+
+function effectiveCardCost(
+	state: SummonersState,
+	player: SummonersPlayer,
+	card: SummonersCardDefinition,
+): number {
+	if (card.id !== "walking-grove") return card.cost
+	const growth = player.battlefield.reduce(
+		(total, being) => total + being.growth,
+		0,
+	)
+	return Math.max(0, card.cost - Math.floor(growth / 2))
 }
 
 export function toSummonersPublicGameView(
@@ -463,7 +493,6 @@ function triggerMolt(state: SummonersState, being: SummonersBeing): void {
 	}
 	being.triggeredKeywords.push("molt")
 	being.attackBonus += 1
-	being.energyBonus += 1
 	setStatus(
 		state,
 		`${definitionFor(state, being.cardId).name} Molts into a stronger shape.`,
@@ -529,11 +558,40 @@ function eliminateSpentSummoners(state: SummonersState): void {
 	}
 }
 
+function consumeDeepRoots(
+	state: SummonersState,
+	being: SummonersBeing,
+): boolean {
+	if (
+		being.deepRootsUsed ||
+		being.growth < 2 ||
+		being.itemCardId === null ||
+		definitionFor(state, being.itemCardId).id !== "deep-roots"
+	) {
+		return false
+	}
+	being.deepRootsUsed = true
+	being.growth -= 2
+	being.damage = Math.min(
+		being.damage,
+		Math.max(0, beingStats(state, being).energy - 1),
+	)
+	setStatus(
+		state,
+		`${definitionFor(state, being.cardId).name} holds fast through Deep Roots.`,
+	)
+	return true
+}
+
 function discardSpentBeings(state: SummonersState): void {
 	for (const player of state.players) {
 		const survivors: SummonersBeing[] = []
 		for (const being of player.battlefield) {
 			if (being.damage < beingStats(state, being).energy) {
+				survivors.push(being)
+				continue
+			}
+			if (consumeDeepRoots(state, being)) {
 				survivors.push(being)
 				continue
 			}
@@ -552,6 +610,7 @@ function beginTurn(
 	for (const seatedPlayer of state.players) {
 		for (const being of seatedPlayer.battlefield) {
 			being.triggeredKeywords = []
+			being.deepRootsUsed = false
 		}
 	}
 	player.maxSpark = Math.min(SUMMONERS_MAXIMUM_SPARK, player.maxSpark + 1)
@@ -764,6 +823,13 @@ function resolveEffect(
 			being.energyBonus += effect.energy
 			break
 		}
+		case "grow": {
+			if (target?.kind !== "being") {
+				throw new SummonersRuleError("That growth needs a friendly Being.")
+			}
+			locateBeing(state, target).being.growth += effect.amount
+			break
+		}
 		case "draw": {
 			for (let count = 0; count < effect.count; count += 1) {
 				if (drawCard(state, actingPlayer)) {
@@ -794,6 +860,7 @@ function resolveEffect(
 				throw new SummonersRuleError("Choose a Being to return.")
 			}
 			const { being, owner } = locateBeing(state, target)
+			if (consumeDeepRoots(state, being)) break
 			if (being.itemCardId !== null) owner.discard.push(being.itemCardId)
 			owner.battlefield = owner.battlefield.filter(
 				(candidate) => candidate.cardId !== being.cardId,
@@ -819,6 +886,39 @@ function resolveEffects(
 	for (const effect of effects) {
 		resolveEffect(state, actingPlayer, effect, target)
 		if (state.phase === "gameComplete") return
+	}
+}
+
+function resolveCardSpecial(
+	state: SummonersState,
+	player: SummonersPlayer,
+	card: SummonersCardDefinition,
+	target: SummonersTarget | null,
+): void {
+	if (target?.kind !== "being") return
+	if (card.id === "season-s-turning") {
+		const recipient = locateBeing(state, target).being
+		let movedGrowth = 0
+		for (const being of player.battlefield) {
+			if (being.cardId === recipient.cardId) continue
+			movedGrowth += being.growth
+			being.growth = 0
+		}
+		recipient.growth += movedGrowth
+		recipient.damage = 0
+		return
+	}
+	if (card.id !== "fruitful-sacrifice") return
+	const sacrificed = locateBeing(state, target).being
+	const hadGrowth = sacrificed.growth > 0
+	player.battlefield = player.battlefield.filter(
+		(being) => being.cardId !== sacrificed.cardId,
+	)
+	player.discard.push(sacrificed.cardId)
+	if (sacrificed.itemCardId !== null) player.discard.push(sacrificed.itemCardId)
+	for (const being of player.battlefield) being.growth += 1
+	if (hadGrowth && drawCard(state, player)) {
+		triggerReadyKeyword(state, player, "current")
 	}
 }
 
@@ -854,7 +954,8 @@ export function playSummonersCard(
 	}
 	const card = definitionFor(next, cardId)
 	validateTarget(next, player, card.targeting, target)
-	player.spark -= card.cost
+	const paidCost = effectiveCardCost(next, player, card)
+	player.spark -= paidCost
 	player.hand = player.hand.filter((candidate) => candidate !== cardId)
 
 	if (card.type === "being") {
@@ -862,7 +963,9 @@ export function playSummonersCard(
 			attackBonus: 0,
 			cardId,
 			damage: 0,
+			deepRootsUsed: false,
 			energyBonus: 0,
+			growth: 0,
 			itemCardId: null,
 			ready: card.keywords?.includes("rush") ?? false,
 			triggeredKeywords: [],
@@ -882,13 +985,56 @@ export function playSummonersCard(
 	}
 
 	resolveEffects(next, player, card.effects ?? [], target)
+	resolveCardSpecial(next, player, card, target)
+	discardSpentBeings(next)
+	eliminateSpentSummoners(next)
 	if (next.phase === "playing") {
-		if (card.cost > 0 && player.spark === 0) {
+		if (paidCost > 0 && player.spark === 0) {
 			triggerReadyKeyword(next, player, "blaze")
 		}
 		setStatus(next, `${player.name} played ${card.name}.`)
 		if (player.eliminated) advanceTurn(next, playerId)
 	}
+	return next
+}
+
+export function tendSummoners(
+	state: SummonersState,
+	playerId: PlayerId,
+	tenderId: CardId,
+	targetId: CardId,
+): SummonersState {
+	const next = copyState(state)
+	const player = requireTurn(next, playerId)
+	const tender = player.battlefield.find((being) => being.cardId === tenderId)
+	const target = player.battlefield.find((being) => being.cardId === targetId)
+	if (tender === undefined || target === undefined || tender === target) {
+		throw new SummonersRuleError("Tend another one of your Beings.")
+	}
+	if (!tender.ready || !beingHasKeyword(next, tender, "tend")) {
+		throw new SummonersRuleError("That Being cannot Tend right now.")
+	}
+	if (tender.triggeredKeywords.includes("tend")) {
+		throw new SummonersRuleError("That Being has already Tended this turn.")
+	}
+	const previousGrowth = target.growth
+	tender.ready = false
+	tender.triggeredKeywords.push("tend")
+	target.growth += 1
+	const tenderCard = definitionFor(next, tender.cardId)
+	setStatus(
+		next,
+		`${tenderCard.name} Tends ${definitionFor(next, target.cardId).name}.`,
+	)
+	if (
+		tenderCard.id === "old-orchard-tender" &&
+		previousGrowth < 2 &&
+		target.growth >= 2 &&
+		drawCard(next, player)
+	) {
+		triggerReadyKeyword(next, player, "current")
+	}
+	eliminateSpentSummoners(next)
 	return next
 }
 
@@ -944,8 +1090,15 @@ export function attackSummoners(
 	} else {
 		const targetBeing = locateBeing(next, target).being
 		const targetStats = beingStats(next, targetBeing)
+		const targetRemainingEnergy = targetStats.energy - targetBeing.damage
 		targetBeing.damage += attackerStats.attack
 		attacker.damage += targetStats.attack
+		if (attackerStats.keywords.includes("breakthrough")) {
+			defender.health -= Math.max(
+				0,
+				attackerStats.attack - targetRemainingEnergy,
+			)
+		}
 		if (attackerStats.keywords.includes("leech")) {
 			player.health = Math.min(
 				SUMMONERS_STARTING_HEALTH,

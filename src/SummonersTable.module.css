@@ -1628,6 +1628,17 @@ summoners-table.class {
 				white-space: nowrap;
 			}
 
+			> growth-count {
+				padding: 0.15rem 0.28rem;
+				border: 1px solid rgb(158 219 67 / 0.45);
+				border-radius: 999px;
+				background: rgb(29 48 23 / 0.94);
+				color: #c9f28c;
+				font-size: 0.42rem;
+				font-weight: 850;
+				text-align: center;
+			}
+
 			> keyword-row {
 				position: static;
 				color: var(--summoners-gold);

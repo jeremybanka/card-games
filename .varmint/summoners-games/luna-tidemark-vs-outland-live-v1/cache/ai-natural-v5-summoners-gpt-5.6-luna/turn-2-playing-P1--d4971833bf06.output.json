@@ -1,0 +1,8 @@
+{
+	"actions": [
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "No legal plays are available this turn; end the turn without spending Spark."
+}

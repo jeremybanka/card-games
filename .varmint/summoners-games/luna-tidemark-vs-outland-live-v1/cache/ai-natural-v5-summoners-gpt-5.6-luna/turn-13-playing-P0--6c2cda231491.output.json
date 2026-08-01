@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Flash Freeze",
+			"target": "P1:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Cast Flash Freeze to destroy the enemy attacker, then preserve the remaining Spark and end the turn."
+}

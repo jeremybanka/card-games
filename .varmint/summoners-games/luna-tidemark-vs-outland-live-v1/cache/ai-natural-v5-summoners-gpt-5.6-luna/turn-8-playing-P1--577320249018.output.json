@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P0"
+		},
+		{
+			"action": "playCard",
+			"card": "Many-Eyed Moth",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Private Thought for guaranteed damage and healing, then spend the remaining 2 Spark on Many-Eyed Moth to expand the battlefield safely without exposing Dustmote Familiar to combat."
+}

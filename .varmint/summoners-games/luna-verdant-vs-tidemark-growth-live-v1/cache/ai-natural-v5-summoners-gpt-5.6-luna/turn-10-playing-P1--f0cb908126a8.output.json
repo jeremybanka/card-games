@@ -1,0 +1,27 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Riverjaw Newt",
+			"target": null
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0:B0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend all 5 Spark on Riverjaw Newt and Read the Current. Use the Newt’s Current-enabled attacks to remove Seedling Scout, preserving tempo while avoiding an unsupported Leviathan commitment."
+}

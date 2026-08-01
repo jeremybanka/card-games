@@ -55,7 +55,12 @@ type SummonersTableProps = {
 
 type Selection =
 	| { cardId: CardId; kind: "card"; targeting: SummonersTargeting }
-	| { cardId: CardId; kind: "attacker"; targeting: "anyEnemy" }
+	| {
+			canTend: boolean
+			cardId: CardId
+			kind: "attacker"
+			targeting: "anyEnemy"
+	  }
 	| { kind: "power"; targeting: SummonersTargeting }
 
 type CardDragState = {
@@ -106,7 +111,13 @@ function targetMatchesSelection(
 	if (selection === null || owner.eliminated) return false
 	const friendly = target.playerId === myPlayerId
 	if (selection.kind === "attacker") {
-		if (friendly) return false
+		if (friendly) {
+			return (
+				selection.canTend &&
+				target.kind === "being" &&
+				target.cardId !== selection.cardId
+			)
+		}
 		const guards = owner.battlefield.filter((being) =>
 			being.keywords.includes("guard"),
 		)
@@ -138,7 +149,9 @@ function selectionInstruction(
 ): string {
 	if (selection === null) return "Choose a card, a ready Being, or your power."
 	if (selection.kind === "attacker") {
-		return "Choose an enemy character. Guard Beings stand in the way."
+		return selection.canTend
+			? "Drag to an enemy to attack, or onto another friendly Being to Tend it."
+			: "Choose an enemy character. Guard Beings stand in the way."
 	}
 	if (selection.kind === "power") {
 		return "Choose a character for your Summoner’s power."
@@ -360,6 +373,11 @@ function BattlefieldBeing({
 						{being.item.art} {being.item.name}
 					</equipped-item>
 				)}
+				{being.growth === 0 ? null : (
+					<growth-count aria-label={`${being.growth} growth counters`}>
+						❧ {being.growth} growth
+					</growth-count>
+				)}
 				{being.keywords.length === 0 ? null : (
 					<keyword-row>
 						{being.keywords
@@ -490,13 +508,19 @@ function RulesCodex({ onClose }: { onClose: () => void }): VNode {
 							<dd>Its Summoner restores life equal to its combat damage.</dd>
 							<dt>Blaze</dt>
 							<dd>Your first spend down to 0 Spark readies this Being.</dd>
+							<dt>Breakthrough</dt>
+							<dd>Excess combat damage reaches the defending Summoner.</dd>
 							<dt>Current</dt>
 							<dd>Your first bonus draw each turn readies this Being.</dd>
 							<dt>Molt</dt>
-							<dd>The first combat it survives each turn gives it +1/+1.</dd>
+							<dd>The first combat it survives each turn gives it +1 Attack.</dd>
 							<dt>Rooted</dt>
 							<dd>
 								A ready, damaged Being restores 2 Energy as your turn ends.
+							</dd>
+							<dt>Tend</dt>
+							<dd>
+								Become weary to give another friendly Being +1/+1 growth.
 							</dd>
 							<dt>Fatigue</dt>
 							<dd>
@@ -791,9 +815,18 @@ export function SummonersTable({
 				handleResult(result, () => setSelection(null)),
 			)
 		} else if (selection?.kind === "attacker") {
-			socket.emit("attackSummoners", selection.cardId, target, (result) =>
-				handleResult(result, () => setSelection(null)),
-			)
+			if (target.playerId === myPlayerId && target.kind === "being") {
+				socket.emit(
+					"tendSummoners",
+					selection.cardId,
+					target.cardId,
+					(result) => handleResult(result, () => setSelection(null)),
+				)
+			} else {
+				socket.emit("attackSummoners", selection.cardId, target, (result) =>
+					handleResult(result, () => setSelection(null)),
+				)
+			}
 		} else if (selection?.kind === "power") {
 			socket.emit("useSummonerPower", target, (result) =>
 				handleResult(result, () => setSelection(null)),
@@ -933,6 +966,7 @@ export function SummonersTable({
 		attackerDragRef.current = nextDrag
 		setAttackerDrag(nextDrag)
 		setSelection({
+			canTend: being.keywords.includes("tend"),
 			cardId: being.card.physicalId,
 			kind: "attacker",
 			targeting: "anyEnemy",
@@ -987,6 +1021,7 @@ export function SummonersTable({
 		}
 		if (!cancelled && dragged) {
 			const activeSelection = {
+				canTend: being.keywords.includes("tend"),
 				cardId: being.card.physicalId,
 				kind: "attacker",
 				targeting: "anyEnemy",
@@ -997,12 +1032,21 @@ export function SummonersTable({
 				event.clientY,
 			)
 			if (target !== undefined) {
-				socket.emit(
-					"attackSummoners",
-					being.card.physicalId,
-					target,
-					(result) => handleResult(result, () => setSelection(null)),
-				)
+				if (target.playerId === myPlayerId && target.kind === "being") {
+					socket.emit(
+						"tendSummoners",
+						being.card.physicalId,
+						target.cardId,
+						(result) => handleResult(result, () => setSelection(null)),
+					)
+				} else {
+					socket.emit(
+						"attackSummoners",
+						being.card.physicalId,
+						target,
+						(result) => handleResult(result, () => setSelection(null)),
+					)
+				}
 			}
 		}
 		attackerPointerOrigin.current = null
@@ -1035,6 +1079,7 @@ export function SummonersTable({
 			current?.kind === "attacker" && current.cardId === being.card.physicalId
 				? null
 				: {
+						canTend: being.keywords.includes("tend"),
 						cardId: being.card.physicalId,
 						kind: "attacker",
 						targeting: "anyEnemy",

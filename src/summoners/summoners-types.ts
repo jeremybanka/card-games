@@ -26,12 +26,14 @@ export type SummonersElement =
 
 export type SummonersKeyword =
 	| "blaze"
+	| "breakthrough"
 	| "current"
 	| "guard"
 	| "leech"
 	| "molt"
 	| "rooted"
 	| "rush"
+	| "tend"
 
 export type SummonersTarget =
 	| {
@@ -66,6 +68,11 @@ export type SummonersEffect =
 			attack: number
 			energy: number
 			kind: "buff"
+			recipient: "target"
+	  }
+	| {
+			amount: number
+			kind: "grow"
 			recipient: "target"
 	  }
 	| {
@@ -136,6 +143,7 @@ export type SummonersPublicBeing = {
 	card: SummonersVisibleCard
 	damage: number
 	energy: number
+	growth: number
 	item: SummonersVisibleCard | null
 	keywords: SummonersKeyword[]
 	ready: boolean
@@ -221,12 +229,21 @@ export type EndSummonersTurnClientEvents = {
 	endSummonersTurn: (ack: import("../game/game-types.ts").ActionAck) => void
 }
 
+export type TendSummonersClientEvents = {
+	tendSummoners: (
+		tenderId: CardId,
+		targetId: CardId,
+		ack: import("../game/game-types.ts").ActionAck,
+	) => void
+}
+
 export type SummonersClientEvents = AiSeatClientEvents &
 	AttackSummonersClientEvents &
 	EndSummonersTurnClientEvents &
 	PlaySummonersCardClientEvents &
 	SelectSummonersDeckClientEvents &
-	SummonerPowerClientEvents & {
+	SummonerPowerClientEvents &
+	TendSummonersClientEvents & {
 		restartGame: (ack: import("../game/game-types.ts").ActionAck) => void
 		startGame: (ack: import("../game/game-types.ts").ActionAck) => void
 	}

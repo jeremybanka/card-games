@@ -1,0 +1,18 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Briar Challenge",
+			"target": "P0:B0"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Use Briar Challenge to grow and ready the Scout, then attack P1 directly for immediate pressure. Preserve the remaining 3 Spark, including the strategic 2-Spark reserve."
+}

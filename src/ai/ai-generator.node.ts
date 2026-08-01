@@ -31,9 +31,56 @@ export type AiModelResponseRecord = {
 }
 
 export type OpenAiTurnGeneratorOptions = {
+	maxOutputTokens?: number
 	onFallback?: NonNullable<AiGuardObserver["onFallback"]>
 	onModelResponse?: (record: AiModelResponseRecord) => void
+	requestAttempts?: number
+	requestTimeoutMs?: number
 	squirrel?: Squirrel
+}
+
+export class AiGenerationTimeoutError extends Error {}
+
+export async function generateAiWithDeadline<T>(
+	generate: (abortSignal: AbortSignal) => Promise<T>,
+	timeoutMs: number,
+): Promise<T> {
+	const controller = new AbortController()
+	let timeout: ReturnType<typeof setTimeout> | undefined
+	const deadline = new Promise<never>((_, reject) => {
+		timeout = setTimeout(() => {
+			const error = new AiGenerationTimeoutError(
+				`AI generation exceeded ${timeoutMs}ms.`,
+			)
+			controller.abort(error)
+			reject(error)
+		}, timeoutMs)
+	})
+	try {
+		return await Promise.race([generate(controller.signal), deadline])
+	} finally {
+		if (timeout !== undefined) clearTimeout(timeout)
+	}
+}
+
+export async function retryAiGeneration<T>(
+	generate: (attempt: number) => Promise<T>,
+	attempts: number,
+	onRetry?: (error: unknown, attempt: number) => void,
+	shouldRetry: (error: unknown) => boolean = () => true,
+): Promise<T> {
+	const attemptLimit = Math.max(1, Math.floor(attempts))
+	let lastError: unknown
+	for (let attempt = 1; attempt <= attemptLimit; attempt += 1) {
+		try {
+			return await generate(attempt)
+		} catch (error) {
+			lastError = error
+			if (attempt >= attemptLimit || !shouldRetry(error)) break
+			onRetry?.(error, attempt)
+		}
+	}
+	throw lastError
 }
 
 export type AiGenerationContract = {
@@ -178,6 +225,9 @@ export function createOpenAiTurnGenerator(
 
 	const openai = createOpenAI({ apiKey })
 	const model = openai.responses(modelId)
+	const maxOutputTokens = options.maxOutputTokens ?? 1_000
+	const requestAttempts = options.requestAttempts ?? 2
+	const requestTimeoutMs = options.requestTimeoutMs ?? 45_000
 	const generate: AiTurnGenerator = async (context): Promise<AiTurnDecision> =>
 		serverLogger.withSpan(
 			"ai.openai.generate",
@@ -207,17 +257,51 @@ export function createOpenAiTurnGenerator(
 					prompt,
 					systemPrompt: contract.system,
 				})
-				const result = await generateText({
-					model,
-					output: Output.object({
-						description: contract.output.description,
-						name: contract.output.name,
-						schema: jsonSchema<AiTurnDecision>(contract.output.schema),
-					}),
-					prompt: contract.prompt,
-					providerOptions: contract.providerOptions,
-					system: contract.system,
-				})
+				const result = await retryAiGeneration(
+					(attempt) =>
+						generateAiWithDeadline(
+							(abortSignal) =>
+								generateText({
+									abortSignal,
+									maxOutputTokens,
+									maxRetries: 0,
+									model,
+									output: Output.object({
+										description: contract.output.description,
+										name: contract.output.name,
+										schema: jsonSchema<AiTurnDecision>(
+											contract.output.schema,
+										),
+									}),
+									prompt: contract.prompt,
+									providerOptions:
+										attempt === 1
+											? contract.providerOptions
+											: {
+													openai: {
+														...contract.providerOptions.openai,
+														reasoningEffort: "none",
+													},
+												},
+									system: contract.system,
+								}),
+							requestTimeoutMs,
+						),
+					requestAttempts,
+					(error, attempt) => {
+						span.event(
+							"ai.openai.retry",
+							{
+								attempt,
+								error:
+									error instanceof Error ? error.message : String(error),
+								requestTimeoutMs,
+							},
+							"warn",
+						)
+						},
+					(error) => !(error instanceof AiGenerationTimeoutError),
+				)
 				span.event("ai.openai.response", {
 					finishReason: result.finishReason,
 					output: result.output,

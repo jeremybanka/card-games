@@ -1,0 +1,22 @@
+{
+	"actions": [
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "usePower",
+			"target": null
+		},
+		{
+			"action": "attack",
+			"attacker": "P1:B0",
+			"target": "P0"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Attack the opposing summoner first, then use Read the Current to draw and trigger Mistfin Minnow’s Current, readying it for a second attack. Preserve Spark and avoid trading into the Guarded Seedling Scout."
+}

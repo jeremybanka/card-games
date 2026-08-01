@@ -39,6 +39,9 @@ At the start of your turn:
 Then play cards, use your Summoner power, and attack in any order. End the turn
 when finished. Unspent Spark disappears.
 
+Some effects place **growth counters** on Beings. Each growth counter gives its
+Being +1 Attack and +1 Energy while it remains on the battlefield.
+
 If you draw from an empty deck, take fatigue damage instead: 1 for the first
 failed draw, 2 for the next, then 3, and so on.
 
@@ -73,12 +76,16 @@ the chosen opponent's battlefield.
   Summoner, up to 24.
 - **Blaze:** the first time each turn this Being's Summoner spends their last
   Spark, ready this Being.
+- **Breakthrough:** when this Being attacks another Being, excess combat damage
+  is dealt to the defending Being's Summoner.
 - **Current:** the first time each turn this Being's Summoner draws a card
   outside the start-of-turn draw, ready this Being.
 - **Molt:** the first time each turn this Being survives combat with another
-  Being, it gets +1 Attack and +1 Energy while it remains on the battlefield.
+  Being, it gets +1 Attack while it remains on the battlefield.
 - **Rooted:** at the end of its Summoner's turn, if this Being is ready and
   damaged, restore 2 Energy to it.
+- **Tend:** once each turn, this ready Being may become weary to put a growth
+  counter on another friendly Being.
 
 ## Summoner powers
 
@@ -99,9 +106,10 @@ Blaze rewards sequencing attacks before spending the final Spark. Pip's
 
 **Brindle, Mossmother** · Leaf, Wood, and Slime
 
-Durable Beings, Guard, healing, and permanent growth. Rooted Beings trade an
-attack for end-of-turn recovery. Brindle's **Tender Growth** costs 2 Spark and
-restores 2 Energy to a friendly Being.
+Verdant's small Tenders invest their attacks into permanent growth, unlocking
+Guard and Breakthrough thresholds on larger Beings. Its spells can concentrate,
+protect, or harvest that investment. Brindle's **Tender Growth** costs 2 Spark,
+puts a growth counter on a friendly Being, and restores 1 Energy to it.
 
 ### Tidemark Menagerie
 

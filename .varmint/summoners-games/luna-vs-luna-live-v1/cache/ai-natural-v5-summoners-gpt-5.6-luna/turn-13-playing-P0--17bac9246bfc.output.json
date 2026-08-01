@@ -1,0 +1,17 @@
+{
+	"actions": [
+		{
+			"action": "usePower",
+			"target": "P1"
+		},
+		{
+			"action": "attack",
+			"attacker": "P0:B0",
+			"target": "P1"
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Spend 2 Spark on Pocket Ember to damage the opposing Summoner, then use Cinderwing Finch’s Rush attack for 3 more damage, defeating P1 while preserving 5 Spark."
+}

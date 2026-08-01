@@ -1,0 +1,13 @@
+{
+	"actions": [
+		{
+			"action": "playCard",
+			"card": "Icicle Stoat",
+			"target": null
+		},
+		{
+			"action": "endTurn"
+		}
+	],
+	"plan": "Summon Icicle Stoat as a blocker, spending the available Spark to establish board presence against Seedling Scout. Preserve the new Being rather than attacking into an unknown combat, then end the turn."
+}
