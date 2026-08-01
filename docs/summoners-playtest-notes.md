@@ -227,14 +227,14 @@ Spark, ready attackers, playable cards, Tend, powers, and Rooted recovery.
 
 Using the same Ember-versus-Verdant deal seed:
 
-| Measure | v6 atomic loop | v7 objective + ledger |
-| --- | ---: | ---: |
-| Result | Verdant, turn 22 at 24 life | Ember, turn 9 at 20 life |
-| Model decisions | 59 | 30 |
-| Empty playing turns | 10 | 0 |
-| Multi-action playing turns | 12 | 9 |
-| Most actions in one turn | 6 | 5 |
-| Model fallbacks | 0 | 0 |
+| Measure                    |              v6 atomic loop |    v7 objective + ledger |
+| -------------------------- | --------------------------: | -----------------------: |
+| Result                     | Verdant, turn 22 at 24 life | Ember, turn 9 at 20 life |
+| Model decisions            |                          59 |                       30 |
+| Empty playing turns        |                          10 |                        0 |
+| Multi-action playing turns |                          12 |                        9 |
+| Most actions in one turn   |                           6 |                        5 |
+| Model fallbacks            |                           0 |                        0 |
 
 - Under v6, turns 3–8 were six consecutive passes despite listed attacks,
   powers, and playable cards. Stale prose such as "already attacked" survived

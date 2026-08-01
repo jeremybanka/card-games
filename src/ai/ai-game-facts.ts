@@ -335,12 +335,10 @@ function renderSummonersFacts(context: AiGameContextFor<"summoners">): string {
 				"To gain a second attack from Blaze, attack with the ready Being first, spend your last Spark to ready it, then attack with it again. Spending the last Spark before its first attack wastes that extra readiness.",
 			current:
 				"To gain a second attack from Current, attack with the ready Being first, cause a bonus draw to ready it, then attack with it again. Do not use the bonus draw first while the Being is already ready.",
-			molt:
-				"Molt rewards combat with a Being this attacker will survive. It can trigger only once this turn and now grants Attack, not Energy, so recheck the return damage before committing.",
+			molt: "Molt rewards combat with a Being this attacker will survive. It can trigger only once this turn and now grants Attack, not Energy, so recheck the return damage before committing.",
 			rooted:
 				"A damaged Rooted Being repairs only if it remains ready when you end the turn. Attacking with it trades away that repair for immediate pressure.",
-			tend:
-				"Tending trades this Being's attack and Rooted recovery for permanent growth on another Being. Tend before growth-threshold payoffs, and concentrate only when the opponent cannot efficiently return that investment to hand.",
+			tend: "Tending trades this Being's attack and Rooted recovery for permanent growth on another Being. Tend before growth-threshold payoffs, and concentrate only when the opponent cannot efficiently return that investment to hand.",
 			breakthrough:
 				"Breakthrough converts excess damage against a smaller Being into Summoner damage. Compare the defender's remaining Energy, not just its printed Energy.",
 		}

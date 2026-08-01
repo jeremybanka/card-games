@@ -543,11 +543,10 @@ describe("four-bot deterministic realtime game", () => {
 			).toBe(true)
 			expect(
 				Math.max(
-						...recorded.generatorContexts.map(
-							(context) =>
-								context.publicView.gameKind === "summoners"
-									? 0
-									: context.publicView.completedTricks.length,
+					...recorded.generatorContexts.map((context) =>
+						context.publicView.gameKind === "summoners"
+							? 0
+							: context.publicView.completedTricks.length,
 					),
 				),
 			).toBe(12)

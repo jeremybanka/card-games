@@ -153,10 +153,10 @@ export function promptFixtureKey(
 		context.publicView.gameKind === "summoners"
 			? `turn-${context.publicView.turnNumber}-revision-${context.publicView.revision}-${context.publicView.phase}-${player}`
 			: context.publicView.phase === "playing"
-			? `round-${context.publicView.roundNumber}-trick-${
-					context.publicView.trickNumber + 1
-				}-play-${context.publicView.currentTrick.length + 1}-${player}`
-			: `round-${context.publicView.roundNumber}-${context.publicView.phase}-${player}`
+				? `round-${context.publicView.roundNumber}-trick-${
+						context.publicView.trickNumber + 1
+					}-play-${context.publicView.currentTrick.length + 1}-${player}`
+				: `round-${context.publicView.roundNumber}-${context.publicView.phase}-${player}`
 	const inputHash = createHash("sha256")
 		.update(JSON.stringify(contract))
 		.digest("hex")
@@ -269,9 +269,7 @@ export function createOpenAiTurnGenerator(
 									output: Output.object({
 										description: contract.output.description,
 										name: contract.output.name,
-										schema: jsonSchema<AiTurnDecision>(
-											contract.output.schema,
-										),
+										schema: jsonSchema<AiTurnDecision>(contract.output.schema),
 									}),
 									prompt: contract.prompt,
 									providerOptions:
@@ -293,13 +291,12 @@ export function createOpenAiTurnGenerator(
 							"ai.openai.retry",
 							{
 								attempt,
-								error:
-									error instanceof Error ? error.message : String(error),
+								error: error instanceof Error ? error.message : String(error),
 								requestTimeoutMs,
 							},
 							"warn",
 						)
-						},
+					},
 					(error) => !(error instanceof AiGenerationTimeoutError),
 				)
 				span.event("ai.openai.response", {

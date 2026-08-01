@@ -30,10 +30,7 @@ const summonersActionJsonSchema: JSONSchema7 = {
 				action: { enum: ["playCard"], type: "string" },
 				card: { type: "string" },
 				target: {
-					anyOf: [
-						{ pattern: targetPattern, type: "string" },
-						{ type: "null" },
-					],
+					anyOf: [{ pattern: targetPattern, type: "string" }, { type: "null" }],
 				},
 			},
 			required: ["action", "card", "target"],
@@ -73,10 +70,7 @@ const summonersActionJsonSchema: JSONSchema7 = {
 			properties: {
 				action: { enum: ["usePower"], type: "string" },
 				target: {
-					anyOf: [
-						{ pattern: targetPattern, type: "string" },
-						{ type: "null" },
-					],
+					anyOf: [{ pattern: targetPattern, type: "string" }, { type: "null" }],
 				},
 			},
 			required: ["action", "target"],
@@ -545,65 +539,65 @@ export const summonersAiStrategy: AiGameStrategy<"summoners"> = {
 	privateViewForStrategy: (view) => view,
 	submitAction: async (socket, action, context) => {
 		switch (action.action) {
-				case "selectDeck":
-					return new Promise((resolve) => {
-						socket.emit("selectSummonersDeck", action.deck, resolve)
-					})
-				case "playCard": {
-					const card = context.privateView.hand.find(
-						(candidate) => candidate.name === action.card,
+			case "selectDeck":
+				return new Promise((resolve) => {
+					socket.emit("selectSummonersDeck", action.deck, resolve)
+				})
+			case "playCard": {
+				const card = context.privateView.hand.find(
+					(candidate) => candidate.name === action.card,
+				)
+				if (card === undefined) {
+					throw new Error("The AI selected a card outside its legal hand.")
+				}
+				return new Promise((resolve) => {
+					socket.emit(
+						"playSummonersCard",
+						card.physicalId,
+						action.target === null
+							? null
+							: resolveSummonersTargetReference(context, action.target),
+						resolve,
 					)
-					if (card === undefined) {
-						throw new Error("The AI selected a card outside its legal hand.")
-					}
-					return new Promise((resolve) => {
-						socket.emit(
-							"playSummonersCard",
-							card.physicalId,
-							action.target === null
-								? null
-								: resolveSummonersTargetReference(context, action.target),
-							resolve,
-						)
-					})
+				})
+			}
+			case "attack": {
+				const attacker = resolveSummonersTargetReference(
+					context,
+					action.attacker,
+				)
+				const target = resolveSummonersTargetReference(context, action.target)
+				if (attacker?.kind !== "being" || target === null) {
+					throw new Error("The AI selected a missing combatant.")
 				}
-				case "attack": {
-					const attacker = resolveSummonersTargetReference(
-						context,
-						action.attacker,
+				return new Promise((resolve) => {
+					socket.emit("attackSummoners", attacker.cardId, target, resolve)
+				})
+			}
+			case "tend": {
+				const tender = resolveSummonersTargetReference(context, action.tender)
+				const target = resolveSummonersTargetReference(context, action.target)
+				if (tender?.kind !== "being" || target?.kind !== "being") {
+					throw new Error("The AI selected a missing Being to Tend.")
+				}
+				return new Promise((resolve) => {
+					socket.emit("tendSummoners", tender.cardId, target.cardId, resolve)
+				})
+			}
+			case "usePower":
+				return new Promise((resolve) => {
+					socket.emit(
+						"useSummonerPower",
+						action.target === null
+							? null
+							: resolveSummonersTargetReference(context, action.target),
+						resolve,
 					)
-					const target = resolveSummonersTargetReference(context, action.target)
-					if (attacker?.kind !== "being" || target === null) {
-						throw new Error("The AI selected a missing combatant.")
-					}
-					return new Promise((resolve) => {
-						socket.emit("attackSummoners", attacker.cardId, target, resolve)
-					})
-				}
-				case "tend": {
-					const tender = resolveSummonersTargetReference(context, action.tender)
-					const target = resolveSummonersTargetReference(context, action.target)
-					if (tender?.kind !== "being" || target?.kind !== "being") {
-						throw new Error("The AI selected a missing Being to Tend.")
-					}
-					return new Promise((resolve) => {
-						socket.emit("tendSummoners", tender.cardId, target.cardId, resolve)
-					})
-				}
-				case "usePower":
-					return new Promise((resolve) => {
-						socket.emit(
-							"useSummonerPower",
-							action.target === null
-								? null
-								: resolveSummonersTargetReference(context, action.target),
-							resolve,
-						)
-					})
-				case "endTurn":
-					return new Promise((resolve) => {
-						socket.emit("endSummonersTurn", resolve)
-					})
+				})
+			case "endTurn":
+				return new Promise((resolve) => {
+					socket.emit("endSummonersTurn", resolve)
+				})
 		}
 	},
 	systemPrompt: [

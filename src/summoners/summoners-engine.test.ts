@@ -451,7 +451,7 @@ describe("Summoners authoritative engine", () => {
 			toSummonersPublicGameView(state).players[0]?.battlefield[0],
 		).toMatchObject({
 			attack: 4,
-				energy: 4,
+			energy: 4,
 			triggeredKeywords: ["molt"],
 		})
 
@@ -466,7 +466,7 @@ describe("Summoners authoritative engine", () => {
 			toSummonersPublicGameView(state).players[0]?.battlefield[0],
 		).toMatchObject({
 			attack: 4,
-				energy: 4,
+			energy: 4,
 		})
 	})
 

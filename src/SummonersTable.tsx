@@ -513,15 +513,15 @@ function RulesCodex({ onClose }: { onClose: () => void }): VNode {
 							<dt>Current</dt>
 							<dd>Your first bonus draw each turn readies this Being.</dd>
 							<dt>Molt</dt>
-							<dd>The first combat it survives each turn gives it +1 Attack.</dd>
+							<dd>
+								The first combat it survives each turn gives it +1 Attack.
+							</dd>
 							<dt>Rooted</dt>
 							<dd>
 								A ready, damaged Being restores 2 Energy as your turn ends.
 							</dd>
 							<dt>Tend</dt>
-							<dd>
-								Become weary to give another friendly Being +1/+1 growth.
-							</dd>
+							<dd>Become weary to give another friendly Being +1/+1 growth.</dd>
 							<dt>Fatigue</dt>
 							<dd>
 								Drawing from an empty deck deals 1, then 2, then 3 damage, and

@@ -210,7 +210,7 @@ const aiTurnReadiness = {
 		return (
 			game.phase === "playing" &&
 			game.currentPlayerId === playerId &&
-				!game.players.find((player) => player.id === playerId)?.eliminated
+			!game.players.find((player) => player.id === playerId)?.eliminated
 		)
 	},
 } satisfies Record<AnyPublicGameView["gameKind"], unknown>
@@ -431,25 +431,18 @@ async function createAiPlayerRuntime(
 						previousPlan: turnObjective,
 						privateView: privateViewAtStart,
 						publicView: gameAtStart,
-						summonersTurnLedger: silo.getState(
-							state.aiSummonersTurnLedgerAtom,
-						),
+						summonersTurnLedger: silo.getState(state.aiSummonersTurnLedgerAtom),
 					} as AiGameContext
 					const result = await aiGameStrategy(
 						gameAtStart.gameKind,
 					).submitAction(socket, decision.nextAction, actionContext)
 					const nextAction = decision.nextAction
-					if (
-						result.ok &&
-						nextAction.action === "passCards"
-					) {
+					if (result.ok && nextAction.action === "passCards") {
 						if (
 							gameAtStart.gameKind !== "hearts" ||
 							privateViewAtStart.gameKind !== "hearts"
 						) {
-							throw new Error(
-								"Only Hearts supports AI card-pass memory.",
-							)
+							throw new Error("Only Hearts supports AI card-pass memory.")
 						}
 						const passMemory = registeredGameCapability<PassMemoryAdapter>(
 							gameAtStart.gameKind,
@@ -513,10 +506,7 @@ async function createAiPlayerRuntime(
 					silo.setState(state.aiStrategyReviewTurnsAtom, (turns) => [
 						...turns,
 						{
-							action: strategyReviewAction(
-								nextAction,
-								privateViewAtStart,
-							),
+							action: strategyReviewAction(nextAction, privateViewAtStart),
 							phase: reviewPhase,
 							plan: decision.currentPlan,
 							trickNumber: gameAtStart.trickNumber,

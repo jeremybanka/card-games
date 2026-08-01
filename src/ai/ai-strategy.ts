@@ -28,7 +28,9 @@ export type AiGuardObserver = {
 export function fallbackAiDecision<Kind extends AiGameKind>(
 	context: AiGameContextFor<Kind>,
 ): AiTurnDecisionFor<Kind> {
-	return aiGameStrategy<Kind>(context.publicView.gameKind).fallbackDecision(context)
+	return aiGameStrategy<Kind>(context.publicView.gameKind).fallbackDecision(
+		context,
+	)
 }
 
 export function chooseFallbackAiAction<Kind extends AiGameKind>(

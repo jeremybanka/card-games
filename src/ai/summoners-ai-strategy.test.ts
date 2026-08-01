@@ -15,10 +15,8 @@ import { renderAiGameFacts, type AiGameContextFor } from "./ai-game-facts.ts"
 import { aiGameStrategy } from "./ai-game-strategy.ts"
 import { fallbackAiDecision } from "./ai-strategy.ts"
 
-const lunaId =
-	"user::00000000-0000-4000-8000-0000000000a1" satisfies PlayerId
-const rivalId =
-	"user::00000000-0000-4000-8000-0000000000b2" satisfies PlayerId
+const lunaId = "user::00000000-0000-4000-8000-0000000000a1" satisfies PlayerId
+const rivalId = "user::00000000-0000-4000-8000-0000000000b2" satisfies PlayerId
 
 function physicalCards() {
 	let index = 0
@@ -68,10 +66,9 @@ describe("Summoners AI strategy", () => {
 			action: "selectDeck",
 			deck: "emberReliquary",
 		})
-		expect(aiGameStrategy("summoners").isLegalAction(
-			context,
-			decision.nextAction,
-		)).toBe(true)
+		expect(
+			aiGameStrategy("summoners").isLegalAction(context, decision.nextAction),
+		).toBe(true)
 		const facts = renderAiGameFacts(context)
 		expect(facts).toContain("Select deck `emberReliquary`")
 		expect(facts).not.toContain("card::")
@@ -98,10 +95,7 @@ describe("Summoners AI strategy", () => {
 
 		const decision = fallbackAiDecision(context)
 		expect(
-			aiGameStrategy("summoners").isLegalAction(
-				context,
-				decision.nextAction,
-			),
+			aiGameStrategy("summoners").isLegalAction(context, decision.nextAction),
 		).toBe(true)
 		expect(
 			aiGameStrategy("summoners").isLegalAction(context, {
@@ -201,8 +195,7 @@ describe("Summoners AI strategy", () => {
 			ok: true,
 			value: {
 				actionReason: "Develop the board before spending readiness.",
-				currentPlan:
-					"Develop a rushing attacker and convert it into pressure.",
+				currentPlan: "Develop a rushing attacker and convert it into pressure.",
 				nextAction: {
 					action: "playCard",
 					card: "Cinder Pup",
