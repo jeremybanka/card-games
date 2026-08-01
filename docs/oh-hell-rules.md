@@ -37,9 +37,9 @@ Pagat's automatic recommendation or an explicit value. The server rejects any
 schedule that would require more than the available 52-card deck for the
 number of seated players. Tables support 3–12 players.
 
-Alongside Standard Pagat, the built-in “Family valley 8–1” profile plays
-8–7–…–1–…–7–8, requires trump to be broken, uses hot-seat bidding, and gives no
-pittance points. Custom profiles can be named, updated, and deleted locally.
+Alongside Standard Pagat, the built-in “Halfway-style” profile plays
+8–7–…–1–…–7–8, requires trump to be broken, uses hot-seat bidding, and gives
+no pittance points. Custom profiles can be named, updated, and deleted locally.
 
 The room's game choice is immutable. All bids, public trick cards, trump,
 rules, trick counts, and scores are public. Hands remain private valued

@@ -1,7 +1,7 @@
 import { atom, getState, setState } from "atom.io"
 
 import {
-	FAMILY_VALLEY_OH_HELL_RULES,
+	HALFWAY_STYLE_OH_HELL_RULES,
 	parseOhHellRules,
 	STANDARD_PAGAT_OH_HELL_RULES,
 	type OhHellRules,
@@ -18,7 +18,7 @@ export type OhHellRuleProfile = {
 }
 
 export const STANDARD_PAGAT_PROFILE_ID = "standard-pagat"
-export const FAMILY_VALLEY_PROFILE_ID = "family-valley-8-1"
+export const HALFWAY_STYLE_PROFILE_ID = "halfway-style"
 
 const BUILT_IN_PROFILES: OhHellRuleProfile[] = [
 	{
@@ -29,9 +29,9 @@ const BUILT_IN_PROFILES: OhHellRuleProfile[] = [
 	},
 	{
 		builtIn: true,
-		id: FAMILY_VALLEY_PROFILE_ID,
-		name: "Family valley 8–1",
-		rules: structuredClone(FAMILY_VALLEY_OH_HELL_RULES),
+		id: HALFWAY_STYLE_PROFILE_ID,
+		name: "Halfway-style",
+		rules: structuredClone(HALFWAY_STYLE_OH_HELL_RULES),
 	},
 ]
 

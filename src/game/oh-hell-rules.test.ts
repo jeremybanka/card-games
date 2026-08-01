@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
 	deriveOhHellHandSchedule,
-	FAMILY_VALLEY_OH_HELL_RULES,
+	HALFWAY_STYLE_OH_HELL_RULES,
 	maximumOhHellHandSize,
 	parseOhHellRules,
 	STANDARD_PAGAT_OH_HELL_RULES,
@@ -20,8 +20,8 @@ describe("Oh Hell rules", () => {
 		)
 	})
 
-	it("supports the family valley 8–1 profile", () => {
-		expect(deriveOhHellHandSchedule(FAMILY_VALLEY_OH_HELL_RULES, 4)).toEqual([
+	it("supports the Halfway-style valley 8–1 profile", () => {
+		expect(deriveOhHellHandSchedule(HALFWAY_STYLE_OH_HELL_RULES, 4)).toEqual([
 			8, 7, 6, 5, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7, 8,
 		])
 	})
@@ -74,12 +74,12 @@ describe("Oh Hell rules", () => {
 	})
 
 	it("strictly parses untrusted realtime and local-storage input", () => {
-		expect(parseOhHellRules(FAMILY_VALLEY_OH_HELL_RULES)).toEqual(
-			FAMILY_VALLEY_OH_HELL_RULES,
+		expect(parseOhHellRules(HALFWAY_STYLE_OH_HELL_RULES)).toEqual(
+			HALFWAY_STYLE_OH_HELL_RULES,
 		)
 		expect(() =>
 			parseOhHellRules({
-				...FAMILY_VALLEY_OH_HELL_RULES,
+				...HALFWAY_STYLE_OH_HELL_RULES,
 				requireTrumpBreak: "yes",
 			}),
 		).toThrow("must be true or false")

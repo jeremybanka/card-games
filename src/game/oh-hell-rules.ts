@@ -41,7 +41,7 @@ export const STANDARD_PAGAT_OH_HELL_RULES = {
 	},
 } as const satisfies OhHellRules
 
-export const FAMILY_VALLEY_OH_HELL_RULES = {
+export const HALFWAY_STYLE_OH_HELL_RULES = {
 	awardPittancePoints: false,
 	requireTrumpBreak: true,
 	requireUnsatisfiableBids: true,
